@@ -242,7 +242,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.editItem):
 				if m.list.SelectedItem() != nil {
 					// Switch to InputModel for editing.
-					formModel := newFormModel(m.list.SelectedItem().(*task.Task), &m)
+					formModel := newFormModel(m.list.SelectedItem().(*task.Task), &m, true)
 					return formModel, nil
 				}
 
@@ -252,7 +252,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					TaskTitle:       "",
 					TaskDescription: "",
 				}
-				formModel := newFormModel(task, &m)
+				formModel := newFormModel(task, &m, false)
 				return formModel, nil
 			}
 		}

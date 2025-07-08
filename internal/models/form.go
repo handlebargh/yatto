@@ -74,7 +74,7 @@ var (
 	taskPriority    string
 )
 
-func newFormModel(t *task.Task, listModel *listModel) formModel {
+func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
 	if t.Title() != "" {
 		taskTitle = t.Title()
 	} else {
@@ -88,6 +88,13 @@ func newFormModel(t *task.Task, listModel *listModel) formModel {
 	m.listModel = listModel
 	m.lg = lipgloss.DefaultRenderer()
 	m.styles = NewStyles(m.lg)
+
+	var confirmQuestion string
+	if edit {
+		confirmQuestion = "Edit task?"
+	} else {
+		confirmQuestion = "Create new task?"
+	}
 
 	m.form = huh.NewForm(
 		huh.NewGroup(
@@ -119,7 +126,7 @@ func newFormModel(t *task.Task, listModel *listModel) formModel {
 				Value(&taskDescription),
 
 			huh.NewConfirm().
-				Title("Create new task?").
+				Title(confirmQuestion).
 				Affirmative("Yes").
 				Negative("No").
 				Value(&confirm),
