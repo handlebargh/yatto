@@ -114,6 +114,10 @@ func (d customDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 		style = lipgloss.NewStyle().Foreground(red).BorderForeground(red)
 	}
 
+	if taskItem.Completed() {
+		style = style.Strikethrough(true).Foreground(green).BorderForeground(green)
+	}
+
 	if index == m.GlobalIndex() {
 		style = style.Border(lipgloss.NormalBorder(), false, false, false, true)
 	} else {
