@@ -5,10 +5,10 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/handlebar/yatto/internal/config"
-	"github.com/handlebar/yatto/internal/git"
-	"github.com/handlebar/yatto/internal/models"
-	"github.com/handlebar/yatto/internal/storage"
+	"github.com/handlebargh/yatto/internal/config"
+	"github.com/handlebargh/yatto/internal/git"
+	"github.com/handlebargh/yatto/internal/models"
+	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
 )
 

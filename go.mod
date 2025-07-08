@@ -1,4 +1,4 @@
-module github.com/handlebar/yatto
+module github.com/handlebargh/yatto
 
 go 1.24.4
 

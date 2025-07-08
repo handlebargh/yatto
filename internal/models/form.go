@@ -7,8 +7,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/handlebar/yatto/internal/storage"
-	"github.com/handlebar/yatto/internal/task"
+	"github.com/handlebargh/yatto/internal/storage"
+	"github.com/handlebargh/yatto/internal/task"
 )
 
 const maxWidth = 80

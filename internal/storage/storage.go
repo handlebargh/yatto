@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/handlebar/yatto/internal/git"
+	"github.com/handlebargh/yatto/internal/git"
 	"github.com/spf13/viper"
 )
 

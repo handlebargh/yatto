@@ -10,7 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
-	"github.com/handlebar/yatto/internal/task"
+	"github.com/handlebargh/yatto/internal/task"
 )
 
 var (
