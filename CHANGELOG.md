@@ -1,3 +1,13 @@
+## v0.2.0 (2025-07-08)
+
+### Feat
+
+- add task completion status
+
+### Refactor
+
+- redo task view
+
 ## v0.1.0 (2025-07-08)
 
 ### Feat
