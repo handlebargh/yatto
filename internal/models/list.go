@@ -343,10 +343,19 @@ func (m listModel) View() string {
 	}
 
 	leftColumn := appStyle.Render(m.list.View())
-	rightColumn := detailBox.Render(completed.Render(task.CompletedString(m.selection.Completed())) + "\n\n" +
-		headline.Render("Title") + "\n\n" + m.selection.Title() + "\n\n" +
-		headline.Render("Priority") + "\n\n" + priority.Render(m.selection.Priority()) + "\n\n" +
-		headline.Render("Description:") + "\n\n" + m.selection.TaskDescription)
+	rightColumn := detailBox.Render(
+		completed.Render(
+			task.CompletedString(m.selection.Completed()),
+		) + " " + priority.Render(
+			m.selection.Priority(),
+		) + "\n\n" +
+			headline.Render(
+				"Title",
+			) + "\n\n" + m.selection.Title() + "\n\n" +
+			headline.Render(
+				"Description:",
+			) + "\n\n" + m.selection.TaskDescription,
+	)
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 }
 
