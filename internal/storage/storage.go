@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/handlebargh/yatto/internal/git"
@@ -34,20 +35,20 @@ func CreateStorageDir() {
 			if err != nil {
 				panic(fmt.Errorf("fatal error creating storage directory: %w", err))
 			}
-
-			if viper.GetBool("use_git") {
-				err = git.GitInit(storageDir)
-				if err != nil {
-					panic(fmt.Errorf("fatal error initializing git repository: %w", err))
-				}
-			}
 		} else {
 			os.Exit(0)
+		}
+	}
+	if viper.GetBool("use_git") {
+		err = git.GitInit(storageDir)
+		if err != nil {
+			panic(fmt.Errorf("fatal error initializing git repository: %w", err))
 		}
 	}
 }
 
 func FileExists(file string) bool {
-	_, err := os.Stat(viper.GetString("storage_dir") + "/" + file)
-	return os.IsExist(err)
+	fullPath := filepath.Join(viper.GetString("storage_dir"), file)
+	_, err := os.Stat(fullPath)
+	return !os.IsNotExist(err)
 }
