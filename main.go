@@ -17,7 +17,7 @@ func main() {
 	config.CreateConfigFile()
 	storage.CreateStorageDir()
 
-	if viper.GetBool("use_git") {
+	if viper.GetString("git_remote") != "" {
 		err := git.GitPull(viper.GetString("storage_dir"))
 		if err != nil {
 			fmt.Println("Error syncing repository:", err)
