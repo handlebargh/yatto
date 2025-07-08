@@ -1,50 +1,27 @@
-# 📝 yatto — Yet Another Terrific Task Organizer
+# yatto - Yet Another Terrific Task Organizer
 
-**yatto** is a lightweight, terminal-based to-do application built with
+**yatto** is a terminal-based to-do application built with
 [Bubble Tea](https://github.com/charmbracelet/bubbletea). It stores each task as
 a separate JSON file on your filesystem and optionally manages the
-task directory as a Git repository for versioning and collaboration.
+task directory as a Git repository for versioning and synchronization.
 
----
+## Features
 
-## 🚀 Features
-
-- ⚡ **TUI-based** interface powered by the Bubble Tea framework
-- 🗂 **Local file storage**: Each task is stored as an individual JSON file for easy inspection and portability
-- 🏷 **Basic task fields**: Title, description, and priority (High, Medium, Low)
-- 🌱 **Git integration**: Optionally initializes a Git repository in your task directory for:
+- **TUI-based** interface powered by the Bubble Tea framework
+- **Local file storage**: Each task is stored as an individual JSON file for easy inspection and portability
+- **Basic task fields**: Title, description, and priority (High, Medium, Low)
+- **Git integration**: Optionally initializes a Git repository in your task directory for:
   - Full version history of all tasks
   - Safe collaboration and backup
-  - Sync across machines with `git pull/push`
+  - Sync across machines
 
----
-
-## 📦 Installation
+## Installation
 
 ```bash
 go install github.com/handlebargh/yatto@latest
 ```
 
----
-
-## 🖥️ Usage
-
-Run from the terminal:
-
-```bash
-yatto
-```
-
-Inside the app:
-
-- Use arrow keys or `j/k` to navigate
-- Press `a` to create a new task
-- Press `d` to delete a task (confirmation prompt included)
-- Press `q` to quit
-
----
-
-## 📁 Task Storage
+## Task Storage
 
 Tasks are saved in a directory like:
 
@@ -52,15 +29,9 @@ Tasks are saved in a directory like:
 ~/.local/share/yatto/tasks/
 ```
 
-Each task is a simple JSON file, making the data:
+Each task is a simple JSON file.
 
-- Human-readable
-- Easy to back up
-- Suitable for automation/scripts
-
----
-
-## 🔀 Git-Enabled Mode
+## Git-Enabled Mode
 
 If you enable Git support, yatto will:
 
@@ -71,9 +42,7 @@ If you enable Git support, yatto will:
 
 > This is ideal for users who want **traceability, backups, or multi-device sync**.
 
----
-
-## 🛣️ Roadmap
+## Roadmap
 
 Planned features:
 
@@ -82,42 +51,16 @@ Planned features:
 - 🏷️ Tags or labels
 - 📦 Export to Markdown or plain text
 
----
-
-## 💡 Why JSON and Git?
-
-- 🧱 JSON is lightweight and easy to manipulate
-- 🧾 Git tracks every change without requiring a separate database
-- 🔐 You're always in control of your data
-
----
-
 ## 🧑‍💻 Built With
 
-- [Go](https://golang.org)
+- [Go](https://go.dev)
 - [Bubble Tea](https://github.com/charmbracelet/bubbletea) — a fun, functional TUI framework
 - [Lip Gloss](https://github.com/charmbracelet/lipgloss) — for terminal styling
-
----
 
 ## 📃 License
 
 MIT — see [LICENSE](LICENSE)
 
----
-
 ## 🤝 Contributing
 
 Contributions, feedback, and ideas are welcome! Feel free to open issues or pull requests.
-
----
-
-## 🌟 Why yatto?
-
-Because productivity tools shouldn’t be bloated. yatto gives you:
-
-- A clean, focused terminal interface
-- Local-first data ownership
-- Git-enhanced history and safety
-
-All wrapped up in a tiny Go binary.
