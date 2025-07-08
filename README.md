@@ -40,8 +40,6 @@ If you enable Git support, yatto will:
 - Allow you to sync across devices (via Git remote)
 - Make accidental deletions recoverable via history
 
-> This is ideal for users who want **traceability, backups, or multi-device sync**.
-
 ## Roadmap
 
 Planned features:
@@ -51,16 +49,16 @@ Planned features:
 - 🏷️ Tags or labels
 - 📦 Export to Markdown or plain text
 
-## 🧑‍💻 Built With
+## Built With
 
 - [Go](https://go.dev)
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) — a fun, functional TUI framework
-- [Lip Gloss](https://github.com/charmbracelet/lipgloss) — for terminal styling
+- [Bubble Tea](https://github.com/charmbracelet/bubbletea) - a fun, functional TUI framework
+- [Lip Gloss](https://github.com/charmbracelet/lipgloss) - for terminal styling
 
-## 📃 License
+## License
 
-MIT — see [LICENSE](LICENSE)
+MIT - see [LICENSE](LICENSE)
 
-## 🤝 Contributing
+## Contributing
 
 Contributions, feedback, and ideas are welcome! Feel free to open issues or pull requests.
