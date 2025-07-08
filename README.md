@@ -40,15 +40,6 @@ If you enable Git support, yatto will:
 - Allow you to sync across devices (via Git remote)
 - Make accidental deletions recoverable via history
 
-## Roadmap
-
-Planned features:
-
-- 📅 Due dates
-- ✅ Task completion status (done/undone)
-- 🏷️ Tags or labels
-- 📦 Export to Markdown or plain text
-
 ## Built With
 
 - [Go](https://go.dev)
