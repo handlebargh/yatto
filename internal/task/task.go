@@ -15,12 +15,14 @@ type Task struct {
 	TaskTitle       string `json:"title"`
 	TaskDescription string `json:"description"`
 	TaskPriority    string `json:"priority"`
+	TaskCompleted   bool   `json:"completed"`
 }
 
 func (t Task) Id() string          { return t.TaskId }
 func (t Task) Title() string       { return t.TaskTitle }
 func (t Task) Description() string { return t.TaskDescription }
 func (t Task) Priority() string    { return t.TaskPriority }
+func (t Task) Completed() bool     { return t.TaskCompleted }
 func (t Task) FilterValue() string { return t.TaskTitle }
 
 // Function to convert priority to a numerical value for sorting.
@@ -35,6 +37,14 @@ func PriorityValue(priority string) int {
 	default:
 		return -1
 	}
+}
+
+func CompletedString(completed bool) string {
+	if completed {
+		return "done"
+	}
+
+	return "open"
 }
 
 // ReadTasksFromFS reads all tasks from the storage directory
@@ -67,12 +77,13 @@ func ReadTasksFromFS() []Task {
 	return tasks
 }
 
-func MarshalTask(uuid, title, description, priority string) []byte {
+func MarshalTask(uuid, title, description, priority string, completed bool) []byte {
 	var task Task
 	task.TaskId = uuid
 	task.TaskTitle = title
 	task.TaskDescription = description
 	task.TaskPriority = priority
+	task.TaskCompleted = completed
 
 	json, err := json.MarshalIndent(task, "", "\t")
 	if err != nil {

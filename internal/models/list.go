@@ -312,6 +312,17 @@ func (m listModel) View() string {
 	}
 
 	// Display task view.
+	completed := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#000000")).
+		Padding(0, 1)
+
+	switch m.selection.Completed() {
+	case true:
+		completed = completed.Background(green)
+	case false:
+		completed = completed.Background(red)
+	}
+
 	headline := lipgloss.NewStyle().
 		Foreground(green).
 		Bold(true)
@@ -332,7 +343,8 @@ func (m listModel) View() string {
 	}
 
 	leftColumn := appStyle.Render(m.list.View())
-	rightColumn := detailBox.Render(headline.Render("Title") + "\n\n" + m.selection.Title() + "\n\n" +
+	rightColumn := detailBox.Render(completed.Render(task.CompletedString(m.selection.Completed())) + "\n\n" +
+		headline.Render("Title") + "\n\n" + m.selection.Title() + "\n\n" +
 		headline.Render("Priority") + "\n\n" + priority.Render(m.selection.Priority()) + "\n\n" +
 		headline.Render("Description:") + "\n\n" + m.selection.TaskDescription)
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)

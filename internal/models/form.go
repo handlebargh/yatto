@@ -20,6 +20,7 @@ type Styles struct {
 	StatusHeader,
 	Title,
 	Priority,
+	Completed,
 	Highlight,
 	ErrorHeaderText,
 	Help lipgloss.Style
@@ -49,6 +50,9 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 	s.Priority = lg.NewStyle().
 		Foreground(lipgloss.Color("#000000")).
 		Padding(0, 1)
+	s.Completed = lg.NewStyle().
+		Foreground(lipgloss.Color("#000000")).
+		Padding(0, 1)
 	s.Highlight = lg.NewStyle().
 		Foreground(lipgloss.Color("212"))
 	s.ErrorHeaderText = s.HeaderText.
@@ -72,6 +76,7 @@ var (
 	taskTitle       string
 	taskDescription string
 	taskPriority    string
+	taskCompleted   bool
 )
 
 func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
@@ -82,6 +87,7 @@ func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
 	}
 	taskDescription = t.Description()
 	taskPriority = t.Priority()
+	taskCompleted = t.Completed()
 
 	m := formModel{width: maxWidth}
 	m.task = t
@@ -124,6 +130,12 @@ func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
 				Key("description").
 				Title("Enter a description:").
 				Value(&taskDescription),
+
+			huh.NewConfirm().
+				Title("Done").
+				Affirmative("Yes").
+				Negative("No").
+				Value(&taskCompleted),
 
 			huh.NewConfirm().
 				Title(confirmQuestion).
@@ -181,12 +193,14 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.task.TaskTitle = taskTitle
 			m.task.TaskDescription = taskDescription
 			m.task.TaskPriority = taskPriority
+			m.task.TaskCompleted = taskCompleted
 
 			json := task.MarshalTask(
 				m.task.Id(),
 				m.task.Title(),
 				m.task.Description(),
-				m.task.Priority())
+				m.task.Priority(),
+				m.task.Completed())
 
 			if storage.FileExists(m.task.Id()) {
 				err := task.WriteJson(json, *m.task,
@@ -230,6 +244,14 @@ func (m formModel) View() string {
 	default:
 		s.Priority = s.Priority.Background(indigo)
 	}
+
+	switch taskCompleted {
+	case true:
+		s.Completed = s.Completed.Background(green)
+	case false:
+		s.Completed = s.Completed.Background(red)
+	}
+
 	var status string
 	{
 		const statusWidth = 35
@@ -240,7 +262,8 @@ func (m formModel) View() string {
 			MarginLeft(statusMarginLeft).
 			Render(s.StatusHeader.Render("Task preview") + "\n\n" +
 				s.Title.Render(taskTitle) + " " +
-				s.Priority.Render(taskPriority) + "\n\n" +
+				s.Priority.Render(taskPriority) + " " +
+				s.Completed.Render(task.CompletedString(taskCompleted)) + "\n\n" +
 				taskDescription)
 	}
 
