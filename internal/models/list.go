@@ -28,6 +28,13 @@ var (
 			Background(green).
 			Padding(0, 1)
 
+	detailBox = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.AdaptiveColor{Light: "#333333", Dark: "#CCCCCC"}).
+			Padding(1, 2).
+			Margin(1, 1).
+			Width(50)
+
 	promptBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			Padding(1, 2).
@@ -306,8 +313,8 @@ func (m listModel) View() string {
 
 	// Display task view.
 	title := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Background(green).
+		Foreground(lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#000000"}).
+		Background(lipgloss.AdaptiveColor{Light: "#333333", Dark: "#CCCCCC"}).
 		Padding(0, 1).
 		Bold(true)
 
@@ -326,9 +333,11 @@ func (m listModel) View() string {
 		priority = priority.Background(indigo)
 	}
 
-	return appStyle.Render(title.Render(m.selection.Title()) + "\n\n" +
+	leftColumn := appStyle.Render(m.list.View())
+	rightColumn := detailBox.Render(title.Render(m.selection.Title()) + "\n\n" +
 		priority.Render(m.selection.Priority()) + "\n\n" +
 		m.selection.TaskDescription)
+	return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 }
 
 func sortTasksByPriority(m *list.Model) {
