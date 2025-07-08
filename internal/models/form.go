@@ -102,7 +102,7 @@ func newFormModel(t *task.Task, listModel *listModel) formModel {
 				Title("Enter a title:").
 				Value(&taskTitle).
 				Description("Give it a short but concise title."+"\n"+
-					"(Max 64 characters)").
+					"(max 64 characters)").
 				Validate(func(str string) error {
 					if len(strings.TrimSpace(str)) < 1 {
 						return errors.New("title must not be empty")
