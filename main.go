@@ -40,7 +40,7 @@ func initConfig() {
 
 	viper.SetDefault("config_dir", home+"/.config/yatto")
 	viper.SetDefault("storage_dir", home+"/.local/share/yatto/tasks")
-	viper.SetDefault("use_git", false)
+	viper.SetDefault("use_git", true)
 	viper.SetDefault("git_remote", "")
 
 	viper.SetConfigName("config")
