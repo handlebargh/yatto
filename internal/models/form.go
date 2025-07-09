@@ -203,22 +203,10 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.task.Completed())
 
 			if storage.FileExists(m.task.Id()) {
-				err := task.WriteJson(json, *m.task,
-					"update: "+m.task.Title())
-				if err != nil {
-					m.listModel.mode = 2
-					m.listModel.error = err.Error()
-				}
-				cmds = append(cmds, m.listModel.list.NewStatusMessage(statusMessageGreenStyle("Task updated")))
+				cmds = append(cmds, task.WriteJsonCmd(json, *m.task, "update: "+m.task.Title()))
 			} else {
 				m.listModel.list.InsertItem(0, m.task)
-				err := task.WriteJson(json, *m.task,
-					"create: "+m.task.Title())
-				if err != nil {
-					m.listModel.mode = 2
-					m.listModel.error = err.Error()
-				}
-				cmds = append(cmds, m.listModel.list.NewStatusMessage(statusMessageGreenStyle("Task created")))
+				cmds = append(cmds, task.WriteJsonCmd(json, *m.task, "create: "+m.task.Title()))
 			}
 		}
 

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/handlebargh/yatto/internal/git"
 	"github.com/spf13/viper"
 )
 
@@ -37,12 +36,6 @@ func CreateStorageDir() {
 			}
 		} else {
 			os.Exit(0)
-		}
-	}
-	if viper.GetBool("use_git") {
-		err = git.GitInit(storageDir)
-		if err != nil {
-			panic(fmt.Errorf("fatal error initializing git repository: %w", err))
 		}
 	}
 }

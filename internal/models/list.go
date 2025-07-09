@@ -10,7 +10,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
+	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/task"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -144,7 +146,7 @@ type listModel struct {
 	selection *task.Task
 	keys      *listKeyMap
 	mode      mode
-	error     string
+	err       error
 }
 
 func InitialListModel() listModel {
@@ -182,6 +184,11 @@ func InitialListModel() listModel {
 }
 
 func (m listModel) Init() tea.Cmd {
+	if viper.GetBool("use_git") {
+		storageDir := viper.GetString("storage_dir")
+		return git.GitInit(storageDir)
+	}
+
 	return nil
 }
 
@@ -189,6 +196,28 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case git.GitErrorMsg:
+		m.mode = 2
+		m.err = msg.Err
+
+	case git.GitDoneMsg:
+		return m, m.list.NewStatusMessage(statusMessageGreenStyle("Tasks synchronized"))
+
+	case task.JsonWriteDoneMsg:
+		return m, m.list.NewStatusMessage(statusMessageGreenStyle("Task created/updated"))
+
+	case task.JsonWriteErrorMsg:
+		m.mode = 2
+		m.err = msg.Err
+
+	case task.TaskDeleteDoneMsg:
+		m.list.RemoveItem(m.list.GlobalIndex())
+		return m, m.list.NewStatusMessage(statusMessageRedStyle("Task deleted"))
+
+	case task.TaskDeleteErrorMsg:
+		m.mode = 2
+		m.err = msg.Err
+
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
@@ -198,18 +227,15 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
+				var cmds []tea.Cmd
 				if m.list.SelectedItem() != nil {
-					err := task.DeleteTaskFromFS(m.list.SelectedItem().(*task.Task),
-						"delete: "+m.list.SelectedItem().(*task.Task).Title())
-					if err != nil {
-						m.mode = 2
-						m.error = err.Error()
-						return m, nil
-					}
+					cmds = append(cmds, task.DeleteTaskFromFSCmd(m.list.SelectedItem().(*task.Task),
+						"delete: "+m.list.SelectedItem().(*task.Task).Title()))
+					cmds = append(cmds, m.list.NewStatusMessage(statusMessageRedStyle("Task deleted")))
 					m.list.RemoveItem(m.list.GlobalIndex())
 				}
 				m.mode = modeNormal
-				return m, m.list.NewStatusMessage(statusMessageRedStyle("Task deleted"))
+				return m, tea.Batch(cmds...)
 
 			case "n", "N", "esc", "q":
 				m.mode = modeNormal
@@ -306,7 +332,7 @@ func (m listModel) View() string {
 	// Display git error view
 	if m.mode == modeGitError {
 		styledBox := promptBoxStyle.Render("An error occured while executing git:\n\n" +
-			m.error + "\n\n" +
+			m.err.Error() + "\n\n" +
 			"Please commit manually!")
 
 		termWidth := m.list.Width()
