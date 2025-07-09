@@ -231,7 +231,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.list.SelectedItem() != nil {
 					cmds = append(cmds, task.DeleteTaskFromFSCmd(m.list.SelectedItem().(*task.Task),
 						"delete: "+m.list.SelectedItem().(*task.Task).Title()))
-					cmds = append(cmds, m.list.NewStatusMessage(statusMessageRedStyle("Task deleted")))
+					cmds = append(cmds, m.list.NewStatusMessage(statusMessageRedStyle("Task removed")))
 					m.list.RemoveItem(m.list.GlobalIndex())
 				}
 				m.mode = modeNormal

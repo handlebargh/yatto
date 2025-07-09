@@ -36,7 +36,7 @@ func GitCommit(file, storageDir, message string, push bool) tea.Cmd {
 
 func GitPull(storageDir string) tea.Cmd {
 	return func() tea.Msg {
-		if err := gitPullLogic(storageDir); err != nil {
+		if err := GitPullLogic(storageDir); err != nil {
 			return GitErrorMsg{err}
 		}
 		return GitDoneMsg{}
@@ -91,7 +91,7 @@ func GitCommitLogic(file, storageDir, message string, push bool) error {
 	return nil
 }
 
-func gitPullLogic(storageDir string) error {
+func GitPullLogic(storageDir string) error {
 	if err := os.Chdir(storageDir); err != nil {
 		return err
 	}

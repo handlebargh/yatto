@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/handlebargh/yatto/internal/config"
+	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/models"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
@@ -15,6 +16,15 @@ func main() {
 	initConfig()
 	config.CreateConfigFile()
 	storage.CreateStorageDir()
+
+	if viper.GetString("git_remote") != "" {
+		fmt.Println("Synchronizing tasks...")
+		err := git.GitPullLogic(viper.GetString("storage_dir"))
+		if err != nil {
+			fmt.Println("Error syncing repository:", err)
+			os.Exit(1)
+		}
+	}
 
 	if _, err := tea.NewProgram(models.InitialListModel(), tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
