@@ -28,7 +28,7 @@ var (
 			Background(green).
 			Padding(0, 1)
 
-	detailBox = lipgloss.NewStyle().
+	detailBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.AdaptiveColor{Light: "#333333", Dark: "#CCCCCC"}).
 			Padding(1, 2).
@@ -41,6 +41,14 @@ var (
 			BorderForeground(lipgloss.Color("9")).
 			Align(lipgloss.Center).
 			Width(40)
+
+	statusMessageRedStyle = lipgloss.NewStyle().
+				Foreground(red).
+				Render
+
+	statusMessageGreenStyle = lipgloss.NewStyle().
+				Foreground(green).
+				Render
 )
 
 type mode int
@@ -201,7 +209,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.list.RemoveItem(m.list.GlobalIndex())
 				}
 				m.mode = modeNormal
-				return m, nil
+				return m, m.list.NewStatusMessage(statusMessageRedStyle("Task deleted"))
 
 			case "n", "N", "esc", "q":
 				m.mode = modeNormal
@@ -347,7 +355,7 @@ func (m listModel) View() string {
 	}
 
 	leftColumn := appStyle.Render(m.list.View())
-	rightColumn := detailBox.Render(
+	rightColumn := detailBoxStyle.Render(
 		completed.Render(
 			task.CompletedString(m.selection.Completed()),
 		) + " " + priority.Render(

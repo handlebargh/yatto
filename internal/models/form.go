@@ -209,6 +209,7 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.listModel.mode = 2
 					m.listModel.error = err.Error()
 				}
+				cmds = append(cmds, m.listModel.list.NewStatusMessage(statusMessageGreenStyle("Task updated")))
 			} else {
 				m.listModel.list.InsertItem(0, m.task)
 				err := task.WriteJson(json, *m.task,
@@ -217,6 +218,7 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.listModel.mode = 2
 					m.listModel.error = err.Error()
 				}
+				cmds = append(cmds, m.listModel.list.NewStatusMessage(statusMessageGreenStyle("Task created")))
 			}
 		}
 
