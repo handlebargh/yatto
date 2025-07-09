@@ -1,3 +1,16 @@
+## v0.4.0 (2025-07-09)
+
+### Feat
+
+- show spinner while synchronization is in progress
+- run git commands in background
+
+### Fix
+
+- set margin to vertically align with task view
+- revert conditional
+- synchronize tasks at startup
+
 ## v0.3.0 (2025-07-09)
 
 ### Feat
