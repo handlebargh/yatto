@@ -42,7 +42,6 @@ func initConfig() {
 	viper.SetDefault("storage_dir", home+"/.local/share/yatto/tasks")
 	viper.SetDefault("use_git", false)
 	viper.SetDefault("git_remote", "")
-	viper.SetDefault("push_on_change", false)
 
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")

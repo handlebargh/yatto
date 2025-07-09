@@ -5,9 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/spf13/viper"
+)
+
+var uuidRegex = regexp.MustCompile(
+	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`,
 )
 
 type Task struct {
@@ -57,14 +62,14 @@ func ReadTasksFromFS() []Task {
 
 	var tasks []Task
 	for _, entry := range taskFiles {
-		var fileContent []byte
-		if !entry.IsDir() {
-			fileContent, err = os.ReadFile(filepath.Join(viper.GetString("storage_dir"), entry.Name()))
-			if err != nil {
-				panic(err)
-			}
-		} else {
+		if entry.IsDir() || !uuidRegex.MatchString(entry.Name()) {
 			continue
+		}
+
+		filePath := filepath.Join(viper.GetString("storage_dir"), entry.Name())
+		fileContent, err := os.ReadFile(filePath)
+		if err != nil {
+			panic(err)
 		}
 
 		var task Task
@@ -102,7 +107,11 @@ func WriteJson(json []byte, task Task, message string) error {
 	}
 
 	if viper.GetBool("use_git") {
-		return git.GitCommit(file, viper.GetString("storage_dir"), message, false)
+		if viper.GetString("git_remote") == "" {
+			return git.GitCommit(file, viper.GetString("storage_dir"), message, false)
+		} else {
+			return git.GitCommit(file, viper.GetString("storage_dir"), message, true)
+		}
 	}
 
 	return nil
@@ -117,7 +126,11 @@ func DeleteTaskFromFS(task *Task, message string) error {
 	}
 
 	if viper.GetBool("use_git") {
-		return git.GitCommit(file, viper.GetString("storage_dir"), message, false)
+		if viper.GetString("git_remote") == "" {
+			return git.GitCommit(file, viper.GetString("storage_dir"), message, false)
+		} else {
+			return git.GitCommit(file, viper.GetString("storage_dir"), message, true)
+		}
 	}
 
 	return nil
