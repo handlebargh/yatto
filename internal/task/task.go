@@ -142,7 +142,7 @@ func deleteTaskFromFSLogic(task *Task, message string) error {
 	}
 
 	if viper.GetBool("use_git") {
-		push := viper.GetString("git_remote") == ""
+		push := viper.GetString("git_remote") != ""
 		return git.GitCommitLogic(file, viper.GetString("storage_dir"), message, push)
 	}
 
