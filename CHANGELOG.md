@@ -1,3 +1,16 @@
+## v0.3.0 (2025-07-09)
+
+### Feat
+
+- let yatto use remote repositories
+- add status messages on delete/update/create tasks
+- display completed tasks differently
+
+### Refactor
+
+- activate git by default
+- show task priority right next to task state
+
 ## v0.2.0 (2025-07-08)
 
 ### Feat
