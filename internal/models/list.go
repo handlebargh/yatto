@@ -66,10 +66,15 @@ type listKeyMap struct {
 	editItem       key.Binding
 	deleteItem     key.Binding
 	sortByPriority key.Binding
+	toggleComplete key.Binding
 }
 
 func newListKeyMap() *listKeyMap {
 	return &listKeyMap{
+		toggleComplete: key.NewBinding(
+			key.WithKeys("D"),
+			key.WithHelp("D", "toggle done"),
+		),
 		sortByPriority: key.NewBinding(
 			key.WithKeys("s"),
 			key.WithHelp("s", "sort by priority"),
@@ -112,27 +117,36 @@ func (d customDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 		return
 	}
 
-	var style lipgloss.Style
+	var titleStyle, descriptionStyle lipgloss.Style
+	descriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+
 	switch taskItem.Priority() {
 	case "low":
-		style = lipgloss.NewStyle().Foreground(indigo).BorderForeground(indigo)
+		titleStyle = lipgloss.NewStyle().Foreground(indigo).BorderForeground(indigo)
+		descriptionStyle = descriptionStyle.BorderForeground(indigo)
 	case "medium":
-		style = lipgloss.NewStyle().Foreground(orange).BorderForeground(orange)
+		titleStyle = lipgloss.NewStyle().Foreground(orange).BorderForeground(orange)
+		descriptionStyle = descriptionStyle.BorderForeground(orange)
 	case "high":
-		style = lipgloss.NewStyle().Foreground(red).BorderForeground(red)
+		titleStyle = lipgloss.NewStyle().Foreground(red).BorderForeground(red)
+		descriptionStyle = descriptionStyle.BorderForeground(red)
 	}
 
 	if taskItem.Completed() {
-		style = style.Strikethrough(true).Foreground(green).BorderForeground(green)
+		titleStyle = titleStyle.Strikethrough(true).Foreground(green).BorderForeground(green)
+		descriptionStyle = descriptionStyle.Strikethrough(true).Foreground(green).BorderForeground(green)
 	}
+
+	titleStyle = titleStyle.PaddingLeft(1)
+	descriptionStyle = descriptionStyle.PaddingLeft(1)
 
 	if index == m.GlobalIndex() {
-		style = style.Border(lipgloss.NormalBorder(), false, false, false, true)
-	} else {
-		style = style.PaddingLeft(1)
+		titleStyle = titleStyle.Border(lipgloss.NormalBorder(), false, false, false, true)
+		descriptionStyle = descriptionStyle.Border(lipgloss.NormalBorder(), false, false, false, true)
 	}
 
-	_, err := fmt.Fprint(w, style.Render(" "+taskItem.Title()))
+	_, err := fmt.Fprint(w, titleStyle.Render(taskItem.Title())+"\n"+
+		descriptionStyle.Render(taskItem.Description()))
 	if err != nil {
 		panic(err)
 	}
@@ -173,6 +187,7 @@ func InitialListModel() listModel {
 			listKeys.editItem,
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
+			listKeys.toggleComplete,
 		}
 	}
 
@@ -217,11 +232,11 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case git.GitDoneMsg:
 		m.loading = false
-		return m, m.list.NewStatusMessage(statusMessageStyle("✅ Tasks synchronized"))
+		return m, m.list.NewStatusMessage(statusMessageStyle("🗘  Tasks synchronized"))
 
 	case task.JsonWriteDoneMsg:
 		m.loading = false
-		return m, m.list.NewStatusMessage(statusMessageStyle("✅ Task created/updated"))
+		return m, m.list.NewStatusMessage(statusMessageStyle("🗸  Task created/updated"))
 
 	case task.JsonWriteErrorMsg:
 		m.loading = false
@@ -232,7 +247,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case task.TaskDeleteDoneMsg:
 		m.loading = false
 		m.list.RemoveItem(m.list.GlobalIndex())
-		return m, m.list.NewStatusMessage(statusMessageStyle("✅ Task deleted"))
+		return m, m.list.NewStatusMessage(statusMessageStyle("🗑  Task deleted"))
 
 	case task.TaskDeleteErrorMsg:
 		m.loading = false
@@ -296,6 +311,23 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.list.SelectedItem() != nil {
 					m.selected = true
 					m.selection = m.list.SelectedItem().(*task.Task)
+				}
+				return m, nil
+
+			case key.Matches(msg, m.keys.toggleComplete):
+				if m.list.SelectedItem() != nil {
+					t := m.list.SelectedItem().(*task.Task)
+					json := task.MarshalTask(
+						t.Id(),
+						t.Title(),
+						t.Description(),
+						t.Priority(),
+						!t.Completed())
+
+					m.list.SelectedItem().(*task.Task).TaskCompleted = !m.list.SelectedItem().(*task.Task).TaskCompleted
+					cmd := task.WriteJsonCmd(json, *t, "complete: "+t.Title())
+					m.loading = true
+					return m, cmd
 				}
 				return m, nil
 
