@@ -9,7 +9,7 @@ task directory as a Git repository for versioning and synchronization.
 
 - **TUI-based** interface powered by the Bubble Tea framework
 - **Local file storage**: Each task is stored as an individual JSON file for easy inspection and portability
-- **Git integration**: Optionally initializes a Git repository in your task directory for:
+- **Git integration**: Initializes a Git repository in your task directory for:
   - Full version history of all tasks
   - Safe collaboration and backup
   - Sync across machines
@@ -44,7 +44,7 @@ You can change the task storage directory in the config file.
 
 ## Git-Enabled Mode
 
-If you keep Git support enabled, yatto will:
+If you keep Git support enabled, YATTO will:
 
 - Automatically create a Git repo in the task directory
 - Commit every add/delete/update
