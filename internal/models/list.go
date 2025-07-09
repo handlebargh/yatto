@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
@@ -42,13 +43,9 @@ var (
 			Padding(1, 2).
 			BorderForeground(lipgloss.Color("9")).
 			Align(lipgloss.Center).
-			Width(40)
+			Width(50)
 
-	statusMessageRedStyle = lipgloss.NewStyle().
-				Foreground(red).
-				Render
-
-	statusMessageGreenStyle = lipgloss.NewStyle().
+	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(green).
 				Render
 )
@@ -147,6 +144,8 @@ type listModel struct {
 	keys      *listKeyMap
 	mode      mode
 	err       error
+	spinner   spinner.Model
+	loading   bool
 }
 
 func InitialListModel() listModel {
@@ -180,13 +179,21 @@ func InitialListModel() listModel {
 		list:     itemList,
 		selected: false,
 		keys:     listKeys,
+		spinner: spinner.New(
+			spinner.WithSpinner(spinner.Dot),
+			spinner.WithStyle(lipgloss.NewStyle().Foreground(orange)),
+		),
 	}
 }
 
 func (m listModel) Init() tea.Cmd {
 	if viper.GetBool("use_git") {
 		storageDir := viper.GetString("storage_dir")
-		return git.GitInit(storageDir)
+		return tea.Batch(
+			m.spinner.Tick,
+
+			git.GitInit(storageDir),
+		)
 	}
 
 	return nil
@@ -196,27 +203,41 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
 	case git.GitErrorMsg:
+		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
+		return m, nil
 
 	case git.GitDoneMsg:
-		return m, m.list.NewStatusMessage(statusMessageGreenStyle("Tasks synchronized"))
+		m.loading = false
+		return m, m.list.NewStatusMessage(statusMessageStyle("✅ Tasks synchronized"))
 
 	case task.JsonWriteDoneMsg:
-		return m, m.list.NewStatusMessage(statusMessageGreenStyle("Task created/updated"))
+		m.loading = false
+		return m, m.list.NewStatusMessage(statusMessageStyle("✅ Task created/updated"))
 
 	case task.JsonWriteErrorMsg:
+		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
+		return m, nil
 
 	case task.TaskDeleteDoneMsg:
+		m.loading = false
 		m.list.RemoveItem(m.list.GlobalIndex())
-		return m, m.list.NewStatusMessage(statusMessageRedStyle("Task deleted"))
+		return m, m.list.NewStatusMessage(statusMessageStyle("✅ Task deleted"))
 
 	case task.TaskDeleteErrorMsg:
+		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
+		return m, nil
 
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
@@ -227,15 +248,14 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
-				var cmds []tea.Cmd
+				var cmd tea.Cmd
 				if m.list.SelectedItem() != nil {
-					cmds = append(cmds, task.DeleteTaskFromFSCmd(m.list.SelectedItem().(*task.Task),
-						"delete: "+m.list.SelectedItem().(*task.Task).Title()))
-					cmds = append(cmds, m.list.NewStatusMessage(statusMessageRedStyle("Task removed")))
-					m.list.RemoveItem(m.list.GlobalIndex())
+					m.loading = true
+					cmd = task.DeleteTaskFromFSCmd(m.list.SelectedItem().(*task.Task),
+						"delete: "+m.list.SelectedItem().(*task.Task).Title())
 				}
 				m.mode = modeNormal
-				return m, tea.Batch(cmds...)
+				return m, cmd
 
 			case "n", "N", "esc", "q":
 				m.mode = modeNormal
@@ -311,37 +331,39 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m listModel) View() string {
+	// Display spinner while git operation is running.
+	if m.loading {
+		leftColumn := appStyle.Render(m.list.View())
+
+		rightColumn := fmt.Sprintf("\n%s %s\n   %s", m.spinner.View(),
+			lipgloss.NewStyle().Foreground(orange).Render("Synchronization in progress"),
+			lipgloss.NewStyle().Foreground(red).Render("Do not exit application!"))
+
+		return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
+	}
+
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
 		selected := m.list.SelectedItem().(*task.Task)
 
 		boxContent := fmt.Sprintf("Delete \"%s\"?\n\n[y] Yes   [n] No", selected.Title())
-		styledBox := promptBoxStyle.Render(boxContent)
 
-		// Get terminal size from the list model
-		termWidth := m.list.Width()
-		termHeight := m.list.Height()
+		leftColumn := appStyle.Render(m.list.View())
+		rightColumn := promptBoxStyle.Render(boxContent)
 
-		// Center the box in the terminal
-		centered := lipgloss.Place(termWidth, termHeight,
-			lipgloss.Center, lipgloss.Center, styledBox)
-
-		return centered
+		return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 	}
 
 	// Display git error view
 	if m.mode == modeGitError {
-		styledBox := promptBoxStyle.Render("An error occured while executing git:\n\n" +
+		boxContent := "An error occured while executing git:\n\n" +
 			m.err.Error() + "\n\n" +
-			"Please commit manually!")
+			"Please commit manually!"
 
-		termWidth := m.list.Width()
-		termHeight := m.list.Height()
+		leftColumn := appStyle.Render(m.list.View())
+		rightColumn := promptBoxStyle.Render(boxContent)
 
-		centered := lipgloss.Place(termWidth, termHeight,
-			lipgloss.Center, lipgloss.Center, styledBox)
-
-		return centered
+		return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 	}
 
 	// Display list view.

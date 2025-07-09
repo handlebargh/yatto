@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -167,8 +168,14 @@ func min(x, y int) int {
 
 func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.listModel.spinner, cmd = m.listModel.spinner.Update(msg)
+		return m, cmd
+
 	case tea.WindowSizeMsg:
 		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -204,9 +211,11 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if storage.FileExists(m.task.Id()) {
 				cmds = append(cmds, task.WriteJsonCmd(json, *m.task, "update: "+m.task.Title()))
+				m.listModel.loading = true
 			} else {
 				m.listModel.list.InsertItem(0, m.task)
 				cmds = append(cmds, task.WriteJsonCmd(json, *m.task, "create: "+m.task.Title()))
+				m.listModel.loading = true
 			}
 		}
 
