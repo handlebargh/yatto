@@ -17,10 +17,12 @@ import (
 )
 
 var (
-	red    = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
-	indigo = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
-	green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
-	orange = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
+	red     = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
+	blue    = lipgloss.AdaptiveColor{Light: "#4DA6FF", Dark: "#4DA6FF"}
+	indigo  = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
+	green   = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
+	orange  = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
+	neutral = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
 )
 
 var (
@@ -109,7 +111,7 @@ type customDelegate struct {
 func (d customDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	taskItem, ok := item.(*task.Task)
 	if !ok {
-		_, err := fmt.Fprint(w, "Invalid item")
+		_, err := fmt.Fprint(w, "Invalid item\n")
 		if err != nil {
 			panic(err)
 		}
@@ -117,36 +119,57 @@ func (d customDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 		return
 	}
 
-	var titleStyle, descriptionStyle lipgloss.Style
-	descriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+	// Base styles.
+	titleStyle := lipgloss.NewStyle().
+		Foreground(neutral).
+		BorderForeground(orange).
+		Width(64)
 
+	completedStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#000000")).
+		BorderForeground(orange).
+		Padding(0, 1)
+
+	priorityStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#000000")).
+		Padding(0, 1)
+
+	// Priority-based coloring.
 	switch taskItem.Priority() {
 	case "low":
-		titleStyle = lipgloss.NewStyle().Foreground(indigo).BorderForeground(indigo)
-		descriptionStyle = descriptionStyle.BorderForeground(indigo)
+		priorityStyle = priorityStyle.Background(indigo)
 	case "medium":
-		titleStyle = lipgloss.NewStyle().Foreground(orange).BorderForeground(orange)
-		descriptionStyle = descriptionStyle.BorderForeground(orange)
+		priorityStyle = priorityStyle.Background(orange)
 	case "high":
-		titleStyle = lipgloss.NewStyle().Foreground(red).BorderForeground(red)
-		descriptionStyle = descriptionStyle.BorderForeground(red)
+		priorityStyle = priorityStyle.Background(red)
 	}
 
+	// Completed coloring.
 	if taskItem.Completed() {
-		titleStyle = titleStyle.Strikethrough(true).Foreground(green).BorderForeground(green)
-		descriptionStyle = descriptionStyle.Strikethrough(true).Foreground(green).BorderForeground(green)
+		completedStyle = completedStyle.Background(green)
+		titleStyle = titleStyle.Strikethrough(true)
+	} else {
+		completedStyle = completedStyle.Background(blue)
 	}
 
-	titleStyle = titleStyle.PaddingLeft(1)
-	descriptionStyle = descriptionStyle.PaddingLeft(1)
-
+	// Selection border on the left only.
 	if index == m.GlobalIndex() {
-		titleStyle = titleStyle.Border(lipgloss.NormalBorder(), false, false, false, true)
-		descriptionStyle = descriptionStyle.Border(lipgloss.NormalBorder(), false, false, false, true)
+		titleStyle = titleStyle.
+			Border(lipgloss.ThickBorder(), false, false, false, true).
+			MarginLeft(0)
+		completedStyle = completedStyle.
+			Border(lipgloss.ThickBorder(), false, false, false, true).
+			MarginLeft(0)
+	} else {
+		titleStyle = titleStyle.MarginLeft(1)
+		completedStyle = completedStyle.MarginLeft(1)
 	}
 
-	_, err := fmt.Fprint(w, titleStyle.Render(taskItem.Title())+"\n"+
-		descriptionStyle.Render(taskItem.Description()))
+	line := titleStyle.Render(taskItem.Title()) + "\n" +
+		completedStyle.Render(task.CompletedString(taskItem.Completed())) + " " +
+		priorityStyle.Render(taskItem.Priority())
+
+	_, err := fmt.Fprint(w, line)
 	if err != nil {
 		panic(err)
 	}
@@ -413,7 +436,7 @@ func (m listModel) View() string {
 	case true:
 		completed = completed.Background(green)
 	case false:
-		completed = completed.Background(red)
+		completed = completed.Background(blue)
 	}
 
 	headline := lipgloss.NewStyle().
