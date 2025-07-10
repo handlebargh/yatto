@@ -133,12 +133,6 @@ func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
 				Value(&taskDescription),
 
 			huh.NewConfirm().
-				Title("Done").
-				Affirmative("Yes").
-				Negative("No").
-				Value(&taskCompleted),
-
-			huh.NewConfirm().
 				Title(confirmQuestion).
 				Affirmative("Yes").
 				Negative("No").
