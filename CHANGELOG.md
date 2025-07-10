@@ -1,3 +1,14 @@
+## v0.5.0 (2025-07-10)
+
+### Feat
+
+- allow task completion to be toggled by shortcut
+
+### Refactor
+
+- redo list view
+- remove confirm in edit view in favour of hotkey
+
 ## v0.4.0 (2025-07-09)
 
 ### Feat
