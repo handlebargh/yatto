@@ -12,67 +12,27 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/git"
-	"github.com/handlebargh/yatto/internal/task"
+	"github.com/handlebargh/yatto/internal/items"
 	"github.com/spf13/viper"
 )
 
-var (
-	red     = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
-	blue    = lipgloss.AdaptiveColor{Light: "#4DA6FF", Dark: "#4DA6FF"}
-	indigo  = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
-	green   = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
-	orange  = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
-	neutral = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
-)
-
-var (
-	appStyle = lipgloss.NewStyle().Padding(1, 2)
-
-	titleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#000000")).
-			Background(green).
-			Padding(0, 1)
-
-	detailBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.AdaptiveColor{Light: "#333333", Dark: "#CCCCCC"}).
-			Padding(1, 2).
-			Margin(1, 1).
-			Width(50)
-
-	promptBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			Padding(1, 2).
-			Margin(1, 1).
-			BorderForeground(lipgloss.Color("9")).
-			Align(lipgloss.Center).
-			Width(50)
-
-	statusMessageStyle = lipgloss.NewStyle().
-				Foreground(green).
-				Render
-)
-
-type mode int
-
-const (
-	modeNormal mode = iota
-	modeConfirmDelete
-	modeGitError
-)
-
-type listKeyMap struct {
+type taskListKeyMap struct {
 	toggleHelpMenu key.Binding
-	insertItem     key.Binding
+	addItem        key.Binding
 	chooseItem     key.Binding
 	editItem       key.Binding
 	deleteItem     key.Binding
 	sortByPriority key.Binding
 	toggleComplete key.Binding
+	showBranchView key.Binding
 }
 
-func newListKeyMap() *listKeyMap {
-	return &listKeyMap{
+func newTaskListKeyMap() *taskListKeyMap {
+	return &taskListKeyMap{
+		showBranchView: key.NewBinding(
+			key.WithKeys("b"),
+			key.WithHelp("b", "branch view"),
+		),
 		toggleComplete: key.NewBinding(
 			key.WithKeys("D"),
 			key.WithHelp("D", "toggle done"),
@@ -93,7 +53,7 @@ func newListKeyMap() *listKeyMap {
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "choose"),
 		),
-		insertItem: key.NewBinding(
+		addItem: key.NewBinding(
 			key.WithKeys("a"),
 			key.WithHelp("a", "add item"),
 		),
@@ -104,12 +64,12 @@ func newListKeyMap() *listKeyMap {
 	}
 }
 
-type customDelegate struct {
+type customTaskDelegate struct {
 	list.DefaultDelegate
 }
 
-func (d customDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
-	taskItem, ok := item.(*task.Task)
+func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
+	taskItem, ok := item.(*items.Task)
 	if !ok {
 		_, err := fmt.Fprint(w, "Invalid item\n")
 		if err != nil {
@@ -166,7 +126,7 @@ func (d customDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	}
 
 	line := titleStyle.Render(taskItem.Title()) + "\n" +
-		completedStyle.Render(task.CompletedString(taskItem.Completed())) + " " +
+		completedStyle.Render(items.CompletedString(taskItem.Completed())) + " " +
 		priorityStyle.Render(taskItem.Priority())
 
 	_, err := fmt.Fprint(w, line)
@@ -175,28 +135,28 @@ func (d customDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	}
 }
 
-type listModel struct {
+type taskListModel struct {
 	list      list.Model
 	selected  bool
-	selection *task.Task
-	keys      *listKeyMap
+	selection *items.Task
+	keys      *taskListKeyMap
 	mode      mode
 	err       error
 	spinner   spinner.Model
 	loading   bool
 }
 
-func InitialListModel() listModel {
-	listKeys := newListKeyMap()
+func InitialTaskListModel() taskListModel {
+	listKeys := newTaskListKeyMap()
 
-	tasks := task.ReadTasksFromFS()
+	tasks := items.ReadTasksFromFS()
 	items := []list.Item{}
 
 	for _, task := range tasks {
 		items = append(items, &task)
 	}
 
-	itemList := list.New(items, customDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
+	itemList := list.New(items, customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
@@ -205,7 +165,7 @@ func InitialListModel() listModel {
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
-			listKeys.insertItem,
+			listKeys.addItem,
 			listKeys.chooseItem,
 			listKeys.editItem,
 			listKeys.deleteItem,
@@ -214,7 +174,7 @@ func InitialListModel() listModel {
 		}
 	}
 
-	return listModel{
+	return taskListModel{
 		list:     itemList,
 		selected: false,
 		keys:     listKeys,
@@ -225,20 +185,18 @@ func InitialListModel() listModel {
 	}
 }
 
-func (m listModel) Init() tea.Cmd {
-	if viper.GetBool("use_git") {
-		storageDir := viper.GetString("storage_dir")
+func (m taskListModel) Init() tea.Cmd {
+	if viper.GetBool("git.enable") {
 		return tea.Batch(
 			m.spinner.Tick,
-
-			git.GitInit(storageDir),
+			git.Init(),
 		)
 	}
 
 	return nil
 }
 
-func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
@@ -247,32 +205,57 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
-	case git.GitErrorMsg:
+	case git.GitInitDoneMsg:
+		return m, m.list.NewStatusMessage(statusMessageStyleGreen("🕹  Initialization completed"))
+
+	case git.GitInitErrorMsg:
 		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
 		return m, nil
 
-	case git.GitDoneMsg:
+	case git.GitCommitDoneMsg:
 		m.loading = false
-		return m, m.list.NewStatusMessage(statusMessageStyle("🗘  Tasks synchronized"))
+		return m, nil
 
-	case task.JsonWriteDoneMsg:
-		m.loading = false
-		return m, m.list.NewStatusMessage(statusMessageStyle("🗸  Task created/updated"))
-
-	case task.JsonWriteErrorMsg:
+	case git.GitCommitErrorMsg:
 		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
 		return m, nil
 
-	case task.TaskDeleteDoneMsg:
+	case items.WriteJSONDoneMsg:
+		m.loading = false
+		switch msg.Kind {
+		case "create":
+			m.list.InsertItem(0, &msg.Task)
+			return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗸  Task created"))
+
+		case "update":
+			return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗸  Task updated"))
+
+		case "complete":
+			if msg.Task.Completed() {
+				return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗸  Task completed"))
+			}
+			return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗸  Task reopened"))
+
+		default:
+			return m, nil
+		}
+
+	case items.WriteJSONErrorMsg:
+		m.loading = false
+		m.mode = 2
+		m.err = msg.Err
+		return m, nil
+
+	case items.TaskDeleteDoneMsg:
 		m.loading = false
 		m.list.RemoveItem(m.list.GlobalIndex())
-		return m, m.list.NewStatusMessage(statusMessageStyle("🗑  Task deleted"))
+		return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗑  Task deleted"))
 
-	case task.TaskDeleteErrorMsg:
+	case items.TaskDeleteErrorMsg:
 		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
@@ -287,14 +270,15 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
-				var cmd tea.Cmd
 				if m.list.SelectedItem() != nil {
 					m.loading = true
-					cmd = task.DeleteTaskFromFSCmd(m.list.SelectedItem().(*task.Task),
-						"delete: "+m.list.SelectedItem().(*task.Task).Title())
+					cmds = append(cmds, items.DeleteTaskFromFS(m.list.SelectedItem().(*items.Task)),
+						git.Commit(m.list.SelectedItem().(*items.Task).Id(),
+							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
+					)
 				}
 				m.mode = modeNormal
-				return m, cmd
+				return m, tea.Batch(cmds...)
 
 			case "n", "N", "esc", "q":
 				m.mode = modeNormal
@@ -326,6 +310,10 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.SetShowHelp(!m.list.ShowHelp())
 				return m, nil
 
+			case key.Matches(msg, m.keys.showBranchView):
+				branchListModel := InitialBranchListModel(&m)
+				return branchListModel, nil
+
 			case key.Matches(msg, m.keys.sortByPriority):
 				sortTasksByPriority(&m.list)
 				return m, nil
@@ -333,24 +321,27 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.chooseItem):
 				if m.list.SelectedItem() != nil {
 					m.selected = true
-					m.selection = m.list.SelectedItem().(*task.Task)
+					m.selection = m.list.SelectedItem().(*items.Task)
 				}
 				return m, nil
 
 			case key.Matches(msg, m.keys.toggleComplete):
 				if m.list.SelectedItem() != nil {
-					t := m.list.SelectedItem().(*task.Task)
-					json := task.MarshalTask(
+					t := m.list.SelectedItem().(*items.Task)
+					json := items.MarshalTask(
 						t.Id(),
 						t.Title(),
 						t.Description(),
 						t.Priority(),
 						!t.Completed())
 
-					m.list.SelectedItem().(*task.Task).TaskCompleted = !m.list.SelectedItem().(*task.Task).TaskCompleted
-					cmd := task.WriteJsonCmd(json, *t, "complete: "+t.Title())
+					m.list.SelectedItem().(*items.Task).TaskCompleted = !m.list.SelectedItem().(*items.Task).TaskCompleted
+					cmds = append(cmds, items.WriteJson(json, *t, "complete"),
+						git.Commit(t.Id(),
+							"complete: "+t.Title()),
+					)
 					m.loading = true
-					return m, cmd
+					return m, tea.Batch(cmds...)
 				}
 				return m, nil
 
@@ -363,17 +354,17 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.editItem):
 				if m.list.SelectedItem() != nil {
 					// Switch to InputModel for editing.
-					formModel := newFormModel(m.list.SelectedItem().(*task.Task), &m, true)
+					formModel := newTaskFormModel(m.list.SelectedItem().(*items.Task), &m, true)
 					return formModel, nil
 				}
 
-			case key.Matches(msg, m.keys.insertItem):
-				task := &task.Task{
+			case key.Matches(msg, m.keys.addItem):
+				task := &items.Task{
 					TaskId:          uuid.NewString(),
 					TaskTitle:       "",
 					TaskDescription: "",
 				}
-				formModel := newFormModel(task, &m, false)
+				formModel := newTaskFormModel(task, &m, false)
 				return formModel, nil
 			}
 		}
@@ -386,7 +377,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m listModel) View() string {
+func (m taskListModel) View() string {
 	// Display spinner while git operation is running.
 	if m.loading {
 		leftColumn := appStyle.Render(m.list.View())
@@ -400,7 +391,7 @@ func (m listModel) View() string {
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
-		selected := m.list.SelectedItem().(*task.Task)
+		selected := m.list.SelectedItem().(*items.Task)
 
 		boxContent := fmt.Sprintf("Delete \"%s\"?\n\n[y] Yes   [n] No", selected.Title())
 
@@ -461,7 +452,7 @@ func (m listModel) View() string {
 	leftColumn := appStyle.Render(m.list.View())
 	rightColumn := detailBoxStyle.Render(
 		completed.Render(
-			task.CompletedString(m.selection.Completed()),
+			items.CompletedString(m.selection.Completed()),
 		) + " " + priority.Render(
 			m.selection.Priority(),
 		) + "\n\n" +
@@ -480,16 +471,16 @@ func sortTasksByPriority(m *list.Model) {
 	selected := m.SelectedItem()
 
 	// Extract all tasks
-	items := m.Items()
-	tasks := make([]*task.Task, len(items))
-	for i, item := range items {
-		tasks[i] = item.(*task.Task)
+	listItems := m.Items()
+	tasks := make([]*items.Task, len(listItems))
+	for i, item := range listItems {
+		tasks[i] = item.(*items.Task)
 	}
 
 	// Sort tasks by priority
 	sort.Slice(tasks, func(i, j int) bool {
-		return task.PriorityValue(tasks[i].Priority()) >
-			task.PriorityValue(tasks[j].Priority())
+		return items.PriorityValue(tasks[i].Priority()) >
+			items.PriorityValue(tasks[j].Priority())
 	})
 
 	// Convert back to []list.Item

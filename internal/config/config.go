@@ -3,14 +3,15 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 )
 
-func CreateConfigFile() {
+func CreateConfigFile(home string) {
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			if err := os.MkdirAll(viper.GetString("config_dir"), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Join(home, ".config/yatto"), 0755); err != nil {
 				panic(fmt.Errorf("fatal error creating config directory: %w", err))
 			}
 			if err := viper.SafeWriteConfig(); err != nil {

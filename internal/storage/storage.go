@@ -11,7 +11,7 @@ import (
 )
 
 func CreateStorageDir() {
-	storageDir := viper.GetString("storage_dir")
+	storageDir := viper.GetString("storage.path")
 
 	// Ask if storage directory should be created if it does not exist.
 	_, err := os.Stat(storageDir)
@@ -30,7 +30,7 @@ func CreateStorageDir() {
 
 		if input == "yes" || input == "y" {
 			// Create storage directory.
-			err := os.MkdirAll(storageDir, 0755)
+			err := os.MkdirAll(storageDir, 0700)
 			if err != nil {
 				panic(fmt.Errorf("fatal error creating storage directory: %w", err))
 			}
@@ -41,7 +41,7 @@ func CreateStorageDir() {
 }
 
 func FileExists(file string) bool {
-	fullPath := filepath.Join(viper.GetString("storage_dir"), file)
+	fullPath := filepath.Join(viper.GetString("storage.path"), file)
 	_, err := os.Stat(fullPath)
 	return !os.IsNotExist(err)
 }

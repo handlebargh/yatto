@@ -8,89 +8,40 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/git"
+	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
-	"github.com/handlebargh/yatto/internal/task"
 )
 
-const maxWidth = 80
-
-type Styles struct {
-	Base,
-	HeaderText,
-	Status,
-	StatusHeader,
-	Title,
-	Priority,
-	Completed,
-	Highlight,
-	ErrorHeaderText,
-	Help lipgloss.Style
-}
-
-func NewStyles(lg *lipgloss.Renderer) *Styles {
-	s := Styles{}
-	s.Base = lg.NewStyle().
-		Padding(1, 4, 0, 1)
-	s.HeaderText = lg.NewStyle().
-		Foreground(indigo).
-		Bold(true).
-		Padding(0, 1, 0, 2)
-	s.Status = lg.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(indigo).
-		PaddingLeft(1).
-		MarginTop(1)
-	s.StatusHeader = lg.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}).
-		Bold(true)
-	s.Title = lg.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Background(green).
-		Padding(0, 1).
-		Bold(true)
-	s.Priority = lg.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Padding(0, 1)
-	s.Completed = lg.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Padding(0, 1)
-	s.Highlight = lg.NewStyle().
-		Foreground(lipgloss.Color("212"))
-	s.ErrorHeaderText = s.HeaderText.
-		Foreground(red)
-	s.Help = lg.NewStyle().
-		Foreground(lipgloss.Color("240"))
-	return &s
-}
-
-type formModel struct {
+type taskFormModel struct {
 	form      *huh.Form
-	task      *task.Task
-	listModel *listModel
+	task      *items.Task
+	listModel *taskListModel
 	width     int
 	lg        *lipgloss.Renderer
 	styles    *Styles
+	vars      *taskFormVars
 }
 
-var (
-	confirm         bool = false
+type taskFormVars struct {
+	confirm         bool
 	taskTitle       string
 	taskDescription string
 	taskPriority    string
 	taskCompleted   bool
-)
+}
 
-func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
-	if t.Title() != "" {
-		taskTitle = t.Title()
-	} else {
-		taskTitle = "My Task"
+func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFormModel {
+	v := taskFormVars{
+		confirm:         false,
+		taskTitle:       t.Title(),
+		taskDescription: t.Description(),
+		taskPriority:    t.Priority(),
+		taskCompleted:   t.Completed(),
 	}
-	taskDescription = t.Description()
-	taskPriority = t.Priority()
-	taskCompleted = t.Completed()
 
-	m := formModel{width: maxWidth}
+	m := taskFormModel{width: maxWidth}
+	m.vars = &v
 	m.task = t
 	m.listModel = listModel
 	m.lg = lipgloss.DefaultRenderer()
@@ -109,12 +60,12 @@ func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
 				Key("priority").
 				Options(huh.NewOptions("low", "medium", "high")...).
 				Title("Select priority").
-				Value(&taskPriority),
+				Value(&m.vars.taskPriority),
 
 			huh.NewInput().
 				Key("title").
 				Title("Enter a title:").
-				Value(&taskTitle).
+				Value(&m.vars.taskTitle).
 				Description("Give it a short but concise title."+"\n"+
 					"(max 64 characters)").
 				Validate(func(str string) error {
@@ -130,13 +81,13 @@ func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
 			huh.NewText().
 				Key("description").
 				Title("Enter a description:").
-				Value(&taskDescription),
+				Value(&m.vars.taskDescription),
 
 			huh.NewConfirm().
 				Title(confirmQuestion).
 				Affirmative("Yes").
 				Negative("No").
-				Value(&confirm),
+				Value(&m.vars.confirm),
 		)).
 		WithWidth(45).
 		WithShowHelp(false).
@@ -149,18 +100,11 @@ func newFormModel(t *task.Task, listModel *listModel, edit bool) formModel {
 	return m
 }
 
-func (m formModel) Init() tea.Cmd {
+func (m taskFormModel) Init() tea.Cmd {
 	return m.form.Init()
 }
 
-func min(x, y int) int {
-	if x > y {
-		return y
-	}
-	return x
-}
-
-func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -173,7 +117,7 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			return m, tea.Interrupt
+			return m, tea.Quit
 		case "esc", "q":
 			return m.listModel, nil
 		}
@@ -189,14 +133,13 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.form.State == huh.StateCompleted {
 		// Write task only if form has been confirmed.
-		if confirm {
-			confirm = false
-			m.task.TaskTitle = taskTitle
-			m.task.TaskDescription = taskDescription
-			m.task.TaskPriority = taskPriority
-			m.task.TaskCompleted = taskCompleted
+		if m.vars.confirm {
+			m.task.TaskTitle = m.vars.taskTitle
+			m.task.TaskDescription = m.vars.taskDescription
+			m.task.TaskPriority = m.vars.taskPriority
+			m.task.TaskCompleted = m.vars.taskCompleted
 
-			json := task.MarshalTask(
+			json := items.MarshalTask(
 				m.task.Id(),
 				m.task.Title(),
 				m.task.Description(),
@@ -204,11 +147,18 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.task.Completed())
 
 			if storage.FileExists(m.task.Id()) {
-				cmds = append(cmds, task.WriteJsonCmd(json, *m.task, "update: "+m.task.Title()))
+				cmds = append(cmds, items.WriteJson(json, *m.task, "update"),
+					git.Commit(m.task.Id(),
+						"update: "+m.task.Title(),
+					),
+				)
 				m.listModel.loading = true
 			} else {
-				m.listModel.list.InsertItem(0, m.task)
-				cmds = append(cmds, task.WriteJsonCmd(json, *m.task, "create: "+m.task.Title()))
+				cmds = append(cmds, items.WriteJson(json, *m.task, "create"),
+					git.Commit(m.task.Id(),
+						"create: "+m.task.Title(),
+					),
+				)
 				m.listModel.loading = true
 			}
 		}
@@ -219,7 +169,7 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m formModel) View() string {
+func (m taskFormModel) View() string {
 	s := m.styles
 
 	// Form (left side)
@@ -227,7 +177,7 @@ func (m formModel) View() string {
 	form := m.lg.NewStyle().Margin(1, 0).Render(v)
 
 	// Status (right side)
-	switch taskPriority {
+	switch m.vars.taskPriority {
 	case "high":
 		s.Priority = s.Priority.Background(red)
 	case "medium":
@@ -238,7 +188,7 @@ func (m formModel) View() string {
 		s.Priority = s.Priority.Background(indigo)
 	}
 
-	switch taskCompleted {
+	switch m.vars.taskCompleted {
 	case true:
 		s.Completed = s.Completed.Background(green)
 	case false:
@@ -254,10 +204,10 @@ func (m formModel) View() string {
 			Width(statusWidth).
 			MarginLeft(statusMarginLeft).
 			Render(s.StatusHeader.Render("Task preview") + "\n\n" +
-				s.Title.Render(taskTitle) + " " +
-				s.Priority.Render(taskPriority) + " " +
-				s.Completed.Render(task.CompletedString(taskCompleted)) + "\n\n" +
-				taskDescription)
+				s.Title.Render(m.vars.taskTitle) + " " +
+				s.Priority.Render(m.vars.taskPriority) + " " +
+				s.Completed.Render(items.CompletedString(m.vars.taskCompleted)) + "\n\n" +
+				m.vars.taskDescription)
 	}
 
 	errors := m.form.Errors()
@@ -275,7 +225,7 @@ func (m formModel) View() string {
 	return s.Base.Render(header + "\n" + body + "\n\n" + footer)
 }
 
-func (m formModel) errorView() string {
+func (m taskFormModel) errorView() string {
 	var s string
 	for _, err := range m.form.Errors() {
 		s += err.Error()
@@ -283,7 +233,7 @@ func (m formModel) errorView() string {
 	return s
 }
 
-func (m formModel) appBoundaryView(text string) string {
+func (m taskFormModel) appBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,
 		lipgloss.Left,
@@ -293,7 +243,7 @@ func (m formModel) appBoundaryView(text string) string {
 	)
 }
 
-func (m formModel) appErrorBoundaryView(text string) string {
+func (m taskFormModel) appErrorBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,
 		lipgloss.Left,

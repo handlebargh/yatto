@@ -1,4 +1,4 @@
-package task
+package items
 
 import (
 	"encoding/json"
@@ -8,7 +8,6 @@ import (
 	"regexp"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/handlebargh/yatto/internal/git"
 	"github.com/spf13/viper"
 )
 
@@ -17,13 +16,16 @@ var uuidRegex = regexp.MustCompile(
 )
 
 type (
-	JsonWriteDoneMsg   struct{}
-	JsonWriteErrorMsg  struct{ Err error }
+	WriteJSONDoneMsg struct {
+		Task Task
+		Kind string
+	}
+	WriteJSONErrorMsg  struct{ Err error }
 	TaskDeleteDoneMsg  struct{}
 	TaskDeleteErrorMsg struct{ Err error }
 )
 
-func (e JsonWriteErrorMsg) Error() string  { return e.Err.Error() }
+func (e WriteJSONErrorMsg) Error() string  { return e.Err.Error() }
 func (e TaskDeleteErrorMsg) Error() string { return e.Err.Error() }
 
 type Task struct {
@@ -66,7 +68,8 @@ func CompletedString(completed bool) string {
 // ReadTasksFromFS reads all tasks from the storage directory
 // and returns them as a slice of Task.
 func ReadTasksFromFS() []Task {
-	taskFiles, err := os.ReadDir(viper.GetString("storage_dir"))
+	storageDir := viper.GetString("storage.path")
+	taskFiles, err := os.ReadDir(storageDir)
 	if err != nil {
 		panic(fmt.Errorf("fatal error reading storage directory: %w", err))
 	}
@@ -77,7 +80,7 @@ func ReadTasksFromFS() []Task {
 			continue
 		}
 
-		filePath := filepath.Join(viper.GetString("storage_dir"), entry.Name())
+		filePath := filepath.Join(storageDir, entry.Name())
 		fileContent, err := os.ReadFile(filePath)
 		if err != nil {
 			panic(err)
@@ -109,51 +112,27 @@ func MarshalTask(uuid, title, description, priority string, completed bool) []by
 	return json
 }
 
-func writeJsonLogic(json []byte, task Task, message string) error {
-	file := filepath.Join(viper.GetString("storage_dir"), task.Id())
-
-	if err := os.WriteFile(file, json, 0600); err != nil {
-		return err
-	}
-
-	if viper.GetBool("use_git") {
-		push := viper.GetString("git_remote") != ""
-		return git.GitCommitLogic(file, viper.GetString("storage_dir"), message, push)
-	}
-
-	return nil
-}
-
-func WriteJsonCmd(json []byte, task Task, message string) tea.Cmd {
+func WriteJson(json []byte, task Task, kind string) tea.Cmd {
 	return func() tea.Msg {
-		if err := writeJsonLogic(json, task, message); err != nil {
-			return JsonWriteErrorMsg{Err: err}
+		file := filepath.Join(viper.GetString("storage.path"), task.Id())
+
+		if err := os.WriteFile(file, json, 0600); err != nil {
+			return WriteJSONErrorMsg{err}
 		}
-		return JsonWriteDoneMsg{}
+
+		return WriteJSONDoneMsg{Task: task, Kind: kind}
 	}
 }
 
-func deleteTaskFromFSLogic(task *Task, message string) error {
-	file := filepath.Join(viper.GetString("storage_dir"), task.Id())
-
-	err := os.Remove(file)
-	if err != nil {
-		panic(err)
-	}
-
-	if viper.GetBool("use_git") {
-		push := viper.GetString("git_remote") != ""
-		return git.GitCommitLogic(file, viper.GetString("storage_dir"), message, push)
-	}
-
-	return nil
-}
-
-func DeleteTaskFromFSCmd(task *Task, message string) tea.Cmd {
+func DeleteTaskFromFS(task *Task) tea.Cmd {
 	return func() tea.Msg {
-		if err := deleteTaskFromFSLogic(task, message); err != nil {
-			return TaskDeleteErrorMsg{Err: err}
+		file := filepath.Join(viper.GetString("storage.path"), task.Id())
+
+		err := os.Remove(file)
+		if err != nil {
+			return TaskDeleteErrorMsg{err}
 		}
+
 		return TaskDeleteDoneMsg{}
 	}
 }

@@ -1,76 +1,183 @@
 package git
 
 import (
+	"bufio"
 	"bytes"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/handlebargh/yatto/internal/items"
+	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
 )
 
-type (
-	GitDoneMsg  struct{}
-	GitErrorMsg struct{ Err error }
+const (
+	branchMain       = "main"
+	branchDone       = "done"
+	branchInProgress = "inProgress"
+	branchOnHold     = "onHold"
 )
 
-func GitInit(storageDir string) tea.Cmd {
+var branches = []string{branchMain, branchDone, branchInProgress, branchOnHold}
+
+type (
+	GitInitDoneMsg         struct{}
+	GitInitErrorMsg        struct{ Err error }
+	GitCommitDoneMsg       struct{}
+	GitCommitErrorMsg      struct{ Err error }
+	GitPullDoneMsg         struct{}
+	GitPullErrorMsg        struct{ Err error }
+	AddBranchDoneMsg       struct{ Branch items.Branch }
+	AddBranchErrorMsg      struct{ Err error }
+	DeleteBranchDoneMsg    struct{}
+	DeleteBranchErrorMsg   struct{ Err error }
+	CheckoutBranchDoneMsg  struct{}
+	CheckoutBranchErrorMsg struct{ Err error }
+)
+
+func (e GitInitErrorMsg) Error() string        { return e.Err.Error() }
+func (e GitCommitErrorMsg) Error() string      { return e.Err.Error() }
+func (e GitPullErrorMsg) Error() string        { return e.Err.Error() }
+func (e AddBranchErrorMsg) Error() string      { return e.Err.Error() }
+func (e DeleteBranchErrorMsg) Error() string   { return e.Err.Error() }
+func (e CheckoutBranchErrorMsg) Error() string { return e.Err.Error() }
+
+func Init() tea.Cmd {
 	return func() tea.Msg {
-		if err := gitInitLogic(storageDir); err != nil {
-			return GitErrorMsg{err}
+		if storage.FileExists("INIT") {
+			return GitInitDoneMsg{}
 		}
-		return GitDoneMsg{}
+
+		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+			return GitInitErrorMsg{err}
+		}
+
+		if err := exec.Command("git", "init", "-b", "main").Run(); err != nil {
+			return GitInitErrorMsg{err}
+		}
+
+		if err := os.WriteFile("INIT", nil, 0600); err != nil {
+			return GitInitErrorMsg{err}
+		}
+
+		err := commitFlow("INIT", "Initial commit")
+		if err != nil {
+			return GitInitErrorMsg{err}
+		}
+
+		for _, branch := range branches {
+			if !branchExists(branch) {
+				if err := exec.Command("git", "branch", branch).Run(); err != nil {
+					return GitInitErrorMsg{err}
+				}
+			}
+		}
+
+		return GitInitDoneMsg{}
 	}
 }
 
-func GitCommit(file, storageDir, message string, push bool) tea.Cmd {
+func Commit(file, message string) tea.Cmd {
 	return func() tea.Msg {
-		if err := GitCommitLogic(file, storageDir, message, push); err != nil {
-			return GitErrorMsg{err}
+		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+			return GitCommitErrorMsg{err}
 		}
-		return GitDoneMsg{}
+
+		if err := exec.Command("git", "add", file).Run(); err != nil {
+			return GitCommitErrorMsg{err}
+		}
+
+		cmd := exec.Command("git", "diff", "--cached", "--quiet")
+		if err := cmd.Run(); err == nil {
+			// Exit code 0 = no staged changes
+			return GitCommitDoneMsg{} // Already committed.
+		}
+
+		if err := exec.Command("git", "commit", "-m", message).Run(); err != nil {
+			return GitCommitErrorMsg{err}
+		}
+
+		if viper.GetBool("git.push_on_commit") {
+			_, currentBranch, err := GetBranches()
+			if err != nil {
+				return GitCommitErrorMsg{err}
+			}
+
+			if err := exec.Command("git", "push", "-u", viper.GetString("git.remote"), currentBranch).Run(); err != nil {
+				return GitCommitErrorMsg{err}
+			}
+		}
+
+		return GitCommitDoneMsg{}
 	}
 }
 
-func GitPull(storageDir string) tea.Cmd {
+func Pull() tea.Cmd {
 	return func() tea.Msg {
-		if err := GitPullLogic(storageDir); err != nil {
-			return GitErrorMsg{err}
+		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+			return GitPullErrorMsg{err}
 		}
-		return GitDoneMsg{}
+
+		if err := exec.Command("git", "pull", "--rebase").Run(); err != nil {
+			return GitPullErrorMsg{err}
+		}
+
+		return GitPullDoneMsg{}
 	}
 }
 
-func gitInitLogic(storageDir string) error {
-	if fileExists(storageDir, "INIT") {
-		return nil
-	}
+func AddBranch(branch items.Branch, setUpstream bool) tea.Cmd {
+	return func() tea.Msg {
+		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+			return AddBranchErrorMsg{err}
+		}
 
-	cmd := exec.Command("git", "init", "-b", "main", storageDir)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
+		if err := exec.Command("git", "branch", branch.Title()).Run(); err != nil {
+			return AddBranchErrorMsg{err}
+		}
 
-	initFilePath := filepath.Join(storageDir, "INIT")
-	if err := os.WriteFile(initFilePath, nil, 0600); err != nil {
-		return err
-	}
+		if setUpstream {
+			if err := exec.Command("git", "push", "--set-upstream", viper.GetString("git.remote"), branch.Title()).Run(); err != nil {
+				return AddBranchErrorMsg{err}
+			}
+		}
 
-	if viper.GetString("git_remote") == "" {
-		return GitCommitLogic("INIT", storageDir, "Initial commit", false)
+		return AddBranchDoneMsg{Branch: branch}
 	}
-
-	if err := ensureGitRemote(storageDir, "origin", viper.GetString("git_remote")); err != nil {
-		return err
-	}
-
-	return GitCommitLogic("INIT", storageDir, "Initial commit", true)
 }
 
-func GitCommitLogic(file, storageDir, message string, push bool) error {
-	if err := os.Chdir(storageDir); err != nil {
+func DeleteBranch(branch string) tea.Cmd {
+	return func() tea.Msg {
+		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+			return DeleteBranchErrorMsg{err}
+		}
+
+		if err := exec.Command("git", "branch", "-D", branch).Run(); err != nil {
+			return DeleteBranchErrorMsg{err}
+		}
+
+		return DeleteBranchDoneMsg{}
+	}
+}
+
+func CheckoutBranch(branch string) tea.Cmd {
+	return func() tea.Msg {
+		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+			return CheckoutBranchErrorMsg{err}
+		}
+
+		if err := exec.Command("git", "checkout", branch).Run(); err != nil {
+			return CheckoutBranchErrorMsg{err}
+		}
+
+		return CheckoutBranchDoneMsg{}
+	}
+}
+
+func commitFlow(file, message string) error {
+	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 		return err
 	}
 
@@ -78,12 +185,23 @@ func GitCommitLogic(file, storageDir, message string, push bool) error {
 		return err
 	}
 
+	cmd := exec.Command("git", "diff", "--cached", "--quiet")
+	if err := cmd.Run(); err == nil {
+		// Exit code 0 = no staged changes
+		return nil // Already committed.
+	}
+
 	if err := exec.Command("git", "commit", "-m", message).Run(); err != nil {
 		return err
 	}
 
-	if push {
-		if err := exec.Command("git", "push", "-u", "origin", "main").Run(); err != nil {
+	if viper.GetBool("git.remote.enable") {
+		_, currentBranch, err := GetBranches()
+		if err != nil {
+			return err
+		}
+
+		if err := exec.Command("git", "push", "-u", viper.GetString("git.remote.name"), currentBranch).Run(); err != nil {
 			return err
 		}
 	}
@@ -91,58 +209,86 @@ func GitCommitLogic(file, storageDir, message string, push bool) error {
 	return nil
 }
 
-func GitPullLogic(storageDir string) error {
-	if err := os.Chdir(storageDir); err != nil {
+func PullAll() error {
+	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 		return err
 	}
 
-	if err := ensureGitRemote(storageDir, "origin", viper.GetString("git_remote")); err != nil {
+	if err := exec.Command("git", "pull", "--all").Run(); err != nil {
 		return err
 	}
 
-	if err := exec.Command("git", "fetch", "origin").Run(); err != nil {
-		return err
-	}
-
-	return exec.Command("git", "rebase", "origin/main").Run()
+	return nil
 }
 
-func fileExists(storageDir, filename string) bool {
-	info, err := os.Stat(filepath.Join(storageDir, filename))
-	if err != nil {
-		return false
-	}
-	return !info.IsDir()
-}
-
-func ensureGitRemote(storageDir, remoteName, remoteURL string) error {
-	err := os.Chdir(storageDir)
-	if err != nil {
-		return err
+func GetBranches() ([]items.Branch, string, error) {
+	var branches []items.Branch
+	var currentBranch string
+	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+		return branches, "", err
 	}
 
-	// Check if the remote exists
-	cmdCheck := exec.Command("git", "remote", "get-url", remoteName)
+	cmd := exec.Command("git", "branch", "-vv")
 	var out bytes.Buffer
-	cmdCheck.Stdout = &out
-	err = cmdCheck.Run()
+	cmd.Stdout = &out
 
-	if err == nil {
-		// Remote exists - update its URL
-		existingURL := strings.TrimSpace(out.String())
-		if existingURL != remoteURL {
-			cmdSet := exec.Command("git", "remote", "set-url", remoteName, remoteURL)
-			if err := cmdSet.Run(); err != nil {
-				return err
-			}
-		}
-	} else {
-		// Remote doesn't exist - add it
-		cmdAdd := exec.Command("git", "remote", "add", remoteName, remoteURL)
-		if err := cmdAdd.Run(); err != nil {
-			return err
-		}
+	err := cmd.Run()
+	if err != nil {
+		return branches, "", err
 	}
 
-	return nil
+	scanner := bufio.NewScanner(&out)
+	for scanner.Scan() {
+		line := scanner.Text()
+		isCurrent := strings.HasPrefix(line, "*")
+
+		line = strings.TrimSpace(strings.TrimPrefix(line, "*"))
+
+		branch := items.Branch{
+			Name:     getBranchName(line),
+			Upstream: getUpstream(line),
+		}
+
+		if isCurrent {
+			currentBranch = branch.Name
+		}
+
+		branches = append(branches, branch)
+
+	}
+
+	if err := scanner.Err(); err != nil {
+		return branches, "", err
+	}
+
+	return branches, currentBranch, nil
+}
+
+func getBranchName(line string) string {
+	fields := strings.Fields(line)
+
+	if len(fields) == 0 {
+		return ""
+	}
+
+	return fields[0]
+}
+
+func getUpstream(line string) string {
+	fields := strings.Fields(line)
+	for _, field := range fields {
+		if strings.HasPrefix(field, "[") && strings.HasSuffix(field, "]") {
+			return "Remote: " + strings.Trim(field, "[]")
+		}
+	}
+	return "local only"
+}
+
+func branchExists(branch string) bool {
+	if err := exec.Command("git", "rev-parse", "--verify", branch).Run(); err == nil {
+		// Branch exists
+		return true
+	}
+
+	return false
 }
