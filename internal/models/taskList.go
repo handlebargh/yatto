@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/items"
-	"github.com/spf13/viper"
 )
 
 type doneWaitingMsg struct{}
@@ -190,14 +189,10 @@ func InitialTaskListModel() taskListModel {
 }
 
 func (m taskListModel) Init() tea.Cmd {
-	if viper.GetBool("git.enable") {
-		return tea.Batch(
-			tickCmd(),
-			git.InitCmd(),
-		)
-	}
-
-	return nil
+	return tea.Batch(
+		tickCmd(),
+		git.InitCmd(),
+	)
 }
 
 func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

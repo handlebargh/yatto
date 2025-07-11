@@ -14,13 +14,12 @@ import (
 )
 
 const (
-	branchMain       = "main"
 	branchDone       = "done"
 	branchInProgress = "inProgress"
 	branchOnHold     = "onHold"
 )
 
-var branches = []string{branchMain, branchDone, branchInProgress, branchOnHold}
+var branches = []string{branchDone, branchInProgress, branchOnHold}
 
 type (
 	GitInitDoneMsg         struct{}
@@ -54,7 +53,7 @@ func InitCmd() tea.Cmd {
 			return GitInitErrorMsg{err}
 		}
 
-		if err := exec.Command("git", "init", "-b", "main").Run(); err != nil {
+		if err := exec.Command("git", "init", "-b", viper.GetString("git.default_branch")).Run(); err != nil {
 			return GitInitErrorMsg{err}
 		}
 

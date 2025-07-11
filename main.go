@@ -45,7 +45,7 @@ func main() {
 func initConfig(home string, configPath *string) {
 	viper.SetDefault("storage.path", filepath.Join(home, ".yatto"))
 
-	viper.SetDefault("git.enable", true)
+	viper.SetDefault("git.default_branch", "main")
 	viper.SetDefault("git.remote.enable", false)
 	viper.SetDefault("git.remote.name", "origin")
 	viper.SetDefault("git.remote.push_on_commit", false)
