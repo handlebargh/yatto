@@ -1,8 +1,23 @@
 package models
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"time"
 
-const maxWidth = 80
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+type (
+	tickMsg time.Time
+	mode    int
+)
+
+const (
+	modeNormal mode = iota
+	modeConfirmDelete
+	modeGitError
+	maxWidth = 80
+)
 
 var (
 	red     = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
@@ -43,14 +58,6 @@ var (
 	statusMessageStyleRed = lipgloss.NewStyle().
 				Foreground(red).
 				Render
-)
-
-type mode int
-
-const (
-	modeNormal mode = iota
-	modeConfirmDelete
-	modeGitError
 )
 
 type Styles struct {
@@ -107,4 +114,10 @@ func min(x, y int) int {
 		return y
 	}
 	return x
+}
+
+func tickCmd() tea.Cmd {
+	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
 }

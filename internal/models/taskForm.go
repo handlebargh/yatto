@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -106,11 +105,6 @@ func (m taskFormModel) Init() tea.Cmd {
 
 func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.listModel.spinner, cmd = m.listModel.spinner.Update(msg)
-		return m, cmd
-
 	case tea.WindowSizeMsg:
 		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
 
@@ -147,19 +141,21 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.task.Completed())
 
 			if storage.FileExists(m.task.Id()) {
-				cmds = append(cmds, items.WriteJson(json, *m.task, "update"),
-					git.CommitCmd(m.task.Id(),
-						"update: "+m.task.Title(),
-					),
+				cmds = append(cmds,
+					m.listModel.progress.SetPercent(0.10),
+					tickCmd(),
+					items.WriteJson(json, *m.task, "update"),
+					git.CommitCmd(m.task.Id(), "update: "+m.task.Title()),
 				)
-				m.listModel.loading = true
+				m.listModel.status = ""
 			} else {
-				cmds = append(cmds, items.WriteJson(json, *m.task, "create"),
-					git.CommitCmd(m.task.Id(),
-						"create: "+m.task.Title(),
-					),
+				cmds = append(cmds,
+					m.listModel.progress.SetPercent(0.10),
+					tickCmd(),
+					items.WriteJson(json, *m.task, "create"),
+					git.CommitCmd(m.task.Id(), "create: "+m.task.Title()),
 				)
-				m.listModel.loading = true
+				m.listModel.status = ""
 			}
 		}
 

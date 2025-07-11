@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
@@ -15,6 +16,8 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/spf13/viper"
 )
+
+type doneWaitingMsg struct{}
 
 type taskListKeyMap struct {
 	toggleHelpMenu key.Binding
@@ -136,16 +139,18 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 }
 
 type taskListModel struct {
-	list      list.Model
-	selected  bool
-	selection *items.Task
-	keys      *taskListKeyMap
-	mode      mode
-	err       error
-	spinner   spinner.Model
-	loading   bool
-	width     int
-	height    int
+	list             list.Model
+	selected         bool
+	selection        *items.Task
+	keys             *taskListKeyMap
+	mode             mode
+	err              error
+	progress         progress.Model
+	progressDone     bool
+	waitingAfterDone bool
+	status           string
+	width            int
+	height           int
 }
 
 func InitialTaskListModel() taskListModel {
@@ -180,18 +185,14 @@ func InitialTaskListModel() taskListModel {
 		list:     itemList,
 		selected: false,
 		keys:     listKeys,
-		loading:  false,
-		spinner: spinner.New(
-			spinner.WithSpinner(spinner.Pulse),
-			spinner.WithStyle(lipgloss.NewStyle().Foreground(orange)),
-		),
+		progress: progress.New(progress.WithDefaultGradient()),
 	}
 }
 
 func (m taskListModel) Init() tea.Cmd {
 	if viper.GetBool("git.enable") {
 		return tea.Batch(
-			m.spinner.Tick,
+			tickCmd(),
 			git.InitCmd(),
 		)
 	}
@@ -203,66 +204,87 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
+	case tickMsg:
+		if m.progress.Percent() >= 1.0 && !m.waitingAfterDone {
+			m.progressDone = true
+			m.waitingAfterDone = true
+
+			// Return a timer command to keep displaying 100% progress
+			// for one second.
+			return m, tea.Tick(time.Second, func(t time.Time) tea.Msg {
+				return doneWaitingMsg{}
+			})
+		}
+
+		return m, tickCmd()
+
+	// FrameMsg is sent when the progress bar wants to animate itself
+	case progress.FrameMsg:
+		progressModel, cmd := m.progress.Update(msg)
+		m.progress = progressModel.(progress.Model)
 		return m, cmd
 
+	case doneWaitingMsg:
+		m.progressDone, m.waitingAfterDone = false, false
+		// Reset the progress bar.
+		return m, m.progress.SetPercent(0.0)
+
 	case git.GitInitDoneMsg:
-		return m, m.list.NewStatusMessage(statusMessageStyleGreen("🕹  Initialization completed"))
+		m.status = "🕹  Initialization completed"
+		return m, nil
 
 	case git.GitInitErrorMsg:
-		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
 		return m, nil
 
 	case git.GitCommitDoneMsg:
-		m.loading = false
-		return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗘  Changes committed"))
+		m.status = "🗘  Changes committed"
+		m.progressDone = true
+		return m, m.progress.SetPercent(1.0)
 
 	case git.GitCommitErrorMsg:
-		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
-		return m, nil
+		return m, m.progress.SetPercent(0.0)
 
 	case items.WriteJSONDoneMsg:
-		m.loading = false
 		switch msg.Kind {
 		case "create":
 			m.list.InsertItem(0, &msg.Task)
-			return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗸  Task created"))
+			m.status = "🗸  Task created"
+			return m, m.progress.SetPercent(0.5)
 
 		case "update":
-			return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗸  Task updated"))
+			m.status = "🗸  Task updated"
+			return m, m.progress.SetPercent(0.5)
 
 		case "complete":
-			if msg.Task.Completed() {
-				return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗸  Task completed"))
-			}
-			return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗸  Task reopened"))
+			m.status = "🗸  Task completed"
+			return m, m.progress.SetPercent(0.5)
+
+		case "reopen":
+			m.status = "🗸  Task reopened"
+			return m, m.progress.SetPercent(0.5)
 
 		default:
 			return m, nil
 		}
 
 	case items.WriteJSONErrorMsg:
-		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
-		return m, nil
+		return m, m.progress.SetPercent(0.0)
 
 	case items.TaskDeleteDoneMsg:
-		m.loading = false
 		m.list.RemoveItem(m.list.GlobalIndex())
-		return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗑  Task deleted"))
+		m.status = "🗑  Task deleted"
+		return m, m.progress.SetPercent(0.5)
 
 	case items.TaskDeleteErrorMsg:
-		m.loading = false
 		m.mode = 2
 		m.err = msg.Err
-		return m, nil
+		return m, m.progress.SetPercent(0.0)
 
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
@@ -276,12 +298,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "y", "Y":
 				if m.list.SelectedItem() != nil {
-					m.loading = true
-					cmds = append(cmds, items.DeleteTaskFromFS(m.list.SelectedItem().(*items.Task)),
+					cmds = append(cmds,
+						m.progress.SetPercent(0.10),
+						tickCmd(),
+						items.DeleteTaskFromFS(m.list.SelectedItem().(*items.Task)),
 						git.CommitCmd(m.list.SelectedItem().(*items.Task).Id(),
 							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
 					)
+					m.status = ""
 				}
+
 				m.mode = modeNormal
 				return m, tea.Batch(cmds...)
 
@@ -341,11 +367,22 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						!t.Completed())
 
 					m.list.SelectedItem().(*items.Task).TaskCompleted = !m.list.SelectedItem().(*items.Task).TaskCompleted
-					cmds = append(cmds, items.WriteJson(json, *t, "complete"),
-						git.CommitCmd(t.Id(),
-							"complete: "+t.Title()),
+
+					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
+					if t.Completed() {
+						cmds = append(cmds,
+							items.WriteJson(json, *t, "complete"),
+							git.CommitCmd(t.Id(), "reopen: "+t.Title()),
+						)
+						m.status = ""
+						return m, tea.Batch(cmds...)
+					}
+
+					cmds = append(cmds,
+						items.WriteJson(json, *t, "reopen"),
+						git.CommitCmd(t.Id(), "complete: "+t.Title()),
 					)
-					m.loading = true
+					m.status = ""
 					return m, tea.Batch(cmds...)
 				}
 				return m, nil
@@ -383,17 +420,21 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m taskListModel) View() string {
-	// Display spinner while git operation is running.
-	if m.loading {
-		spinnerStyle := lipgloss.NewStyle().
-			Width(m.width).
-			Height(m.height).
-			Align(lipgloss.Center).
-			AlignVertical(lipgloss.Center)
+	// Progress bar styling
+	progressStyle := lipgloss.NewStyle().
+		Width(m.width).
+		Height(m.height).
+		Align(lipgloss.Center).
+		AlignVertical(lipgloss.Center)
 
-		return spinnerStyle.Render(fmt.Sprintf("\n%s %s\n   %s", m.spinner.View(),
-			lipgloss.NewStyle().Foreground(orange).Render("Synchronization in progress"),
-			lipgloss.NewStyle().Foreground(red).Render("Do not exit application!")))
+	// Display progress bar at 100%
+	if m.progressDone && m.waitingAfterDone {
+		return progressStyle.Render(m.status + "\n\n" + m.progress.ViewAs(1.0))
+	}
+
+	// Display progress bar if not at 0%
+	if m.progress.Percent() != 0.0 {
+		return progressStyle.Render(m.status + "\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.
