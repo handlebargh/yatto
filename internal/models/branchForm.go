@@ -114,7 +114,7 @@ func (m branchFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			setUpstream := viper.GetBool("git.push_on_commit") && m.branchType == "local + remote"
 
-			cmds = append(cmds, git.AddBranch(*m.branch, setUpstream))
+			cmds = append(cmds, git.AddBranchCmd(*m.branch, setUpstream))
 			m.listModel.loading = true
 		}
 

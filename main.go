@@ -29,7 +29,7 @@ func main() {
 
 	if viper.GetBool("git.remote.enable") {
 		fmt.Println("Synchronizing tasks...")
-		err := git.PullAll()
+		err := git.Pull()
 		if err != nil {
 			fmt.Println("Error syncing repository:", err)
 			os.Exit(1)

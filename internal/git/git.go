@@ -44,7 +44,7 @@ func (e AddBranchErrorMsg) Error() string      { return e.Err.Error() }
 func (e DeleteBranchErrorMsg) Error() string   { return e.Err.Error() }
 func (e CheckoutBranchErrorMsg) Error() string { return e.Err.Error() }
 
-func Init() tea.Cmd {
+func InitCmd() tea.Cmd {
 	return func() tea.Msg {
 		if storage.FileExists("INIT") {
 			return GitInitDoneMsg{}
@@ -62,7 +62,7 @@ func Init() tea.Cmd {
 			return GitInitErrorMsg{err}
 		}
 
-		err := commitFlow("INIT", "Initial commit")
+		err := commit("INIT", "Initial commit")
 		if err != nil {
 			return GitInitErrorMsg{err}
 		}
@@ -79,48 +79,21 @@ func Init() tea.Cmd {
 	}
 }
 
-func Commit(file, message string) tea.Cmd {
+func CommitCmd(file, message string) tea.Cmd {
 	return func() tea.Msg {
-		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+		err := commit(file, message)
+		if err != nil {
 			return GitCommitErrorMsg{err}
-		}
-
-		if err := exec.Command("git", "add", file).Run(); err != nil {
-			return GitCommitErrorMsg{err}
-		}
-
-		cmd := exec.Command("git", "diff", "--cached", "--quiet")
-		if err := cmd.Run(); err == nil {
-			// Exit code 0 = no staged changes
-			return GitCommitDoneMsg{} // Already committed.
-		}
-
-		if err := exec.Command("git", "commit", "-m", message).Run(); err != nil {
-			return GitCommitErrorMsg{err}
-		}
-
-		if viper.GetBool("git.push_on_commit") {
-			_, currentBranch, err := GetBranches()
-			if err != nil {
-				return GitCommitErrorMsg{err}
-			}
-
-			if err := exec.Command("git", "push", "-u", viper.GetString("git.remote"), currentBranch).Run(); err != nil {
-				return GitCommitErrorMsg{err}
-			}
 		}
 
 		return GitCommitDoneMsg{}
 	}
 }
 
-func Pull() tea.Cmd {
+func PullCmd() tea.Cmd {
 	return func() tea.Msg {
-		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-			return GitPullErrorMsg{err}
-		}
-
-		if err := exec.Command("git", "pull", "--rebase").Run(); err != nil {
+		err := Pull()
+		if err != nil {
 			return GitPullErrorMsg{err}
 		}
 
@@ -128,7 +101,7 @@ func Pull() tea.Cmd {
 	}
 }
 
-func AddBranch(branch items.Branch, setUpstream bool) tea.Cmd {
+func AddBranchCmd(branch items.Branch, setUpstream bool) tea.Cmd {
 	return func() tea.Msg {
 		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 			return AddBranchErrorMsg{err}
@@ -148,7 +121,7 @@ func AddBranch(branch items.Branch, setUpstream bool) tea.Cmd {
 	}
 }
 
-func DeleteBranch(branch string) tea.Cmd {
+func DeleteBranchCmd(branch string) tea.Cmd {
 	return func() tea.Msg {
 		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 			return DeleteBranchErrorMsg{err}
@@ -162,7 +135,7 @@ func DeleteBranch(branch string) tea.Cmd {
 	}
 }
 
-func CheckoutBranch(branch string) tea.Cmd {
+func CheckoutBranchCmd(branch string) tea.Cmd {
 	return func() tea.Msg {
 		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 			return CheckoutBranchErrorMsg{err}
@@ -176,7 +149,19 @@ func CheckoutBranch(branch string) tea.Cmd {
 	}
 }
 
-func commitFlow(file, message string) error {
+func Pull() error {
+	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+		return err
+	}
+
+	if err := exec.Command("git", "pull", "--rebase").Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func commit(file, message string) error {
 	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 		return err
 	}
@@ -204,18 +189,6 @@ func commitFlow(file, message string) error {
 		if err := exec.Command("git", "push", "-u", viper.GetString("git.remote.name"), currentBranch).Run(); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func PullAll() error {
-	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-		return err
-	}
-
-	if err := exec.Command("git", "pull", "--all").Run(); err != nil {
-		return err
 	}
 
 	return nil

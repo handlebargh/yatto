@@ -140,7 +140,7 @@ func (m branchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "y", "Y":
 				m.mode = modeNormal
 				if m.list.SelectedItem() != nil {
-					return m, git.DeleteBranch(m.list.SelectedItem().(*items.Branch).Title())
+					return m, git.DeleteBranchCmd(m.list.SelectedItem().(*items.Branch).Title())
 				}
 				return m, nil
 

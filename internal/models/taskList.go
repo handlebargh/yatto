@@ -144,6 +144,8 @@ type taskListModel struct {
 	err       error
 	spinner   spinner.Model
 	loading   bool
+	width     int
+	height    int
 }
 
 func InitialTaskListModel() taskListModel {
@@ -178,8 +180,9 @@ func InitialTaskListModel() taskListModel {
 		list:     itemList,
 		selected: false,
 		keys:     listKeys,
+		loading:  false,
 		spinner: spinner.New(
-			spinner.WithSpinner(spinner.Dot),
+			spinner.WithSpinner(spinner.Pulse),
 			spinner.WithStyle(lipgloss.NewStyle().Foreground(orange)),
 		),
 	}
@@ -189,7 +192,7 @@ func (m taskListModel) Init() tea.Cmd {
 	if viper.GetBool("git.enable") {
 		return tea.Batch(
 			m.spinner.Tick,
-			git.Init(),
+			git.InitCmd(),
 		)
 	}
 
@@ -216,7 +219,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case git.GitCommitDoneMsg:
 		m.loading = false
-		return m, nil
+		return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗘  Changes committed"))
 
 	case git.GitCommitErrorMsg:
 		m.loading = false
@@ -264,6 +267,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.width = msg.Width
+		m.height = msg.Height
 
 	case tea.KeyMsg:
 		switch m.mode {
@@ -273,7 +278,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.list.SelectedItem() != nil {
 					m.loading = true
 					cmds = append(cmds, items.DeleteTaskFromFS(m.list.SelectedItem().(*items.Task)),
-						git.Commit(m.list.SelectedItem().(*items.Task).Id(),
+						git.CommitCmd(m.list.SelectedItem().(*items.Task).Id(),
 							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
 					)
 				}
@@ -337,7 +342,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					m.list.SelectedItem().(*items.Task).TaskCompleted = !m.list.SelectedItem().(*items.Task).TaskCompleted
 					cmds = append(cmds, items.WriteJson(json, *t, "complete"),
-						git.Commit(t.Id(),
+						git.CommitCmd(t.Id(),
 							"complete: "+t.Title()),
 					)
 					m.loading = true
@@ -380,13 +385,15 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m taskListModel) View() string {
 	// Display spinner while git operation is running.
 	if m.loading {
-		leftColumn := appStyle.Render(m.list.View())
+		spinnerStyle := lipgloss.NewStyle().
+			Width(m.width).
+			Height(m.height).
+			Align(lipgloss.Center).
+			AlignVertical(lipgloss.Center)
 
-		rightColumn := fmt.Sprintf("\n%s %s\n   %s", m.spinner.View(),
+		return spinnerStyle.Render(fmt.Sprintf("\n%s %s\n   %s", m.spinner.View(),
 			lipgloss.NewStyle().Foreground(orange).Render("Synchronization in progress"),
-			lipgloss.NewStyle().Foreground(red).Render("Do not exit application!"))
-
-		return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
+			lipgloss.NewStyle().Foreground(red).Render("Do not exit application!")))
 	}
 
 	// Display deletion confirm view.

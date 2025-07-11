@@ -148,14 +148,14 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if storage.FileExists(m.task.Id()) {
 				cmds = append(cmds, items.WriteJson(json, *m.task, "update"),
-					git.Commit(m.task.Id(),
+					git.CommitCmd(m.task.Id(),
 						"update: "+m.task.Title(),
 					),
 				)
 				m.listModel.loading = true
 			} else {
 				cmds = append(cmds, items.WriteJson(json, *m.task, "create"),
-					git.Commit(m.task.Id(),
+					git.CommitCmd(m.task.Id(),
 						"create: "+m.task.Title(),
 					),
 				)
