@@ -30,9 +30,9 @@ type (
 	GitPullErrorMsg        struct{ Err error }
 	AddBranchDoneMsg       struct{ Branch items.Branch }
 	AddBranchErrorMsg      struct{ Err error }
-	DeleteBranchDoneMsg    struct{}
+	DeleteBranchDoneMsg    struct{ Branch items.Branch }
 	DeleteBranchErrorMsg   struct{ Err error }
-	CheckoutBranchDoneMsg  struct{}
+	CheckoutBranchDoneMsg  struct{ Branch items.Branch }
 	CheckoutBranchErrorMsg struct{ Err error }
 )
 
@@ -120,31 +120,31 @@ func AddBranchCmd(branch items.Branch, setUpstream bool) tea.Cmd {
 	}
 }
 
-func DeleteBranchCmd(branch string) tea.Cmd {
+func DeleteBranchCmd(branch items.Branch) tea.Cmd {
 	return func() tea.Msg {
 		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 			return DeleteBranchErrorMsg{err}
 		}
 
-		if err := exec.Command("git", "branch", "-D", branch).Run(); err != nil {
+		if err := exec.Command("git", "branch", "-D", branch.Title()).Run(); err != nil {
 			return DeleteBranchErrorMsg{err}
 		}
 
-		return DeleteBranchDoneMsg{}
+		return DeleteBranchDoneMsg{Branch: branch}
 	}
 }
 
-func CheckoutBranchCmd(branch string) tea.Cmd {
+func CheckoutBranchCmd(branch items.Branch) tea.Cmd {
 	return func() tea.Msg {
 		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 			return CheckoutBranchErrorMsg{err}
 		}
 
-		if err := exec.Command("git", "checkout", branch).Run(); err != nil {
+		if err := exec.Command("git", "checkout", branch.Title()).Run(); err != nil {
 			return CheckoutBranchErrorMsg{err}
 		}
 
-		return CheckoutBranchDoneMsg{}
+		return CheckoutBranchDoneMsg{Branch: branch}
 	}
 }
 

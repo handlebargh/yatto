@@ -16,8 +16,6 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 )
 
-type doneWaitingMsg struct{}
-
 type taskListKeyMap struct {
 	toggleHelpMenu key.Binding
 	addItem        key.Binding
@@ -338,7 +336,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.showBranchView):
 				branchListModel := InitialBranchListModel(&m)
-				return branchListModel, nil
+				return branchListModel, tea.WindowSize()
 
 			case key.Matches(msg, m.keys.sortByPriority):
 				sortTasksByPriority(&m.list)

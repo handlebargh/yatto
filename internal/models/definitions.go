@@ -8,8 +8,9 @@ import (
 )
 
 type (
-	tickMsg time.Time
-	mode    int
+	tickMsg        time.Time
+	mode           int
+	doneWaitingMsg struct{}
 )
 
 const (
@@ -41,19 +42,14 @@ var (
 			BorderForeground(lipgloss.AdaptiveColor{Light: "#333333", Dark: "#CCCCCC"}).
 			Padding(1, 2).
 			Margin(1, 1).
-			Width(50)
+			Align(lipgloss.Center)
 
 	promptBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("9")).
 			Padding(1, 2).
 			Margin(1, 1).
-			BorderForeground(lipgloss.Color("9")).
-			Align(lipgloss.Center).
-			Width(50)
-
-	statusMessageStyleGreen = lipgloss.NewStyle().
-				Foreground(green).
-				Render
+			Align(lipgloss.Center)
 
 	statusMessageStyleRed = lipgloss.NewStyle().
 				Foreground(red).

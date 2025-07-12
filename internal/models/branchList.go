@@ -2,13 +2,15 @@ package models
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/items"
+	"github.com/spf13/viper"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -16,19 +18,24 @@ import (
 type branchListKeyMap struct {
 	toggleHelpMenu key.Binding
 	addBranch      key.Binding
-	chooseBranch   key.Binding
+	checkoutBranch key.Binding
 	deleteBranch   key.Binding
+	chooseBranch   key.Binding
 }
 
 func newBranchListKeyMap() *branchListKeyMap {
 	return &branchListKeyMap{
+		chooseBranch: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "branch info"),
+		),
 		deleteBranch: key.NewBinding(
 			key.WithKeys("d"),
 			key.WithHelp("d", "delete branch"),
 		),
-		chooseBranch: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "choose branch"),
+		checkoutBranch: key.NewBinding(
+			key.WithKeys("c"),
+			key.WithHelp("c", "checkout branch"),
 		),
 		addBranch: key.NewBinding(
 			key.WithKeys("a"),
@@ -42,26 +49,27 @@ func newBranchListKeyMap() *branchListKeyMap {
 }
 
 type branchListModel struct {
-	list      list.Model
-	listModel *taskListModel
-	keys      *branchListKeyMap
-	selected  bool
-	selection *items.Branch
-	mode      mode
-	err       error
-	spinner   spinner.Model
-	loading   bool
+	list             list.Model
+	listModel        *taskListModel
+	keys             *branchListKeyMap
+	selected         bool
+	selection        *items.Branch
+	mode             mode
+	err              error
+	progress         progress.Model
+	progressDone     bool
+	waitingAfterDone bool
+	status           string
+	width            int
+	height           int
 }
 
 func InitialBranchListModel(listModel *taskListModel) branchListModel {
-	m := branchListModel{}
-
 	listKeys := newBranchListKeyMap()
 
 	branches, _, err := git.GetBranches()
 	if err != nil {
-		m.mode = 2
-		m.err = err
+		panic(err)
 	}
 
 	listItems := []list.Item{}
@@ -70,7 +78,7 @@ func InitialBranchListModel(listModel *taskListModel) branchListModel {
 		listItems = append(listItems, &branch)
 	}
 
-	itemList := list.New(listItems, list.NewDefaultDelegate(), 40, 40)
+	itemList := list.New(listItems, list.NewDefaultDelegate(), 0, 0)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
@@ -79,30 +87,54 @@ func InitialBranchListModel(listModel *taskListModel) branchListModel {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
 			listKeys.addBranch,
-			listKeys.chooseBranch,
+			listKeys.checkoutBranch,
 			listKeys.deleteBranch,
+			listKeys.chooseBranch,
 		}
 	}
 
-	m.list = itemList
-	m.listModel = listModel
-	m.selected = false
-	m.keys = listKeys
-	m.spinner = spinner.New(
-		spinner.WithSpinner(spinner.Dot),
-		spinner.WithStyle(lipgloss.NewStyle().Foreground(orange)))
-
-	return m
+	return branchListModel{
+		list:      itemList,
+		listModel: listModel,
+		selected:  false,
+		keys:      listKeys,
+		progress:  progress.New(progress.WithDefaultGradient()),
+	}
 }
 
 func (m branchListModel) Init() tea.Cmd {
-	return m.spinner.Tick
+	return tickCmd()
 }
 
 func (m branchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case tickMsg:
+		if m.progress.Percent() >= 1.0 && !m.waitingAfterDone {
+			m.progressDone = true
+			m.waitingAfterDone = true
+
+			// Return a timer command to keep displaying 100% progress
+			// for one second.
+			return m, tea.Tick(time.Second, func(t time.Time) tea.Msg {
+				return doneWaitingMsg{}
+			})
+		}
+
+		return m, tickCmd()
+
+	// FrameMsg is sent when the progress bar wants to animate itself
+	case progress.FrameMsg:
+		progressModel, cmd := m.progress.Update(msg)
+		m.progress = progressModel.(progress.Model)
+		return m, cmd
+
+	case doneWaitingMsg:
+		m.progressDone, m.waitingAfterDone = false, false
+		// Reset the progress bar.
+		return m, m.progress.SetPercent(0.0)
+
 	case git.AddBranchErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
@@ -119,19 +151,26 @@ func (m branchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case git.AddBranchDoneMsg:
-		m.loading = false
-		m.list.InsertItem(0, msg.Branch)
+		m.status = fmt.Sprintf("🗸  New branch %s added", msg.Branch.Title())
+		m.progressDone = true
+		return m, tea.Batch(m.progress.SetPercent(1.0), m.list.InsertItem(0, &msg.Branch))
 
 	case git.DeleteBranchDoneMsg:
-		m.loading = false
+		m.status = fmt.Sprintf("🗑  branch %s deleted", msg.Branch.Title())
+		m.progressDone = true
 		m.list.RemoveItem(m.list.GlobalIndex())
-		return m, m.list.NewStatusMessage(statusMessageStyleGreen("🗑  branch deleted"))
+		return m, m.progress.SetPercent(1.0)
 
 	case git.CheckoutBranchDoneMsg:
+		m.status = fmt.Sprintf("🗸  branch %s checked out", msg.Branch.Title())
+		m.progressDone = true
+		return m, m.progress.SetPercent(1.0)
 
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.width = msg.Width
+		m.height = msg.Height
 
 	case tea.KeyMsg:
 		switch m.mode {
@@ -140,7 +179,10 @@ func (m branchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "y", "Y":
 				m.mode = modeNormal
 				if m.list.SelectedItem() != nil {
-					return m, git.DeleteBranchCmd(m.list.SelectedItem().(*items.Branch).Title())
+					return m, tea.Batch(
+						m.progress.SetPercent(0.1),
+						tickCmd(),
+						git.DeleteBranchCmd(*m.list.SelectedItem().(*items.Branch)))
 				}
 				return m, nil
 
@@ -174,6 +216,15 @@ func (m branchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.SetShowHelp(!m.list.ShowHelp())
 				return m, nil
 
+			case key.Matches(msg, m.keys.checkoutBranch):
+				if m.list.SelectedItem() != nil {
+					return m, tea.Batch(
+						m.progress.SetPercent(0.1),
+						tickCmd(),
+						git.CheckoutBranchCmd(*m.list.SelectedItem().(*items.Branch)))
+				}
+				return m, nil
+
 			case key.Matches(msg, m.keys.addBranch):
 				branch := &items.Branch{}
 				branchFormModel := newBranchFormModel(branch, &m)
@@ -181,7 +232,7 @@ func (m branchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.deleteBranch):
 				if m.list.SelectedItem() != nil {
-					if m.list.SelectedItem().(*items.Branch).Title() == "main" ||
+					if m.list.SelectedItem().(*items.Branch).Title() == viper.GetString("git.default_branch") ||
 						m.list.SelectedItem().(*items.Branch).Title() == "done" ||
 						m.list.SelectedItem().(*items.Branch).Title() == "inProgress" ||
 						m.list.SelectedItem().(*items.Branch).Title() == "onHold" {
@@ -193,6 +244,10 @@ func (m branchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.chooseBranch):
+				if m.list.SelectedItem() != nil {
+					m.selected = true
+					m.selection = m.list.SelectedItem().(*items.Branch)
+				}
 				return m, nil
 			}
 		}
@@ -206,15 +261,21 @@ func (m branchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m branchListModel) View() string {
-	// Display spinner while git operation is running.
-	if m.loading {
-		leftColumn := appStyle.Render(m.list.View())
+	// Progress bar styling
+	progressStyle := lipgloss.NewStyle().
+		Width(m.width).
+		Height(m.height).
+		Align(lipgloss.Center).
+		AlignVertical(lipgloss.Center)
 
-		rightColumn := fmt.Sprintf("\n%s %s\n   %s", m.spinner.View(),
-			lipgloss.NewStyle().Foreground(orange).Render("Synchronization in progress"),
-			lipgloss.NewStyle().Foreground(red).Render("Do not exit application!"))
+	// Display progress bar at 100%
+	if m.progressDone && m.waitingAfterDone {
+		return progressStyle.Render(m.status + "\n\n" + m.progress.ViewAs(1.0))
+	}
 
-		return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
+	// Display progress bar if not at 0%
+	if m.progress.Percent() != 0.0 {
+		return progressStyle.Render(m.status + "\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.
@@ -229,5 +290,14 @@ func (m branchListModel) View() string {
 		return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 	}
 
-	return appStyle.Render(m.list.View())
+	// Display list view.
+	if !m.selected {
+		return appStyle.Render(m.list.View())
+	}
+
+	// Display branch view
+	leftColumn := appStyle.Render(m.list.View())
+	rightColumn := detailBoxStyle.Render("hello")
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -20,19 +19,28 @@ type branchFormModel struct {
 	width     int
 	lg        *lipgloss.Renderer
 	styles    *Styles
+	vars      *branchFormVars
+}
 
+type branchFormVars struct {
+	confirm    bool
 	branchName string
 	branchType string
-	confirm    bool
 }
 
 func newBranchFormModel(b *items.Branch, listModel *branchListModel) branchFormModel {
+	v := branchFormVars{
+		confirm:    false,
+		branchName: b.Title(),
+		branchType: b.Description(),
+	}
+
 	m := branchFormModel{width: maxWidth}
+	m.vars = &v
 	m.branch = b
 	m.listModel = listModel
 	m.lg = lipgloss.DefaultRenderer()
 	m.styles = NewStyles(m.lg)
-	m.confirm = false
 
 	m.form = huh.NewForm(
 		huh.NewGroup(
@@ -41,13 +49,13 @@ func newBranchFormModel(b *items.Branch, listModel *branchListModel) branchFormM
 				Options(huh.NewOptions("local + remote", "local-only")...).
 				Title("Select branch type:").
 				Description("local-only branches will not leave this computer.").
-				Value(&m.branchType),
+				Value(&m.vars.branchType),
 
 			huh.NewInput().
 				Key("name").
 				Title("Enter a name:").
 				Description("git branch naming rules apply").
-				Value(&m.branchName).
+				Value(&m.vars.branchName).
 				Validate(func(str string) error {
 					if len(strings.TrimSpace(str)) < 1 {
 						return errors.New("name must not be empty")
@@ -62,7 +70,7 @@ func newBranchFormModel(b *items.Branch, listModel *branchListModel) branchFormM
 				Title("Create new branch?").
 				Affirmative("Yes").
 				Negative("No").
-				Value(&m.confirm),
+				Value(&m.vars.confirm),
 		)).
 		WithWidth(45).
 		WithShowHelp(false).
@@ -81,11 +89,6 @@ func (m branchFormModel) Init() tea.Cmd {
 
 func (m branchFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.listModel.spinner, cmd = m.listModel.spinner.Update(msg)
-		return m, cmd
-
 	case tea.WindowSizeMsg:
 		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
 
@@ -108,14 +111,16 @@ func (m branchFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.form.State == huh.StateCompleted {
 		// Write task only if form has been confirmed.
-		if m.confirm {
-			m.confirm = false
-			m.branch.Name = m.branchName
+		if m.vars.confirm {
+			m.vars.confirm = false
+			m.branch.Name = m.vars.branchName
 
-			setUpstream := viper.GetBool("git.push_on_commit") && m.branchType == "local + remote"
+			setUpstream := viper.GetBool("git.remote.push_on_commit") && m.vars.branchType == "local + remote"
 
-			cmds = append(cmds, git.AddBranchCmd(*m.branch, setUpstream))
-			m.listModel.loading = true
+			cmds = append(cmds,
+				m.listModel.progress.SetPercent(0.1),
+				tickCmd(),
+				git.AddBranchCmd(*m.branch, setUpstream))
 		}
 
 		return m.listModel, tea.Batch(cmds...)
