@@ -141,3 +141,20 @@ func DeleteTaskFromFS(task *Task) tea.Cmd {
 		return TaskDeleteDoneMsg{}
 	}
 }
+
+func TaskToMarkdown(task *Task) string {
+	title := fmt.Sprintf("# %s\n\n", task.Title())
+
+	priority := fmt.Sprintf("## Priority:\n%s\n\n", task.Priority())
+
+	var completed string
+	if task.Completed() {
+		completed = "## State\n* [x] done\n\n"
+	} else {
+		completed = "## State\n* [ ] open\n\n"
+	}
+
+	description := fmt.Sprintf("## Description\n%s", task.Description())
+
+	return title + priority + completed + description
+}

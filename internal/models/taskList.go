@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/git"
@@ -46,7 +47,7 @@ func newTaskListKeyMap() *taskListKeyMap {
 		),
 		chooseItem: key.NewBinding(
 			key.WithKeys("enter"),
-			key.WithHelp("enter", "choose"),
+			key.WithHelp("enter", "show"),
 		),
 		addItem: key.NewBinding(
 			key.WithKeys("a"),
@@ -130,6 +131,11 @@ type taskListModel struct {
 	status           string
 	width            int
 	height           int
+
+	// Glamour renderer
+	renderer *glamour.TermRenderer
+	markdown string
+	rendered string
 }
 
 func InitialTaskListModel() taskListModel {
@@ -161,11 +167,17 @@ func InitialTaskListModel() taskListModel {
 		}
 	}
 
+	renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+	if err != nil {
+		panic(err)
+	}
+
 	return taskListModel{
 		list:     itemList,
 		selected: false,
 		keys:     listKeys,
 		progress: progress.New(progress.WithDefaultGradient()),
+		renderer: renderer,
 	}
 }
 
@@ -206,7 +218,6 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(0.0)
 
 	case git.GitInitDoneMsg:
-		m.status = "🕹  Initialization completed"
 		return m, nil
 
 	case git.GitInitErrorMsg:
@@ -323,8 +334,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.chooseItem):
 				if m.list.SelectedItem() != nil {
+					var err error
 					m.selected = true
 					m.selection = m.list.SelectedItem().(*items.Task)
+					m.markdown = items.TaskToMarkdown(m.selection)
+					m.rendered, err = m.renderer.Render(m.markdown)
+					if err != nil {
+						m.mode = 2
+						m.err = err
+						return m, nil
+					}
 				}
 				return m, nil
 
@@ -422,7 +441,7 @@ func (m taskListModel) View() string {
 	}
 
 	// Display git error view
-	if m.mode == modeGitError {
+	if m.mode == modeError {
 		boxContent := "An error occured while executing git:\n\n" +
 			m.err.Error() + "\n\n" +
 			"Please commit manually!"
@@ -438,52 +457,7 @@ func (m taskListModel) View() string {
 		return appStyle.Render(m.list.View())
 	}
 
-	// Display task view.
-	completed := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Padding(0, 1)
-
-	switch m.selection.Completed() {
-	case true:
-		completed = completed.Background(green)
-	case false:
-		completed = completed.Background(blue)
-	}
-
-	headline := lipgloss.NewStyle().
-		Foreground(green).
-		Bold(true)
-
-	priority := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Padding(0, 1)
-
-	switch m.selection.Priority() {
-	case "high":
-		priority = priority.Background(red)
-	case "medium":
-		priority = priority.Background(orange)
-	case "low":
-		priority = priority.Background(indigo)
-	default:
-		priority = priority.Background(indigo)
-	}
-
-	leftColumn := appStyle.Render(m.list.View())
-	rightColumn := detailBoxStyle.Render(
-		completed.Render(
-			items.CompletedString(m.selection.Completed()),
-		) + " " + priority.Render(
-			m.selection.Priority(),
-		) + "\n\n" +
-			headline.Render(
-				"Title",
-			) + "\n\n" + m.selection.Title() + "\n\n" +
-			headline.Render(
-				"Description:",
-			) + "\n\n" + m.selection.Description(),
-	)
-	return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
+	return m.rendered
 }
 
 func sortTasksByPriority(m *list.Model) {

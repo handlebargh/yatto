@@ -62,7 +62,7 @@ func CommitCmd(file, message string) tea.Cmd {
 
 func PullCmd() tea.Cmd {
 	return func() tea.Msg {
-		err := Pull()
+		err := pull()
 		if err != nil {
 			return GitPullErrorMsg{err}
 		}
@@ -71,7 +71,7 @@ func PullCmd() tea.Cmd {
 	}
 }
 
-func Pull() error {
+func pull() error {
 	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 		return err
 	}
