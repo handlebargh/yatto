@@ -82,51 +82,38 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	// Base styles.
 	titleStyle := lipgloss.NewStyle().
 		Foreground(neutral).
-		BorderForeground(orange).
+		BorderForeground(neutral).
+		Padding(0, 1).
 		Width(64)
-
-	completedStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		BorderForeground(orange).
-		Padding(0, 1)
 
 	priorityStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#000000")).
 		Padding(0, 1)
 
-	// Priority-based coloring.
 	switch taskItem.Priority() {
 	case "low":
-		priorityStyle = priorityStyle.Background(indigo)
+		priorityStyle = priorityStyle.Foreground(indigo)
 	case "medium":
-		priorityStyle = priorityStyle.Background(orange)
+		priorityStyle = priorityStyle.Foreground(orange)
 	case "high":
-		priorityStyle = priorityStyle.Background(red)
+		priorityStyle = priorityStyle.Foreground(red)
 	}
 
-	// Completed coloring.
-	if taskItem.Completed() {
-		completedStyle = completedStyle.Background(green)
-		titleStyle = titleStyle.Strikethrough(true)
-	} else {
-		completedStyle = completedStyle.Background(blue)
-	}
-
-	// Selection border on the left only.
 	if index == m.GlobalIndex() {
 		titleStyle = titleStyle.
-			Border(lipgloss.ThickBorder(), false, false, false, true).
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			BorderForeground(neutral).
 			MarginLeft(0)
-		completedStyle = completedStyle.
-			Border(lipgloss.ThickBorder(), false, false, false, true).
+		priorityStyle = priorityStyle.
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			BorderForeground(neutral).
 			MarginLeft(0)
 	} else {
 		titleStyle = titleStyle.MarginLeft(1)
-		completedStyle = completedStyle.MarginLeft(1)
+		priorityStyle = priorityStyle.MarginLeft(1)
 	}
 
 	line := titleStyle.Render(taskItem.Title()) + "\n" +
-		completedStyle.Render(items.CompletedString(taskItem.Completed())) + " " +
 		priorityStyle.Render(taskItem.Priority())
 
 	_, err := fmt.Fprint(w, line)
@@ -164,7 +151,8 @@ func InitialTaskListModel() taskListModel {
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
-	itemList.Title = "YATTO"
+	itemList.SetStatusBarItemName("task", "tasks")
+	itemList.Title = "Tasks"
 	itemList.Styles.Title = titleStyle
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{

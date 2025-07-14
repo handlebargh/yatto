@@ -26,7 +26,7 @@ var (
 	indigo  = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
 	green   = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
 	orange  = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
-	neutral = lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}
+	neutral = lipgloss.AdaptiveColor{Light: "#333333", Dark: "#DDDDDD"}
 )
 
 var (
@@ -34,7 +34,7 @@ var (
 
 	titleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#000000")).
-			Background(green).
+			Background(indigo).
 			Padding(0, 1)
 
 	detailBoxStyle = lipgloss.NewStyle().

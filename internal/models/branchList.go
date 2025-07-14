@@ -82,7 +82,9 @@ func InitialBranchListModel(listModel *taskListModel) branchListModel {
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
+	itemList.SetStatusBarItemName("branch", "branches")
 	itemList.Title = "Branches"
+	itemList.Styles.Title = titleStyle
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
@@ -297,7 +299,7 @@ func (m branchListModel) View() string {
 
 	// Display branch view
 	leftColumn := appStyle.Render(m.list.View())
-	rightColumn := detailBoxStyle.Render("hello")
+	rightColumn := detailBoxStyle.Render(m.selection.Title())
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 }
