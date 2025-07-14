@@ -95,6 +95,10 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		priorityStyle = priorityStyle.Foreground(red)
 	}
 
+	if taskItem.Completed() {
+		titleStyle = titleStyle.Strikethrough(true).Foreground(green)
+	}
+
 	if index == m.GlobalIndex() {
 		titleStyle = titleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
