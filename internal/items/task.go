@@ -31,17 +31,22 @@ func (e TaskDeleteErrorMsg) Error() string { return e.Err.Error() }
 type Task struct {
 	TaskId          string `json:"id"`
 	TaskTitle       string `json:"title"`
-	TaskDescription string `json:"description"`
+	TaskDescription string `json:"description,omitempty"`
 	TaskPriority    string `json:"priority"`
 	TaskCompleted   bool   `json:"completed"`
 }
 
-func (t Task) Id() string          { return t.TaskId }
-func (t Task) Title() string       { return t.TaskTitle }
-func (t Task) Description() string { return t.TaskDescription }
-func (t Task) Priority() string    { return t.TaskPriority }
-func (t Task) Completed() bool     { return t.TaskCompleted }
-func (t Task) FilterValue() string { return t.TaskTitle }
+func (t Task) Id() string                         { return t.TaskId }
+func (t *Task) SetId(id string)                   { t.TaskId = id }
+func (t Task) Title() string                      { return t.TaskTitle }
+func (t *Task) SetTitle(title string)             { t.TaskTitle = title }
+func (t Task) Description() string                { return t.TaskDescription }
+func (t *Task) SetDescription(description string) { t.TaskDescription = description }
+func (t Task) Priority() string                   { return t.TaskPriority }
+func (t *Task) SetPriority(priority string)       { t.TaskPriority = priority }
+func (t Task) Completed() bool                    { return t.TaskCompleted }
+func (t *Task) SetCompleted(completed bool)       { t.TaskCompleted = completed }
+func (t Task) FilterValue() string                { return t.TaskTitle }
 
 // Function to convert priority to a numerical value for sorting.
 func PriorityValue(priority string) int {
@@ -98,11 +103,11 @@ func ReadTasksFromFS() []Task {
 
 func MarshalTask(uuid, title, description, priority string, completed bool) []byte {
 	var task Task
-	task.TaskId = uuid
-	task.TaskTitle = title
-	task.TaskDescription = description
-	task.TaskPriority = priority
-	task.TaskCompleted = completed
+	task.SetId(uuid)
+	task.SetTitle(title)
+	task.SetDescription(description)
+	task.SetPriority(priority)
+	task.SetCompleted(completed)
 
 	json, err := json.MarshalIndent(task, "", "\t")
 	if err != nil {

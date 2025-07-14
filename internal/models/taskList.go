@@ -338,7 +338,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						t.Priority(),
 						!t.Completed())
 
-					m.list.SelectedItem().(*items.Task).TaskCompleted = !m.list.SelectedItem().(*items.Task).TaskCompleted
+					m.list.SelectedItem().(*items.Task).SetCompleted(!m.list.SelectedItem().(*items.Task).Completed())
 
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
 					if t.Completed() {
@@ -481,7 +481,7 @@ func (m taskListModel) View() string {
 			) + "\n\n" + m.selection.Title() + "\n\n" +
 			headline.Render(
 				"Description:",
-			) + "\n\n" + m.selection.TaskDescription,
+			) + "\n\n" + m.selection.Description(),
 	)
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 }

@@ -128,10 +128,10 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.form.State == huh.StateCompleted {
 		// Write task only if form has been confirmed.
 		if m.vars.confirm {
-			m.task.TaskTitle = m.vars.taskTitle
-			m.task.TaskDescription = m.vars.taskDescription
-			m.task.TaskPriority = m.vars.taskPriority
-			m.task.TaskCompleted = m.vars.taskCompleted
+			m.task.SetTitle(m.vars.taskTitle)
+			m.task.SetDescription(m.vars.taskDescription)
+			m.task.SetPriority(m.vars.taskPriority)
+			m.task.SetCompleted(m.vars.taskCompleted)
 
 			json := items.MarshalTask(
 				m.task.Id(),
