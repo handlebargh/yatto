@@ -24,15 +24,10 @@ type taskListKeyMap struct {
 	deleteItem     key.Binding
 	sortByPriority key.Binding
 	toggleComplete key.Binding
-	showBranchView key.Binding
 }
 
 func newTaskListKeyMap() *taskListKeyMap {
 	return &taskListKeyMap{
-		showBranchView: key.NewBinding(
-			key.WithKeys("b"),
-			key.WithHelp("b", "branch view"),
-		),
 		toggleComplete: key.NewBinding(
 			key.WithKeys("D"),
 			key.WithHelp("D", "toggle done"),
@@ -152,7 +147,7 @@ func InitialTaskListModel() taskListModel {
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("task", "tasks")
-	itemList.Title = "Tasks"
+	itemList.Title = "YATTO"
 	itemList.Styles.Title = titleStyle
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
@@ -321,10 +316,6 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.toggleHelpMenu):
 				m.list.SetShowHelp(!m.list.ShowHelp())
 				return m, nil
-
-			case key.Matches(msg, m.keys.showBranchView):
-				branchListModel := InitialBranchListModel(&m)
-				return branchListModel, tea.WindowSize()
 
 			case key.Matches(msg, m.keys.sortByPriority):
 				sortTasksByPriority(&m.list)
