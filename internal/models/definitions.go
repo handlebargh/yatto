@@ -74,9 +74,6 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 		Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}).
 		Bold(true)
 	s.Title = lg.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Background(green).
-		Padding(0, 1).
 		Bold(true)
 	s.Priority = lg.NewStyle().
 		Foreground(lipgloss.Color("#000000")).
