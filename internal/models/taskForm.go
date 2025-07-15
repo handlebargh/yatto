@@ -138,7 +138,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
-		case "esc", "q":
+		case "esc":
 			return m.listModel, nil
 		}
 	}
