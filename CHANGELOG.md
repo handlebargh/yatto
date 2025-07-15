@@ -1,3 +1,31 @@
+## v0.6.0 (2025-07-15)
+
+### Feat
+
+- render tasks as markdown
+- show spinner while pulling on init
+- use animated progress bar instead of spinner
+- extensive refactoring that also introduces the branches view
+
+### Fix
+
+- add some form improvements
+- pull only if remote is enabled and check for errors
+- remove background and padding from title in preview
+- remove branch item
+- remove branch view for adding too much complexity with too little benefit
+- get branch view working
+
+### Refactor
+
+- **deps**: update dependencies
+- show deletion prompts and git errors centered on their own
+- show done tasks in list with green, strikethrough title
+- create setter methods
+- change how list items are displayed
+- make git a hard dependency
+- rewrite git commands for the most part
+
 ## v0.5.0 (2025-07-10)
 
 ### Feat
