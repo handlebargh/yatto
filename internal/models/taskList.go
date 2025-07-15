@@ -133,8 +133,7 @@ type taskListModel struct {
 	progressDone     bool
 	waitingAfterDone bool
 	status           string
-	width            int
-	height           int
+	width, height    int
 
 	// Glamour renderer
 	renderer *glamour.TermRenderer
@@ -392,7 +391,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.list.SelectedItem() != nil {
 					// Switch to InputModel for editing.
 					formModel := newTaskFormModel(m.list.SelectedItem().(*items.Task), &m, true)
-					return formModel, nil
+					return formModel, tea.WindowSize()
 				}
 
 			case key.Matches(msg, m.keys.addItem):
@@ -402,7 +401,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					TaskDescription: "",
 				}
 				formModel := newTaskFormModel(task, &m, false)
-				return formModel, nil
+				return formModel, tea.WindowSize()
 			}
 		}
 	}

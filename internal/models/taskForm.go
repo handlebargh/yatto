@@ -13,13 +13,15 @@ import (
 )
 
 type taskFormModel struct {
-	form      *huh.Form
-	task      *items.Task
-	listModel *taskListModel
-	width     int
-	lg        *lipgloss.Renderer
-	styles    *Styles
-	vars      *taskFormVars
+	form          *huh.Form
+	task          *items.Task
+	listModel     *taskListModel
+	edit          bool
+	cancel        bool
+	width, height int
+	lg            *lipgloss.Renderer
+	styles        *Styles
+	vars          *taskFormVars
 }
 
 type taskFormVars struct {
@@ -39,7 +41,8 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		taskCompleted:   t.Completed(),
 	}
 
-	m := taskFormModel{width: maxWidth}
+	m := taskFormModel{}
+	m.edit = edit
 	m.vars = &v
 	m.task = t
 	m.listModel = listModel
@@ -104,25 +107,39 @@ func (m taskFormModel) Init() tea.Cmd {
 }
 
 func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = min(msg.Width, maxWidth) - m.styles.Base.GetHorizontalFrameSize()
+		h, v := appStyle.GetFrameSize()
+		m.width = msg.Width - h
+		m.height = msg.Height - v
+	}
 
+	form, cmd := m.form.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		m.form = f
+		cmds = append(cmds, cmd)
+	}
+
+	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.cancel {
+			switch msg.String() {
+			case "y", "Y":
+				return m.listModel, nil
+			case "n", "N":
+				m := newTaskFormModel(m.task, m.listModel, m.edit)
+				return m, tea.WindowSize()
+			}
+		}
+
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc", "q":
 			return m.listModel, nil
 		}
-	}
-
-	var cmds []tea.Cmd
-
-	form, cmd := m.form.Update(msg)
-	if f, ok := form.(*huh.Form); ok {
-		m.form = f
-		cmds = append(cmds, cmd)
 	}
 
 	if m.form.State == huh.StateCompleted {
@@ -157,6 +174,9 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				)
 				m.listModel.status = ""
 			}
+		} else {
+			m.cancel = true
+			return m, nil
 		}
 
 		return m.listModel, tea.Batch(cmds...)
@@ -166,6 +186,20 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m taskFormModel) View() string {
+	if m.cancel {
+		centeredStyle := lipgloss.NewStyle().
+			Width(m.width).
+			Height(m.height).
+			Align(lipgloss.Center).
+			AlignVertical(lipgloss.Center)
+
+		if m.edit {
+			return centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No")
+		} else {
+			return centeredStyle.Render("Cancel task creation?\n\n[y] Yes   [n] No")
+		}
+	}
+
 	s := m.styles
 
 	// Form (left side)
@@ -193,7 +227,7 @@ func (m taskFormModel) View() string {
 
 	var status string
 	{
-		const statusWidth = 35
+		const statusWidth = 40
 		statusMarginLeft := m.width - statusWidth - lipgloss.Width(form) - s.Status.GetMarginRight()
 		status = s.Status.
 			Height(lipgloss.Height(form)).
@@ -207,7 +241,14 @@ func (m taskFormModel) View() string {
 	}
 
 	errors := m.form.Errors()
-	header := m.appBoundaryView("Create new task")
+
+	var header string
+	if m.edit {
+		header = m.appBoundaryView("Edit task")
+	} else {
+		header = m.appBoundaryView("Create new task")
+	}
+
 	if len(errors) > 0 {
 		header = m.appErrorBoundaryView(m.errorView())
 	}
@@ -230,12 +271,19 @@ func (m taskFormModel) errorView() string {
 }
 
 func (m taskFormModel) appBoundaryView(text string) string {
+	var color lipgloss.AdaptiveColor
+	if m.edit {
+		color = orange
+	} else {
+		color = green
+	}
+
 	return lipgloss.PlaceHorizontal(
 		m.width,
 		lipgloss.Left,
 		m.styles.HeaderText.Render(text),
-		lipgloss.WithWhitespaceChars("/"),
-		lipgloss.WithWhitespaceForeground(indigo),
+		lipgloss.WithWhitespaceChars("❯"),
+		lipgloss.WithWhitespaceForeground(color),
 	)
 }
 
@@ -244,7 +292,7 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 		m.width,
 		lipgloss.Left,
 		m.styles.ErrorHeaderText.Render(text),
-		lipgloss.WithWhitespaceChars("/"),
+		lipgloss.WithWhitespaceChars("❯"),
 		lipgloss.WithWhitespaceForeground(red),
 	)
 }

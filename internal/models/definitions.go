@@ -17,7 +17,6 @@ const (
 	modeNormal mode = iota
 	modeConfirmDelete
 	modeGitError
-	maxWidth = 80
 )
 
 var (
@@ -85,13 +84,6 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 	s.Help = lg.NewStyle().
 		Foreground(lipgloss.Color("240"))
 	return &s
-}
-
-func min(x, y int) int {
-	if x > y {
-		return y
-	}
-	return x
 }
 
 func tickCmd() tea.Cmd {
