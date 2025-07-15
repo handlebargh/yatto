@@ -85,7 +85,6 @@ git push -u origin main
 
 - [Go](https://go.dev)
 - [Bubble Tea](https://github.com/charmbracelet/bubbletea) - a fun, functional TUI framework
-- [Lip Gloss](https://github.com/charmbracelet/lipgloss) - for terminal styling
 
 ## License
 
