@@ -30,6 +30,25 @@ go install github.com/handlebargh/yatto@latest
 
 Take a look at the releases.
 
+## Configuration
+
+A configuration file is automatically created at `${HOME}/.config/yatto/config.toml`
+
+By default the following settings are written to the file and may be edited.
+
+```toml
+[git]
+default_branch = 'main'
+
+[git.remote]
+enable = false
+name = 'origin'
+push_on_commit = false
+
+[storage]
+path = '/home/handlebargh/.yatto'
+```
+
 ## Task Storage
 
 Tasks are saved in a directory like:
