@@ -1,3 +1,9 @@
+## v0.6.1 (2025-07-15)
+
+### Fix
+
+- allow task titles and descriptions with the letter q
+
 ## v0.6.0 (2025-07-15)
 
 ### Feat
