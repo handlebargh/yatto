@@ -93,7 +93,8 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		)).
 		WithWidth(45).
 		WithShowHelp(false).
-		WithShowErrors(false)
+		WithShowErrors(false).
+		WithTheme(huh.ThemeBase16())
 
 	// Workaround for a problem that prevents the form
 	// from being initially completely rendered.
@@ -225,6 +226,16 @@ func (m taskFormModel) View() string {
 		s.Completed = s.Completed.Background(red)
 	}
 
+	var header string
+	var color lipgloss.AdaptiveColor
+	if m.edit {
+		header = m.appBoundaryView("Edit task")
+		color = orange
+	} else {
+		header = m.appBoundaryView("Create new task")
+		color = green
+	}
+
 	var status string
 	{
 		const statusWidth = 40
@@ -233,6 +244,7 @@ func (m taskFormModel) View() string {
 			Height(lipgloss.Height(form)).
 			Width(statusWidth).
 			MarginLeft(statusMarginLeft).
+			BorderForeground(color).
 			Render(s.StatusHeader.Render("Task preview") + "\n\n" +
 				s.Title.Render(m.vars.taskTitle) + " " +
 				s.Priority.Render(m.vars.taskPriority) + " " +
@@ -241,13 +253,6 @@ func (m taskFormModel) View() string {
 	}
 
 	errors := m.form.Errors()
-
-	var header string
-	if m.edit {
-		header = m.appBoundaryView("Edit task")
-	} else {
-		header = m.appBoundaryView("Create new task")
-	}
 
 	if len(errors) > 0 {
 		header = m.appErrorBoundaryView(m.errorView())
@@ -281,7 +286,7 @@ func (m taskFormModel) appBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,
 		lipgloss.Left,
-		m.styles.HeaderText.Render(text),
+		m.styles.HeaderText.Foreground(color).Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
 		lipgloss.WithWhitespaceForeground(color),
 	)
