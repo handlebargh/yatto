@@ -77,37 +77,39 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	// Base styles.
 	titleStyle := lipgloss.NewStyle().
-		Foreground(neutral).
-		BorderForeground(neutral).
 		Padding(0, 1).
 		Width(64)
 
 	priorityStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
+		Padding(0, 1)
+
+	priorityValueStyle := lipgloss.NewStyle().
+		Foreground(black).
 		Padding(0, 1)
 
 	switch taskItem.Priority() {
 	case "low":
-		priorityStyle = priorityStyle.Foreground(indigo)
+		priorityValueStyle = priorityValueStyle.
+			BorderForeground(indigo).Background(indigo)
 	case "medium":
-		priorityStyle = priorityStyle.Foreground(orange)
+		priorityValueStyle = priorityValueStyle.
+			BorderForeground(orange).Background(orange)
 	case "high":
-		priorityStyle = priorityStyle.Foreground(red)
+		priorityValueStyle = priorityValueStyle.
+			BorderForeground(red).Background(red)
 	}
 
 	if taskItem.Completed() {
-		titleStyle = titleStyle.Strikethrough(true).Foreground(green)
-		priorityStyle = priorityStyle.Strikethrough(true)
+		titleStyle = titleStyle.Strikethrough(true).
+			Foreground(green)
 	}
 
 	if index == m.GlobalIndex() {
 		titleStyle = titleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(neutral).
 			MarginLeft(0)
 		priorityStyle = priorityStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(neutral).
 			MarginLeft(0)
 	} else {
 		titleStyle = titleStyle.MarginLeft(1)
@@ -115,7 +117,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	}
 
 	line := titleStyle.Render(taskItem.Title()) + "\n" +
-		priorityStyle.Render(taskItem.Priority())
+		priorityStyle.Render("Priority: ") + priorityValueStyle.Render(taskItem.Priority())
 
 	_, err := fmt.Fprint(w, line)
 	if err != nil {

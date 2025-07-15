@@ -20,11 +20,11 @@ const (
 )
 
 var (
-	red     = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
-	indigo  = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
-	green   = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
-	orange  = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
-	neutral = lipgloss.AdaptiveColor{Light: "#333333", Dark: "#DDDDDD"}
+	red    = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
+	indigo = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
+	green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
+	orange = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
+	black  = lipgloss.Color("#000000")
 )
 
 var (
