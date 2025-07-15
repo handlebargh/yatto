@@ -2,8 +2,8 @@
 
 **YATTO** is a terminal-based to-do application built with
 [Bubble Tea](https://github.com/charmbracelet/bubbletea). It stores each task as
-a separate JSON file on your filesystem and optionally manages the
-task directory as a Git repository for versioning and synchronization.
+a separate JSON file on your filesystem and manages the
+task directory as a Git repository for versioning, synchronization and collaboration.
 
 ## Features
 
@@ -16,7 +16,7 @@ task directory as a Git repository for versioning and synchronization.
 
 ## Requirements
 
-Git is required by default. You can disable Git in the config file if you want.
+Git is required.
 
 ## Installation
 
@@ -30,21 +30,38 @@ go install github.com/handlebargh/yatto@latest
 
 Take a look at the releases.
 
+## Configuration
+
+A configuration file is automatically created at `${HOME}/.config/yatto/config.toml`
+
+By default the following settings are written to the file and may be edited.
+
+```toml
+[git]
+default_branch = 'main'
+
+[git.remote]
+enable = false
+name = 'origin'
+push_on_commit = false
+
+[storage]
+path = '/home/handlebargh/.yatto'
+```
+
 ## Task Storage
 
 Tasks are saved in a directory like:
 
 ```bash
-~/.local/share/yatto/tasks/
+${HOME}/.yatto
 ```
 
 Each task is a simple JSON file.
 
 You can change the task storage directory in the config file.
 
-## Git-Enabled Mode
-
-If you keep Git support enabled, YATTO will:
+## Git-Enabled workflow
 
 - Automatically create a Git repo in the task directory
 - Commit every add/delete/update
@@ -63,8 +80,6 @@ To do so, inside the storage directory run this command:
 ```bash
 git push -u origin main
 ```
-
-It is expected that the remote repository is in a bare, not initialized state.
 
 ## Built With
 
