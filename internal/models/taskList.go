@@ -202,8 +202,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.waitingAfterDone = true
 
 			// Return a timer command to keep displaying 100% progress
-			// for one second.
-			return m, tea.Tick(time.Second, func(t time.Time) tea.Msg {
+			// for half a second.
+			return m, tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
 				return doneWaitingMsg{}
 			})
 		}
