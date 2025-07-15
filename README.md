@@ -46,7 +46,7 @@ name = 'origin'
 push_on_commit = false
 
 [storage]
-path = '/home/handlebargh/.yatto'
+path = '${HOME}/.yatto'
 ```
 
 ## Task Storage
