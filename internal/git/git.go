@@ -51,6 +51,13 @@ func InitCmd() tea.Cmd {
 
 func CommitCmd(file, message string) tea.Cmd {
 	return func() tea.Msg {
+		if viper.GetBool("git.remote.enable") {
+			err := pull()
+			if err != nil {
+				return GitPullErrorMsg{err}
+			}
+		}
+
 		err := commit(file, message)
 		if err != nil {
 			return GitCommitErrorMsg{err}
