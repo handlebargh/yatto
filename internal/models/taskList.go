@@ -97,6 +97,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	if taskItem.Completed() {
 		titleStyle = titleStyle.Strikethrough(true).Foreground(green)
+		priorityStyle = priorityStyle.Strikethrough(true)
 	}
 
 	if index == m.GlobalIndex() {
@@ -179,7 +180,7 @@ func InitialTaskListModel() taskListModel {
 		list:     itemList,
 		selected: false,
 		keys:     listKeys,
-		progress: progress.New(progress.WithGradient("#FE5F86", "#7571F9")),
+		progress: progress.New(progress.WithGradient("#FFA336", "#02BF87")),
 		renderer: renderer,
 	}
 }
