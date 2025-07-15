@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/viper"
@@ -145,16 +146,16 @@ func DeleteTaskFromFS(task *Task) tea.Cmd {
 func TaskToMarkdown(task *Task) string {
 	title := fmt.Sprintf("# %s\n\n", task.Title())
 
-	priority := fmt.Sprintf("## Priority:\n%s\n\n", task.Priority())
+	description := fmt.Sprintf("## Description:\n\n%s\n\n", task.Description())
 
-	var completed string
+	priority := fmt.Sprintf("## Priority:\n%s\n\n", strings.ToUpper(task.Priority()))
+
+	completed := "## Done:\n❌ No\n\n"
 	if task.Completed() {
-		completed = "## State\n* [x] done\n\n"
-	} else {
-		completed = "## State\n* [ ] open\n\n"
+		completed = "## Done:\n✅ Yes\n\n"
 	}
 
-	description := fmt.Sprintf("## Description\n%s", task.Description())
+	id := fmt.Sprintf("## ID:\n%s", task.Id())
 
-	return title + priority + completed + description
+	return title + description + priority + completed + id
 }
