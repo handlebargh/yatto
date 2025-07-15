@@ -415,8 +415,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m taskListModel) View() string {
-	// Progress bar styling
-	progressStyle := lipgloss.NewStyle().
+	centeredStyle := lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
 		Align(lipgloss.Center).
@@ -424,36 +423,28 @@ func (m taskListModel) View() string {
 
 	// Display progress bar at 100%
 	if m.progressDone && m.waitingAfterDone {
-		return progressStyle.Render(m.status + "\n\n" + m.progress.ViewAs(1.0))
+		return centeredStyle.Render(m.status + "\n\n" + m.progress.ViewAs(1.0))
 	}
 
 	// Display progress bar if not at 0%
 	if m.progress.Percent() != 0.0 {
-		return progressStyle.Render(m.status + "\n\n" + m.progress.View())
+		return centeredStyle.Render(m.status + "\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
 		selected := m.list.SelectedItem().(*items.Task)
 
-		boxContent := fmt.Sprintf("Delete \"%s\"?\n\n[y] Yes   [n] No", selected.Title())
-
-		leftColumn := appStyle.Render(m.list.View())
-		rightColumn := promptBoxStyle.Render(boxContent)
-
-		return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
+		return centeredStyle.Render(fmt.Sprintf("Delete \"%s\"?\n\n[y] Yes   [n] No", selected.Title()))
 	}
 
 	// Display git error view
-	if m.mode == modeError {
-		boxContent := "An error occured while executing git:\n\n" +
+	if m.mode == modeGitError {
+		content := "An error occured while executing git:\n\n" +
 			m.err.Error() + "\n\n" +
 			"Please commit manually!"
 
-		leftColumn := appStyle.Render(m.list.View())
-		rightColumn := promptBoxStyle.Render(boxContent)
-
-		return lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
+		return centeredStyle.Render(content)
 	}
 
 	// Display list view.

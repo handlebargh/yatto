@@ -16,7 +16,7 @@ type (
 const (
 	modeNormal mode = iota
 	modeConfirmDelete
-	modeError
+	modeGitError
 	maxWidth = 80
 )
 
@@ -35,13 +35,6 @@ var (
 			Foreground(lipgloss.Color("#000000")).
 			Background(indigo).
 			Padding(0, 1)
-
-	promptBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("9")).
-			Padding(1, 2).
-			Margin(1, 1).
-			Align(lipgloss.Center)
 )
 
 type Styles struct {
