@@ -423,19 +423,22 @@ func (m taskListModel) View() string {
 
 	// Display progress bar at 100%
 	if m.progressDone && m.waitingAfterDone {
-		return centeredStyle.Render(statusMessageStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
+		return centeredStyle.Render(textStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
 	}
 
 	// Display progress bar if not at 0%
 	if m.progress.Percent() != 0.0 {
-		return centeredStyle.Render(statusMessageStyleGreen(m.status) + "\n\n" + m.progress.View())
+		return centeredStyle.Render(textStyleGreen(m.status) + "\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
 		selected := m.list.SelectedItem().(*items.Task)
 
-		return centeredStyle.Render(fmt.Sprintf("Delete \"%s\"?\n\n[y] Yes   [n] No", selected.Title()))
+		return centeredStyle.Render(
+			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title()) +
+				textStyleRed("[y] Yes") + "    " + textStyleGreen("[n] No"),
+		)
 	}
 
 	// Display git error view
