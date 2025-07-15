@@ -1,4 +1,6 @@
-# YATTO - Yet Another Terrific Task Organizer
+# YATTO
+
+## Yet Another Terrific Task Organizer
 
 **YATTO** is a terminal-based to-do application built with
 [Bubble Tea](https://github.com/charmbracelet/bubbletea). It stores each task as
@@ -16,7 +18,7 @@ task directory as a Git repository for versioning, synchronization and collabora
 
 ## Requirements
 
-Git is required.
+- Git
 
 ## Installation
 
