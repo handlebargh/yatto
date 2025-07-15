@@ -180,7 +180,7 @@ func InitialTaskListModel() taskListModel {
 		list:     itemList,
 		selected: false,
 		keys:     listKeys,
-		progress: progress.New(progress.WithDefaultGradient()),
+		progress: progress.New(progress.WithGradient("#FE5F86", "#7571F9")),
 		renderer: renderer,
 	}
 }
@@ -423,12 +423,12 @@ func (m taskListModel) View() string {
 
 	// Display progress bar at 100%
 	if m.progressDone && m.waitingAfterDone {
-		return centeredStyle.Render(m.status + "\n\n" + m.progress.ViewAs(1.0))
+		return centeredStyle.Render(statusMessageStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
 	}
 
 	// Display progress bar if not at 0%
 	if m.progress.Percent() != 0.0 {
-		return centeredStyle.Render(m.status + "\n\n" + m.progress.View())
+		return centeredStyle.Render(statusMessageStyleGreen(m.status) + "\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.

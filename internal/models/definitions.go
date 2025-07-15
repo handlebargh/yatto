@@ -33,8 +33,12 @@ var (
 
 	titleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#000000")).
-			Background(indigo).
+			Background(green).
 			Padding(0, 1)
+
+	statusMessageStyleGreen = lipgloss.NewStyle().
+				Foreground(green).
+				Render
 )
 
 type Styles struct {

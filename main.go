@@ -116,7 +116,7 @@ func main() {
 
 	if viper.GetBool("git.remote.enable") {
 		s := spinner.New()
-		s.Spinner = spinner.Pulse
+		s.Spinner = spinner.Dot
 		s.Style = s.Style.
 			Foreground(lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}).
 			Bold(true)
