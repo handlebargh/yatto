@@ -1,3 +1,13 @@
+## v0.6.2 (2025-07-16)
+
+### Fix
+
+- pull and rebase before committing if remote is enabled
+
+### Refactor
+
+- reduce time to show filled progress bar
+
 ## v0.6.1 (2025-07-15)
 
 ### Fix
