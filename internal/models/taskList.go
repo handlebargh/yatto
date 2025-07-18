@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -127,6 +128,8 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 type taskListModel struct {
 	list             list.Model
+	project          *items.Project
+	projectModel     *projectListModel
 	selected         bool
 	selection        *items.Task
 	keys             *taskListKeyMap
@@ -144,10 +147,10 @@ type taskListModel struct {
 	rendered string
 }
 
-func InitialTaskListModel() taskListModel {
+func newTaskListModel(project *items.Project, projectModel *projectListModel) taskListModel {
 	listKeys := newTaskListKeyMap()
 
-	tasks := items.ReadTasksFromFS()
+	tasks := items.ReadTasksFromFS(project)
 	items := []list.Item{}
 
 	for _, task := range tasks {
@@ -159,7 +162,7 @@ func InitialTaskListModel() taskListModel {
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("task", "tasks")
-	itemList.Title = "YATTO"
+	itemList.Title = project.Title()
 	itemList.Styles.Title = titleStyle
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
@@ -179,19 +182,18 @@ func InitialTaskListModel() taskListModel {
 	}
 
 	return taskListModel{
-		list:     itemList,
-		selected: false,
-		keys:     listKeys,
-		progress: progress.New(progress.WithGradient("#FFA336", "#02BF87")),
-		renderer: renderer,
+		list:         itemList,
+		project:      project,
+		projectModel: projectModel,
+		selected:     false,
+		keys:         listKeys,
+		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
+		renderer:     renderer,
 	}
 }
 
 func (m taskListModel) Init() tea.Cmd {
-	return tea.Batch(
-		tickCmd(),
-		git.InitCmd(),
-	)
+	return tickCmd()
 }
 
 func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -223,14 +225,6 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reset the progress bar.
 		return m, m.progress.SetPercent(0.0)
 
-	case git.GitInitDoneMsg:
-		return m, nil
-
-	case git.GitInitErrorMsg:
-		m.mode = 2
-		m.err = msg.Err
-		return m, nil
-
 	case git.GitCommitDoneMsg:
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
@@ -241,7 +235,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
 
-	case items.WriteJSONDoneMsg:
+	case items.WriteTaskJSONDoneMsg:
 		switch msg.Kind {
 		case "create":
 			m.list.InsertItem(0, &msg.Task)
@@ -264,7 +258,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-	case items.WriteJSONErrorMsg:
+	case items.WriteTaskJSONErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
@@ -294,8 +288,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds,
 						m.progress.SetPercent(0.10),
 						tickCmd(),
-						items.DeleteTaskFromFS(m.list.SelectedItem().(*items.Task)),
-						git.CommitCmd(m.list.SelectedItem().(*items.Task).Id(),
+						items.DeleteTaskFromFS(*m.project, m.list.SelectedItem().(*items.Task)),
+						git.CommitCmd(filepath.Join(m.project.Id(), m.list.SelectedItem().(*items.Task).Id()),
 							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
 					)
 					m.status = ""
@@ -326,7 +320,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				return m, tea.Quit
+				return m.projectModel, nil
 			}
 
 			switch {
@@ -368,16 +362,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
 					if t.Completed() {
 						cmds = append(cmds,
-							items.WriteJson(json, *t, "complete"),
-							git.CommitCmd(t.Id(), "reopen: "+t.Title()),
+							items.WriteTaskJson(json, *m.project, *t, "complete"),
+							git.CommitCmd(filepath.Join(m.project.Id(), t.Id()), "complete: "+t.Title()),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
 					}
 
 					cmds = append(cmds,
-						items.WriteJson(json, *t, "reopen"),
-						git.CommitCmd(t.Id(), "complete: "+t.Title()),
+						items.WriteTaskJson(json, *m.project, *t, "reopen"),
+						git.CommitCmd(filepath.Join(m.project.Id(), t.Id()), "reopen: "+t.Title()),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
