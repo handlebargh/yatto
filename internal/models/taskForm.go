@@ -35,7 +35,7 @@ type taskFormVars struct {
 
 func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFormModel {
 	v := taskFormVars{
-		confirm:         false,
+		confirm:         true,
 		taskTitle:       t.Title(),
 		taskDescription: t.Description(),
 		taskPriority:    t.Priority(),

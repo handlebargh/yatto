@@ -34,7 +34,7 @@ type projectFormVars struct {
 
 func newProjectFormModel(p *items.Project, listModel *projectListModel, edit bool) projectFormModel {
 	v := projectFormVars{
-		confirm:            false,
+		confirm:            true,
 		projectTitle:       p.Title(),
 		projectDescription: p.Description(),
 		projectColor:       p.Color(),
