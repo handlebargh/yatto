@@ -13,7 +13,7 @@ import (
 )
 
 var uuidRegex = regexp.MustCompile(
-	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`,
+	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\.json$`,
 )
 
 type (
@@ -120,7 +120,7 @@ func MarshalTask(uuid, title, description, priority string, completed bool) []by
 
 func WriteTaskJson(json []byte, project Project, task Task, kind string) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), project.Id(), task.Id())
+		file := filepath.Join(viper.GetString("storage.path"), project.Id(), task.Id()+".json")
 
 		if err := os.WriteFile(file, json, 0600); err != nil {
 			return WriteTaskJSONErrorMsg{err}
@@ -132,7 +132,7 @@ func WriteTaskJson(json []byte, project Project, task Task, kind string) tea.Cmd
 
 func DeleteTaskFromFS(project Project, task *Task) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), project.Id(), task.Id())
+		file := filepath.Join(viper.GetString("storage.path"), project.Id(), task.Id()+".json")
 
 		err := os.Remove(file)
 		if err != nil {

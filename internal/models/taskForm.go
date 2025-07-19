@@ -160,11 +160,15 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.task.Completed())
 
 			if storage.FileExists(m.task.Id()) {
-				cmds = append(cmds,
+				cmds = append(
+					cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
 					items.WriteTaskJson(json, *m.listModel.project, *m.task, "update"),
-					git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()), "update: "+m.task.Title()),
+					git.CommitCmd(
+						filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
+						"update: "+m.task.Title(),
+					),
 				)
 				m.listModel.status = ""
 			} else {
@@ -172,7 +176,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
 					items.WriteTaskJson(json, *m.listModel.project, *m.task, "create"),
-					git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()), "create: "+m.task.Title()),
+					git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"), "create: "+m.task.Title()),
 				)
 				m.listModel.status = ""
 			}

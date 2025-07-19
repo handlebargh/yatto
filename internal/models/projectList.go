@@ -75,6 +75,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	if index == m.GlobalIndex() {
 		titleStyle = titleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
+			BorderForeground(color).
 			MarginLeft(0)
 	} else {
 		titleStyle = titleStyle.MarginLeft(1)

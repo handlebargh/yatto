@@ -288,7 +288,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						items.DeleteTaskFromFS(*m.project, m.list.SelectedItem().(*items.Task)),
-						git.CommitCmd(filepath.Join(m.project.Id(), m.list.SelectedItem().(*items.Task).Id()),
+						git.CommitCmd(filepath.Join(m.project.Id(), m.list.SelectedItem().(*items.Task).Id()+".json"),
 							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
 					)
 					m.status = ""
@@ -362,7 +362,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if t.Completed() {
 						cmds = append(cmds,
 							items.WriteTaskJson(json, *m.project, *t, "complete"),
-							git.CommitCmd(filepath.Join(m.project.Id(), t.Id()), "complete: "+t.Title()),
+							git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "complete: "+t.Title()),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
@@ -370,7 +370,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					cmds = append(cmds,
 						items.WriteTaskJson(json, *m.project, *t, "reopen"),
-						git.CommitCmd(filepath.Join(m.project.Id(), t.Id()), "reopen: "+t.Title()),
+						git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "reopen: "+t.Title()),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
