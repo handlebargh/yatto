@@ -131,7 +131,7 @@ func main() {
 		}
 	}
 
-	if _, err := tea.NewProgram(models.InitialTaskListModel(), tea.WithAltScreen()).Run(); err != nil {
+	if _, err := tea.NewProgram(models.InitialProjectListModel(), tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}

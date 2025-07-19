@@ -13,21 +13,21 @@ import (
 )
 
 var uuidRegex = regexp.MustCompile(
-	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`,
+	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\.json$`,
 )
 
 type (
-	WriteJSONDoneMsg struct {
+	WriteTaskJSONDoneMsg struct {
 		Task Task
 		Kind string
 	}
-	WriteJSONErrorMsg  struct{ Err error }
-	TaskDeleteDoneMsg  struct{}
-	TaskDeleteErrorMsg struct{ Err error }
+	WriteTaskJSONErrorMsg struct{ Err error }
+	TaskDeleteDoneMsg     struct{}
+	TaskDeleteErrorMsg    struct{ Err error }
 )
 
-func (e WriteJSONErrorMsg) Error() string  { return e.Err.Error() }
-func (e TaskDeleteErrorMsg) Error() string { return e.Err.Error() }
+func (e WriteTaskJSONErrorMsg) Error() string { return e.Err.Error() }
+func (e TaskDeleteErrorMsg) Error() string    { return e.Err.Error() }
 
 type Task struct {
 	TaskId          string `json:"id"`
@@ -73,9 +73,9 @@ func CompletedString(completed bool) string {
 
 // ReadTasksFromFS reads all tasks from the storage directory
 // and returns them as a slice of Task.
-func ReadTasksFromFS() []Task {
+func ReadTasksFromFS(project *Project) []Task {
 	storageDir := viper.GetString("storage.path")
-	taskFiles, err := os.ReadDir(storageDir)
+	taskFiles, err := os.ReadDir(filepath.Join(storageDir, project.Id()))
 	if err != nil {
 		panic(fmt.Errorf("fatal error reading storage directory: %w", err))
 	}
@@ -86,7 +86,7 @@ func ReadTasksFromFS() []Task {
 			continue
 		}
 
-		filePath := filepath.Join(storageDir, entry.Name())
+		filePath := filepath.Join(storageDir, project.Id(), entry.Name())
 		fileContent, err := os.ReadFile(filePath)
 		if err != nil {
 			panic(err)
@@ -118,21 +118,21 @@ func MarshalTask(uuid, title, description, priority string, completed bool) []by
 	return json
 }
 
-func WriteJson(json []byte, task Task, kind string) tea.Cmd {
+func WriteTaskJson(json []byte, project Project, task Task, kind string) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), task.Id())
+		file := filepath.Join(viper.GetString("storage.path"), project.Id(), task.Id()+".json")
 
 		if err := os.WriteFile(file, json, 0600); err != nil {
-			return WriteJSONErrorMsg{err}
+			return WriteTaskJSONErrorMsg{err}
 		}
 
-		return WriteJSONDoneMsg{Task: task, Kind: kind}
+		return WriteTaskJSONDoneMsg{Task: task, Kind: kind}
 	}
 }
 
-func DeleteTaskFromFS(task *Task) tea.Cmd {
+func DeleteTaskFromFS(project Project, task *Task) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), task.Id())
+		file := filepath.Join(viper.GetString("storage.path"), project.Id(), task.Id()+".json")
 
 		err := os.Remove(file)
 		if err != nil {

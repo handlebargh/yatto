@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/git"
@@ -127,6 +127,8 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 type taskListModel struct {
 	list             list.Model
+	project          *items.Project
+	projectModel     *projectListModel
 	selected         bool
 	selection        *items.Task
 	keys             *taskListKeyMap
@@ -139,28 +141,34 @@ type taskListModel struct {
 	width, height    int
 
 	// Glamour renderer
-	renderer *glamour.TermRenderer
 	markdown string
 	rendered string
 }
 
-func InitialTaskListModel() taskListModel {
+func newTaskListModel(project *items.Project, projectModel *projectListModel) taskListModel {
 	listKeys := newTaskListKeyMap()
 
-	tasks := items.ReadTasksFromFS()
+	tasks := items.ReadTasksFromFS(project)
 	items := []list.Item{}
 
 	for _, task := range tasks {
 		items = append(items, &task)
 	}
 
+	color := getColorCode(project.Color())
+
+	titleStyleTasks := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#000000")).
+		Background(color).
+		Padding(0, 1)
+
 	itemList := list.New(items, customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("task", "tasks")
-	itemList.Title = "YATTO"
-	itemList.Styles.Title = titleStyle
+	itemList.Title = project.Title()
+	itemList.Styles.Title = titleStyleTasks
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
@@ -173,25 +181,18 @@ func InitialTaskListModel() taskListModel {
 		}
 	}
 
-	renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
-	if err != nil {
-		panic(err)
-	}
-
 	return taskListModel{
-		list:     itemList,
-		selected: false,
-		keys:     listKeys,
-		progress: progress.New(progress.WithGradient("#FFA336", "#02BF87")),
-		renderer: renderer,
+		list:         itemList,
+		project:      project,
+		projectModel: projectModel,
+		selected:     false,
+		keys:         listKeys,
+		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
 	}
 }
 
 func (m taskListModel) Init() tea.Cmd {
-	return tea.Batch(
-		tickCmd(),
-		git.InitCmd(),
-	)
+	return tickCmd()
 }
 
 func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -223,14 +224,6 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reset the progress bar.
 		return m, m.progress.SetPercent(0.0)
 
-	case git.GitInitDoneMsg:
-		return m, nil
-
-	case git.GitInitErrorMsg:
-		m.mode = 2
-		m.err = msg.Err
-		return m, nil
-
 	case git.GitCommitDoneMsg:
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
@@ -241,7 +234,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
 
-	case items.WriteJSONDoneMsg:
+	case items.WriteTaskJSONDoneMsg:
 		switch msg.Kind {
 		case "create":
 			m.list.InsertItem(0, &msg.Task)
@@ -264,7 +257,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-	case items.WriteJSONErrorMsg:
+	case items.WriteTaskJSONErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
@@ -294,8 +287,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds,
 						m.progress.SetPercent(0.10),
 						tickCmd(),
-						items.DeleteTaskFromFS(m.list.SelectedItem().(*items.Task)),
-						git.CommitCmd(m.list.SelectedItem().(*items.Task).Id(),
+						items.DeleteTaskFromFS(*m.project, m.list.SelectedItem().(*items.Task)),
+						git.CommitCmd(filepath.Join(m.project.Id(), m.list.SelectedItem().(*items.Task).Id()+".json"),
 							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
 					)
 					m.status = ""
@@ -326,7 +319,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				return m, tea.Quit
+				return m.projectModel, nil
 			}
 
 			switch {
@@ -344,7 +337,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.selected = true
 					m.selection = m.list.SelectedItem().(*items.Task)
 					m.markdown = items.TaskToMarkdown(m.selection)
-					m.rendered, err = m.renderer.Render(m.markdown)
+					m.rendered, err = m.projectModel.renderer.Render(m.markdown)
 					if err != nil {
 						m.mode = 2
 						m.err = err
@@ -368,16 +361,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
 					if t.Completed() {
 						cmds = append(cmds,
-							items.WriteJson(json, *t, "complete"),
-							git.CommitCmd(t.Id(), "reopen: "+t.Title()),
+							items.WriteTaskJson(json, *m.project, *t, "complete"),
+							git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "complete: "+t.Title()),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
 					}
 
 					cmds = append(cmds,
-						items.WriteJson(json, *t, "reopen"),
-						git.CommitCmd(t.Id(), "complete: "+t.Title()),
+						items.WriteTaskJson(json, *m.project, *t, "reopen"),
+						git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "reopen: "+t.Title()),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
