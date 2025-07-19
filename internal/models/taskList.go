@@ -107,7 +107,8 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	if taskItem.Completed() {
 		titleStyle = titleStyle.Strikethrough(true).
-			Foreground(green)
+			BorderForeground(green)
+		priorityStyle = priorityStyle.BorderForeground(green)
 	}
 
 	if index == m.GlobalIndex() {
@@ -122,10 +123,10 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		priorityStyle = priorityStyle.MarginLeft(1)
 	}
 
-	line := titleStyle.Render(taskItem.Title()) + "\n" +
+	row := titleStyle.Render(taskItem.Title()) + "\n" +
 		priorityStyle.Render("Priority: ") + priorityValueStyle.Render(taskItem.Priority())
 
-	_, err := fmt.Fprint(w, line)
+	_, err := fmt.Fprint(w, row)
 	if err != nil {
 		panic(err)
 	}

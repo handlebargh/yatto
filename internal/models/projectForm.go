@@ -73,8 +73,8 @@ func newProjectFormModel(p *items.Project, listModel *projectListModel, edit boo
 					if len(strings.TrimSpace(str)) < 1 {
 						return errors.New("title must not be empty")
 					}
-					if len(str) > 64 {
-						return errors.New("title is too long (only 64 character allowed)")
+					if len(str) > 32 {
+						return errors.New("title is too long (only 32 character allowed)")
 					}
 					return nil
 				}),

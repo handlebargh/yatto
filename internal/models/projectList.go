@@ -67,24 +67,49 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	color := getColorCode(projectItem.Color())
 
 	// Base styles.
-	titleStyle := lipgloss.NewStyle().
+	listItemStyle := lipgloss.NewStyle().
 		Foreground(color).
 		Padding(0, 1).
-		Width(64)
+		Width(32)
+
+	listItemInfoStyle := lipgloss.NewStyle().
+		Align(lipgloss.Right).
+		Width(m.Width() / 2)
 
 	if index == m.GlobalIndex() {
-		titleStyle = titleStyle.
+		listItemStyle = listItemStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(color).
 			MarginLeft(0)
 	} else {
-		titleStyle = titleStyle.MarginLeft(1)
+		listItemStyle = listItemStyle.MarginLeft(1)
 	}
 
-	line := titleStyle.Render(projectItem.Title() + "\n" +
+	left := listItemStyle.Render(projectItem.Title() + "\n" +
 		projectItem.Description())
 
-	_, err := fmt.Fprint(w, line)
+	numTasks, err := items.NumOfTasksInProject(*projectItem)
+	if err != nil {
+		m.NewStatusMessage(
+			textStyleRed(fmt.Sprintf("Error reading number of tasks for project %s", projectItem.Title())),
+		)
+	}
+
+	numCompletedTasks, err := items.NumOfCompletedTasksInProject(*projectItem)
+	if err != nil {
+		m.NewStatusMessage(
+			textStyleRed(fmt.Sprintf("Error reading number of completed tasks for project %s", projectItem.Title())),
+		)
+	}
+
+	right := listItemInfoStyle.Render(fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks))
+
+	row := lipgloss.JoinHorizontal(lipgloss.Top,
+		lipgloss.NewStyle().Width(m.Width()/2).Render(left),
+		right,
+	)
+
+	_, err = fmt.Fprint(w, row)
 	if err != nil {
 		panic(err)
 	}

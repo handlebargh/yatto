@@ -116,3 +116,60 @@ func WriteProjectJson(json []byte, project Project, kind string) tea.Cmd {
 		return WriteProjectJSONDoneMsg{Project: project, Kind: kind}
 	}
 }
+
+// NumOfTasksInProject calculates the total of tasks
+// for a given project.
+func NumOfTasksInProject(project Project) (int, error) {
+	entries, err := os.ReadDir(filepath.Join(
+		viper.GetString("storage.path"), project.Id()))
+	if err != nil {
+		return 0, err
+	}
+
+	tasks := 0
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Name() == "project.json" {
+			continue
+		}
+
+		tasks++
+	}
+
+	return tasks, nil
+}
+
+// NumOfCompletedTasksInProject calculates the number of tasks
+// not yet completed for a given project.
+func NumOfCompletedTasksInProject(project Project) (int, error) {
+	dir := filepath.Join(viper.GetString("storage.path"), project.Id())
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0, err
+	}
+
+	completedTasks := 0
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Name() == "project.json" {
+			continue
+		}
+
+		filePath := filepath.Join(dir, entry.Name())
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			continue
+		}
+
+		var task struct {
+			Completed bool `json:"completed"`
+		}
+		if err := json.Unmarshal(data, &task); err != nil {
+			continue
+		}
+
+		if task.Completed {
+			completedTasks++
+		}
+	}
+
+	return completedTasks, nil
+}
