@@ -324,7 +324,7 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.editProject):
 				if m.list.SelectedItem() != nil {
-					// Switch to InputModel for editing.
+					// Switch to formModel for editing.
 					formModel := newProjectFormModel(m.list.SelectedItem().(*items.Project), &m, true)
 					return formModel, tea.WindowSize()
 				}
