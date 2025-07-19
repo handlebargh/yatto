@@ -24,15 +24,21 @@ var (
 	indigo = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
 	green  = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
 	orange = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
+	blue   = lipgloss.AdaptiveColor{Light: "#1e90ff", Dark: "#1e90ff"}
 	black  = lipgloss.Color("#000000")
 )
 
 var (
 	appStyle = lipgloss.NewStyle().Padding(1, 2)
 
-	titleStyle = lipgloss.NewStyle().
+	titleStyleProjects = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#000000")).
+				Background(green).
+				Padding(0, 1)
+
+	titleStyleTasks = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#000000")).
-			Background(green).
+			Background(blue).
 			Padding(0, 1)
 
 	textStyleGreen = lipgloss.NewStyle().

@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/git"
@@ -76,7 +77,8 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		titleStyle = titleStyle.MarginLeft(1)
 	}
 
-	line := titleStyle.Render(projectItem.Title())
+	line := titleStyle.Render(projectItem.Title() + "\n" +
+		projectItem.Description())
 
 	_, err := fmt.Fprint(w, line)
 	if err != nil {
@@ -87,7 +89,6 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 type projectListModel struct {
 	list             list.Model
 	selected         bool
-	selection        *items.Project
 	keys             *projectListKeyMap
 	mode             mode
 	err              error
@@ -96,6 +97,8 @@ type projectListModel struct {
 	waitingAfterDone bool
 	status           string
 	width, height    int
+
+	renderer *glamour.TermRenderer
 }
 
 func InitialProjectListModel() projectListModel {
@@ -114,7 +117,7 @@ func InitialProjectListModel() projectListModel {
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("project", "projects")
 	itemList.Title = "Projects"
-	itemList.Styles.Title = titleStyle
+	itemList.Styles.Title = titleStyleProjects
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
@@ -125,9 +128,15 @@ func InitialProjectListModel() projectListModel {
 		}
 	}
 
+	renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+	if err != nil {
+		panic(err)
+	}
+
 	return projectListModel{
 		list:     itemList,
 		keys:     listKeys,
+		renderer: renderer,
 		progress: progress.New(progress.WithGradient("#FFA336", "#02BF87")),
 	}
 }

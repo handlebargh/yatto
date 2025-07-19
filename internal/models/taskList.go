@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/git"
@@ -142,7 +141,6 @@ type taskListModel struct {
 	width, height    int
 
 	// Glamour renderer
-	renderer *glamour.TermRenderer
 	markdown string
 	rendered string
 }
@@ -163,7 +161,7 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("task", "tasks")
 	itemList.Title = project.Title()
-	itemList.Styles.Title = titleStyle
+	itemList.Styles.Title = titleStyleTasks
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
@@ -176,11 +174,6 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 		}
 	}
 
-	renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
-	if err != nil {
-		panic(err)
-	}
-
 	return taskListModel{
 		list:         itemList,
 		project:      project,
@@ -188,7 +181,6 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 		selected:     false,
 		keys:         listKeys,
 		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
-		renderer:     renderer,
 	}
 }
 
@@ -338,7 +330,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.selected = true
 					m.selection = m.list.SelectedItem().(*items.Task)
 					m.markdown = items.TaskToMarkdown(m.selection)
-					m.rendered, err = m.renderer.Render(m.markdown)
+					m.rendered, err = m.projectModel.renderer.Render(m.markdown)
 					if err != nil {
 						m.mode = 2
 						m.err = err
