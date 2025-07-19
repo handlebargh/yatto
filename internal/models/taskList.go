@@ -89,12 +89,18 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	switch taskItem.Priority() {
 	case "low":
+		titleStyle = titleStyle.BorderForeground(indigo)
+		priorityStyle = priorityStyle.BorderForeground(indigo)
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(indigo).Background(indigo)
 	case "medium":
+		titleStyle = titleStyle.BorderForeground(orange)
+		priorityStyle = priorityStyle.BorderForeground(orange)
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(orange).Background(orange)
 	case "high":
+		titleStyle = titleStyle.BorderForeground(red)
+		priorityStyle = priorityStyle.BorderForeground(red)
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(red).Background(red)
 	}
