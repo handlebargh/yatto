@@ -155,6 +155,13 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 		items = append(items, &task)
 	}
 
+	color := getColorCode(project.Color())
+
+	titleStyleTasks := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#000000")).
+		Background(color).
+		Padding(0, 1)
+
 	itemList := list.New(items, customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)

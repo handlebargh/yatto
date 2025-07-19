@@ -36,11 +36,6 @@ var (
 				Background(green).
 				Padding(0, 1)
 
-	titleStyleTasks = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#000000")).
-			Background(blue).
-			Padding(0, 1)
-
 	textStyleGreen = lipgloss.NewStyle().
 			Foreground(green).
 			Render
@@ -92,6 +87,23 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 	s.Help = lg.NewStyle().
 		Foreground(lipgloss.Color("240"))
 	return &s
+}
+
+func getColorCode(color string) lipgloss.AdaptiveColor {
+	switch color {
+	case "green":
+		return green
+	case "orange":
+		return orange
+	case "red":
+		return red
+	case "blue":
+		return blue
+	case "indigo":
+		return indigo
+	default:
+		return blue
+	}
 }
 
 func tickCmd() tea.Cmd {

@@ -27,6 +27,7 @@ type Project struct {
 	ProjectId          string `json:"id"`
 	ProjectTitle       string `json:"title"`
 	ProjectDescription string `json:"description"`
+	ProjectColor       string `json:"color"`
 }
 
 func (p Project) Id() string                         { return p.ProjectId }
@@ -35,6 +36,8 @@ func (p Project) Title() string                      { return p.ProjectTitle }
 func (p *Project) SetTitle(title string)             { p.ProjectTitle = title }
 func (p Project) Description() string                { return p.ProjectDescription }
 func (p *Project) SetDescription(description string) { p.ProjectDescription = description }
+func (p Project) Color() string                      { return p.ProjectColor }
+func (p *Project) SetColor(color string)             { p.ProjectColor = color }
 func (p Project) FilterValue() string                { return p.ProjectTitle }
 
 func ReadProjectsFromFS() []Project {
@@ -80,11 +83,12 @@ func DeleteProjectFromFS(project *Project) tea.Cmd {
 	}
 }
 
-func MarshalProject(uuid, title, description string) []byte {
+func MarshalProject(uuid, title, description, color string) []byte {
 	var project Project
 	project.SetId(uuid)
 	project.SetTitle(title)
 	project.SetDescription(description)
+	project.SetColor(color)
 
 	json, err := json.MarshalIndent(project, "", "\t")
 	if err != nil {

@@ -64,8 +64,11 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		return
 	}
 
+	color := getColorCode(projectItem.Color())
+
 	// Base styles.
 	titleStyle := lipgloss.NewStyle().
+		Foreground(color).
 		Padding(0, 1).
 		Width(64)
 

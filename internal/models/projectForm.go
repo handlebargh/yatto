@@ -29,6 +29,7 @@ type projectFormVars struct {
 	confirm            bool
 	projectTitle       string
 	projectDescription string
+	projectColor       string
 }
 
 func newProjectFormModel(p *items.Project, listModel *projectListModel, edit bool) projectFormModel {
@@ -36,6 +37,7 @@ func newProjectFormModel(p *items.Project, listModel *projectListModel, edit boo
 		confirm:            false,
 		projectTitle:       p.Title(),
 		projectDescription: p.Description(),
+		projectColor:       p.Color(),
 	}
 
 	m := projectFormModel{}
@@ -56,9 +58,10 @@ func newProjectFormModel(p *items.Project, listModel *projectListModel, edit boo
 	m.form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
-				Key("priority").
-				Options(huh.NewOptions("low", "medium", "high")...).
-				Title("Select priority"),
+				Key("color").
+				Options(huh.NewOptions("green", "orange", "red", "blue", "indigo")...).
+				Title("Select a color").
+				Value(&m.vars.projectColor),
 
 			huh.NewInput().
 				Key("title").
@@ -144,11 +147,13 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.vars.confirm {
 			m.project.SetTitle(m.vars.projectTitle)
 			m.project.SetDescription(m.vars.projectDescription)
+			m.project.SetColor(m.vars.projectColor)
 
 			json := items.MarshalProject(
 				m.project.Id(),
 				m.project.Title(),
 				m.project.Description(),
+				m.project.Color(),
 			)
 
 			if storage.FileExists(m.project.Id()) {
