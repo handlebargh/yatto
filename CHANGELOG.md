@@ -1,3 +1,20 @@
+## v0.7.0 (2025-07-19)
+
+### Feat
+
+- show some project information in initial view
+- allow users to choose project colors
+- separate tasks in projects
+
+### Fix
+
+- set the right item object
+- initialize renderer at startup and set list title colors
+
+### Refactor
+
+- set file extension on task files
+
 ## v0.6.2 (2025-07-16)
 
 ### Fix
