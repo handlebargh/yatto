@@ -176,7 +176,8 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
 					items.WriteTaskJson(json, *m.listModel.project, *m.task, "create"),
-					git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"), "create: "+m.task.Title()),
+					git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
+						"create: "+m.task.Title()),
 				)
 				m.listModel.status = ""
 			}

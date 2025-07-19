@@ -392,7 +392,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.editItem):
 				if m.list.SelectedItem() != nil {
-					// Switch to InputModel for editing.
+					// Switch to formModel for editing.
 					formModel := newTaskFormModel(m.list.SelectedItem().(*items.Task), &m, true)
 					return formModel, tea.WindowSize()
 				}
