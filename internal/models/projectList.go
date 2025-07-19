@@ -341,7 +341,7 @@ func (m projectListModel) View() string {
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
-		selected := m.list.SelectedItem().(*items.Task)
+		selected := m.list.SelectedItem().(*items.Project)
 
 		return centeredStyle.Render(
 			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title()) +
