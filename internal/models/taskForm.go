@@ -159,7 +159,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.task.Priority(),
 				m.task.Completed())
 
-			if storage.FileExists(m.task.Id()) {
+			if storage.FileExists(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")) {
 				cmds = append(
 					cmds,
 					m.listModel.progress.SetPercent(0.10),
