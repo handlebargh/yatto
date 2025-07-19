@@ -1,3 +1,14 @@
+## v0.7.1 (2025-07-19)
+
+### Fix
+
+- supply full path to task file to recognize updates
+- ensure err is nil if project directory already exists
+
+### Refactor
+
+- set form confirm to true by default
+
 ## v0.7.0 (2025-07-19)
 
 ### Feat
