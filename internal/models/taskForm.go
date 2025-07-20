@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -30,6 +31,7 @@ type taskFormVars struct {
 	taskTitle       string
 	taskDescription string
 	taskPriority    string
+	taskDueDate     string
 	taskCompleted   bool
 }
 
@@ -39,6 +41,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		taskTitle:       t.Title(),
 		taskDescription: t.Description(),
 		taskPriority:    t.Priority(),
+		taskDueDate:     t.DueDateToString(),
 		taskCompleted:   t.Completed(),
 	}
 
@@ -85,6 +88,29 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Key("description").
 				Title("Enter a description:").
 				Value(&m.vars.taskDescription),
+
+			huh.NewInput().
+				Key("dueDate").
+				Title("Enter a due date:").
+				Value(&m.vars.taskDueDate).
+				Description("Format: YYYY-MM-DD hh-mm-ss").
+				Validate(func(str string) error {
+					// Ok if no date is set.
+					if str == "" {
+						return nil
+					}
+
+					t, err := time.Parse(items.DueDateLayout, str)
+					if err != nil {
+						return errors.New("invalid date format")
+					}
+
+					if t.Before(time.Now()) {
+						return errors.New("date must not be in the past")
+					}
+
+					return nil
+				}),
 
 			huh.NewConfirm().
 				Title(confirmQuestion).
@@ -152,11 +178,24 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.task.SetPriority(m.vars.taskPriority)
 			m.task.SetCompleted(m.vars.taskCompleted)
 
+			if m.vars.taskDueDate != "" {
+				date, err := time.Parse(items.DueDateLayout, m.vars.taskDueDate)
+				if err != nil {
+					// TODO: show an error message
+					return m, nil
+				}
+
+				m.task.SetDueDate(&date)
+			} else {
+				m.task.SetDueDate(nil)
+			}
+
 			json := items.MarshalTask(
 				m.task.Id(),
 				m.task.Title(),
 				m.task.Description(),
 				m.task.Priority(),
+				m.task.DueDate(),
 				m.task.Completed())
 
 			if storage.FileExists(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")) {

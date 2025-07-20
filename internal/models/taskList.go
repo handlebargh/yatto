@@ -361,6 +361,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						t.Title(),
 						t.Description(),
 						t.Priority(),
+						t.DueDate(),
 						!t.Completed())
 
 					m.list.SelectedItem().(*items.Task).SetCompleted(!m.list.SelectedItem().(*items.Task).Completed())

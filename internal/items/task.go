@@ -7,10 +7,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/viper"
 )
+
+const DueDateLayout = "2006-01-02 15:04:05"
 
 var uuidRegex = regexp.MustCompile(
 	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\.json$`,
@@ -30,11 +33,12 @@ func (e WriteTaskJSONErrorMsg) Error() string { return e.Err.Error() }
 func (e TaskDeleteErrorMsg) Error() string    { return e.Err.Error() }
 
 type Task struct {
-	TaskId          string `json:"id"`
-	TaskTitle       string `json:"title"`
-	TaskDescription string `json:"description,omitempty"`
-	TaskPriority    string `json:"priority"`
-	TaskCompleted   bool   `json:"completed"`
+	TaskId          string     `json:"id"`
+	TaskTitle       string     `json:"title"`
+	TaskDescription string     `json:"description,omitempty"`
+	TaskPriority    string     `json:"priority"`
+	TaskDueDate     *time.Time `json:"due_date,omitempty"`
+	TaskCompleted   bool       `json:"completed"`
 }
 
 func (t Task) Id() string                         { return t.TaskId }
@@ -45,9 +49,20 @@ func (t Task) Description() string                { return t.TaskDescription }
 func (t *Task) SetDescription(description string) { t.TaskDescription = description }
 func (t Task) Priority() string                   { return t.TaskPriority }
 func (t *Task) SetPriority(priority string)       { t.TaskPriority = priority }
+func (t Task) DueDate() *time.Time                { return t.TaskDueDate }
+func (t *Task) SetDueDate(dueDate *time.Time)     { t.TaskDueDate = dueDate }
 func (t Task) Completed() bool                    { return t.TaskCompleted }
 func (t *Task) SetCompleted(completed bool)       { t.TaskCompleted = completed }
 func (t Task) FilterValue() string                { return t.TaskTitle }
+
+// Converts a time.Time object to string.
+func (t Task) DueDateToString() string {
+	if t.TaskDueDate != nil {
+		return t.DueDate().Format(DueDateLayout)
+	}
+
+	return ""
+}
 
 // Function to convert priority to a numerical value for sorting.
 func PriorityValue(priority string) int {
@@ -102,12 +117,13 @@ func ReadTasksFromFS(project *Project) []Task {
 	return tasks
 }
 
-func MarshalTask(uuid, title, description, priority string, completed bool) []byte {
+func MarshalTask(uuid, title, description, priority string, dueDate *time.Time, completed bool) []byte {
 	var task Task
 	task.SetId(uuid)
 	task.SetTitle(title)
 	task.SetDescription(description)
 	task.SetPriority(priority)
+	task.SetDueDate(dueDate)
 	task.SetCompleted(completed)
 
 	json, err := json.MarshalIndent(task, "", "\t")
@@ -150,6 +166,11 @@ func TaskToMarkdown(task *Task) string {
 
 	priority := fmt.Sprintf("## Priority\n%s\n\n", strings.ToUpper(task.Priority()))
 
+	dueDate := ""
+	if task.DueDate() != nil {
+		dueDate = fmt.Sprintf("## Due at\n%s\n\n", task.DueDate())
+	}
+
 	completed := "## Done\n❌ No\n\n"
 	if task.Completed() {
 		completed = "## Done\n✅ Yes\n\n"
@@ -157,5 +178,5 @@ func TaskToMarkdown(task *Task) string {
 
 	id := fmt.Sprintf("## ID\n%s", task.Id())
 
-	return title + description + priority + completed + id
+	return title + description + priority + dueDate + completed + id
 }
