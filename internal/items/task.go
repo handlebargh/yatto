@@ -65,8 +65,8 @@ func (t Task) DueDateToString() string {
 }
 
 // Function to convert priority to a numerical value for sorting.
-func PriorityValue(priority string) int {
-	switch priority {
+func (t Task) PriorityValue() int {
+	switch t.Priority() {
 	case "high":
 		return 2
 	case "medium":

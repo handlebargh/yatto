@@ -474,8 +474,7 @@ func sortTasksByPriority(m *list.Model) {
 
 	// Sort tasks by priority
 	sort.Slice(tasks, func(i, j int) bool {
-		return items.PriorityValue(tasks[i].Priority()) >
-			items.PriorityValue(tasks[j].Priority())
+		return tasks[i].PriorityValue() > tasks[j].PriorityValue()
 	})
 
 	// Convert back to []list.Item
