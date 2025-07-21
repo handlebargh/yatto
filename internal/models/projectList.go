@@ -70,11 +70,10 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	listItemStyle := lipgloss.NewStyle().
 		Foreground(color).
 		Padding(0, 1).
-		Width(32)
+		Width(60)
 
 	listItemInfoStyle := lipgloss.NewStyle().
-		Align(lipgloss.Right).
-		Width(m.Width() / 2)
+		Align(lipgloss.Right)
 
 	if index == m.GlobalIndex() {
 		listItemStyle = listItemStyle.
@@ -104,17 +103,17 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		}
 	}
 
-	taskTotalCompleteMessage := fmt.Sprintf("| %d/%d tasks completed", numCompletedTasks, numTasks)
+	taskTotalCompleteMessage := fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
 	if numCompletedTasks == numTasks {
 		taskTotalCompleteMessage = textStyleGreen(taskTotalCompleteMessage)
 	}
 
 	right := listItemInfoStyle.Render(
-		fmt.Sprintf("%s %s", taskDueMessage, taskTotalCompleteMessage),
+		fmt.Sprintf("%s\n%s", taskTotalCompleteMessage, taskDueMessage),
 	)
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Width(m.Width()/2).Render(left),
+		lipgloss.NewStyle().Render(left),
 		right,
 	)
 

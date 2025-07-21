@@ -73,13 +73,13 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Title("Enter a title:").
 				Value(&m.vars.taskTitle).
 				Description("Give it a short but concise title."+"\n"+
-					"(max 64 characters)").
+					"(max 60 characters)").
 				Validate(func(str string) error {
 					if len(strings.TrimSpace(str)) < 1 {
 						return errors.New("title must not be empty")
 					}
-					if len(str) > 64 {
-						return errors.New("title is too long (only 64 character allowed)")
+					if len(str) > 60 {
+						return errors.New("title is too long (only 60 character allowed)")
 					}
 					return nil
 				}),

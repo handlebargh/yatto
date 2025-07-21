@@ -83,7 +83,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	// Base styles.
 	titleStyle := lipgloss.NewStyle().
 		Padding(0, 1).
-		Width(64)
+		Width(60)
 
 	priorityStyle := lipgloss.NewStyle().
 		Padding(0, 1)
@@ -128,8 +128,18 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		priorityStyle = priorityStyle.MarginLeft(1)
 	}
 
-	row := titleStyle.Render(taskItem.Title()) + "\n" +
+	left := titleStyle.Render(taskItem.Title()) + "\n" +
 		priorityStyle.Render("Priority: ") + priorityValueStyle.Render(taskItem.Priority())
+
+	var right string
+	if items.IsToday(taskItem.DueDate()) && !taskItem.Completed() {
+		right = textStyleRed("Due today")
+	}
+
+	row := lipgloss.JoinHorizontal(lipgloss.Top,
+		lipgloss.NewStyle().Render(left),
+		right,
+	)
 
 	_, err := fmt.Fprint(w, row)
 	if err != nil {

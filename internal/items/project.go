@@ -148,18 +148,11 @@ func (p Project) NumOfTasks() (int, int, int, error) {
 		if t.Completed {
 			completed++
 		} else {
-			if isToday(*t.DueDate) {
+			if IsToday(t.DueDate) {
 				due++
 			}
 		}
 	}
 
 	return total, completed, due, nil
-}
-
-func isToday(t time.Time) bool {
-	now := time.Now()
-	y1, m1, d1 := t.Date()
-	y2, m2, d2 := now.Date()
-	return y1 == y2 && m1 == m2 && d1 == d2
 }
