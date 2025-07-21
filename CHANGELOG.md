@@ -1,3 +1,21 @@
+## v0.8.0 (2025-07-21)
+
+### Feat
+
+- sort tasks by due date
+- add due dates to tasks
+
+### Fix
+
+- sort tasks with no due date last
+- resolve issues with project and task status messages
+
+### Refactor
+
+- add tasks due status message
+- use receiver functions where possible
+- make PriorityValue a receiver function
+
 ## v0.7.1 (2025-07-19)
 
 ### Fix
