@@ -507,6 +507,14 @@ func sortTasksByKey(m *list.Model, key string) {
 		})
 	case "dueDate":
 		sort.Slice(tasks, func(i, j int) bool {
+			if tasks[i].DueDate() == nil {
+				return false
+			}
+
+			if tasks[j].DueDate() == nil {
+				return true
+			}
+
 			return tasks[i].DueDate().Before(*tasks[j].DueDate())
 		})
 	default:
