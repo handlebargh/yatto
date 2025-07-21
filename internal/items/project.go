@@ -26,7 +26,7 @@ func (e ProjectDeleteErrorMsg) Error() string    { return e.Err.Error() }
 type Project struct {
 	ProjectId          string `json:"id"`
 	ProjectTitle       string `json:"title"`
-	ProjectDescription string `json:"description"`
+	ProjectDescription string `json:"description,omitempty"`
 	ProjectColor       string `json:"color"`
 }
 
@@ -40,39 +40,40 @@ func (p Project) Color() string                      { return p.ProjectColor }
 func (p *Project) SetColor(color string)             { p.ProjectColor = color }
 func (p Project) FilterValue() string                { return p.ProjectTitle }
 
-func ReadProjectsFromFS() []Project {
+// ReadTasksFromFS reads all tasks from the storage directory
+// and returns them as a slice of Task.
+func (p *Project) ReadTasksFromFS() []Task {
 	storageDir := viper.GetString("storage.path")
-	entries, err := os.ReadDir(storageDir)
+	taskFiles, err := os.ReadDir(filepath.Join(storageDir, p.Id()))
 	if err != nil {
 		panic(fmt.Errorf("fatal error reading storage directory: %w", err))
 	}
 
-	var projects []Project
-	for _, entry := range entries {
-		if !entry.IsDir() || entry.Name() == ".git" {
+	var tasks []Task
+	for _, entry := range taskFiles {
+		if entry.IsDir() || !uuidRegex.MatchString(entry.Name()) {
 			continue
 		}
 
-		dirPath := filepath.Join(storageDir, entry.Name())
-
-		projectFile, err := os.ReadFile(filepath.Join(dirPath, "project.json"))
+		filePath := filepath.Join(storageDir, p.Id(), entry.Name())
+		fileContent, err := os.ReadFile(filePath)
 		if err != nil {
 			panic(err)
 		}
 
-		var project Project
-		if err := json.Unmarshal(projectFile, &project); err != nil {
+		var task Task
+		if err := json.Unmarshal(fileContent, &task); err != nil {
 			panic(err)
 		}
-		projects = append(projects, project)
+		tasks = append(tasks, task)
 	}
 
-	return projects
+	return tasks
 }
 
-func DeleteProjectFromFS(project *Project) tea.Cmd {
+func (p *Project) DeleteProjectFromFS() tea.Cmd {
 	return func() tea.Msg {
-		dir := filepath.Join(viper.GetString("storage.path"), project.Id())
+		dir := filepath.Join(viper.GetString("storage.path"), p.Id())
 
 		err := os.RemoveAll(dir)
 		if err != nil {
@@ -83,14 +84,8 @@ func DeleteProjectFromFS(project *Project) tea.Cmd {
 	}
 }
 
-func MarshalProject(uuid, title, description, color string) []byte {
-	var project Project
-	project.SetId(uuid)
-	project.SetTitle(title)
-	project.SetDescription(description)
-	project.SetColor(color)
-
-	json, err := json.MarshalIndent(project, "", "\t")
+func (p Project) MarshalProject() []byte {
+	json, err := json.MarshalIndent(p, "", "\t")
 	if err != nil {
 		panic(err)
 	}
@@ -98,30 +93,30 @@ func MarshalProject(uuid, title, description, color string) []byte {
 	return json
 }
 
-func WriteProjectJson(json []byte, project Project, kind string) tea.Cmd {
+func (p Project) WriteProjectJson(json []byte, kind string) tea.Cmd {
 	return func() tea.Msg {
 		storageDir := viper.GetString("storage.path")
 
 		// ensure project directory
-		dir := filepath.Join(storageDir, project.Id())
+		dir := filepath.Join(storageDir, p.Id())
 		if err := os.MkdirAll(dir, 0700); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
 
-		file := filepath.Join(storageDir, project.Id(), "project.json")
+		file := filepath.Join(storageDir, p.Id(), "project.json")
 		if err := os.WriteFile(file, json, 0600); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
 
-		return WriteProjectJSONDoneMsg{Project: project, Kind: kind}
+		return WriteProjectJSONDoneMsg{Project: p, Kind: kind}
 	}
 }
 
 // NumOfTasksInProject calculates the total of tasks
 // for a given project.
-func NumOfTasksInProject(project Project) (int, error) {
+func (p Project) NumTotalTasks() (int, error) {
 	entries, err := os.ReadDir(filepath.Join(
-		viper.GetString("storage.path"), project.Id()))
+		viper.GetString("storage.path"), p.Id()))
 	if err != nil {
 		return 0, err
 	}
@@ -140,8 +135,8 @@ func NumOfTasksInProject(project Project) (int, error) {
 
 // NumOfCompletedTasksInProject calculates the number of tasks
 // not yet completed for a given project.
-func NumOfCompletedTasksInProject(project Project) (int, error) {
-	dir := filepath.Join(viper.GetString("storage.path"), project.Id())
+func (p Project) NumCompletedTasks() (int, error) {
+	dir := filepath.Join(viper.GetString("storage.path"), p.Id())
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return 0, err
@@ -159,14 +154,14 @@ func NumOfCompletedTasksInProject(project Project) (int, error) {
 			continue
 		}
 
-		var task struct {
+		var t struct {
 			Completed bool `json:"completed"`
 		}
-		if err := json.Unmarshal(data, &task); err != nil {
+		if err := json.Unmarshal(data, &t); err != nil {
 			continue
 		}
 
-		if task.Completed {
+		if t.Completed {
 			completedTasks++
 		}
 	}

@@ -149,18 +149,13 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.project.SetDescription(m.vars.projectDescription)
 			m.project.SetColor(m.vars.projectColor)
 
-			json := items.MarshalProject(
-				m.project.Id(),
-				m.project.Title(),
-				m.project.Description(),
-				m.project.Color(),
-			)
+			json := m.project.MarshalProject()
 
 			if storage.FileExists(m.project.Id()) {
 				cmds = append(cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
-					items.WriteProjectJson(json, *m.project, "update"),
+					m.project.WriteProjectJson(json, "update"),
 					git.CommitCmd(filepath.Join(m.project.Id(), "project.json"), "update: "+m.project.Title()),
 				)
 				m.listModel.status = ""
@@ -168,7 +163,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
-					items.WriteProjectJson(json, *m.project, "create"),
+					m.project.WriteProjectJson(json, "create"),
 					git.CommitCmd(filepath.Join(m.project.Id(), "project.json"), "create: "+m.project.Title()),
 				)
 				m.listModel.status = ""

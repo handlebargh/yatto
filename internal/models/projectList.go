@@ -88,14 +88,14 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	left := listItemStyle.Render(projectItem.Title() + "\n" +
 		projectItem.Description())
 
-	numTasks, err := items.NumOfTasksInProject(*projectItem)
+	numTasks, err := projectItem.NumTotalTasks()
 	if err != nil {
 		m.NewStatusMessage(
 			textStyleRed(fmt.Sprintf("Error reading number of tasks for project %s", projectItem.Title())),
 		)
 	}
 
-	numCompletedTasks, err := items.NumOfCompletedTasksInProject(*projectItem)
+	numCompletedTasks, err := projectItem.NumCompletedTasks()
 	if err != nil {
 		m.NewStatusMessage(
 			textStyleRed(fmt.Sprintf("Error reading number of completed tasks for project %s", projectItem.Title())),
@@ -133,7 +133,7 @@ type projectListModel struct {
 func InitialProjectListModel() projectListModel {
 	listKeys := newProjectListKeyMap()
 
-	projects := items.ReadProjectsFromFS()
+	projects := readProjectsFromFS()
 	items := []list.Item{}
 
 	for _, project := range projects {
@@ -269,7 +269,7 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds,
 						m.progress.SetPercent(0.10),
 						tickCmd(),
-						items.DeleteProjectFromFS(m.list.SelectedItem().(*items.Project)),
+						m.list.SelectedItem().(*items.Project).DeleteProjectFromFS(),
 						git.CommitCmd(m.list.SelectedItem().(*items.Project).Id(),
 							"delete: "+m.list.SelectedItem().(*items.Project).Title()),
 					)

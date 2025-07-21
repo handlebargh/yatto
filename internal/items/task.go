@@ -78,55 +78,8 @@ func (t Task) PriorityValue() int {
 	}
 }
 
-func CompletedString(completed bool) string {
-	if completed {
-		return "done"
-	}
-
-	return "open"
-}
-
-// ReadTasksFromFS reads all tasks from the storage directory
-// and returns them as a slice of Task.
-func ReadTasksFromFS(project *Project) []Task {
-	storageDir := viper.GetString("storage.path")
-	taskFiles, err := os.ReadDir(filepath.Join(storageDir, project.Id()))
-	if err != nil {
-		panic(fmt.Errorf("fatal error reading storage directory: %w", err))
-	}
-
-	var tasks []Task
-	for _, entry := range taskFiles {
-		if entry.IsDir() || !uuidRegex.MatchString(entry.Name()) {
-			continue
-		}
-
-		filePath := filepath.Join(storageDir, project.Id(), entry.Name())
-		fileContent, err := os.ReadFile(filePath)
-		if err != nil {
-			panic(err)
-		}
-
-		var task Task
-		if err := json.Unmarshal(fileContent, &task); err != nil {
-			panic(err)
-		}
-		tasks = append(tasks, task)
-	}
-
-	return tasks
-}
-
-func MarshalTask(uuid, title, description, priority string, dueDate *time.Time, completed bool) []byte {
-	var task Task
-	task.SetId(uuid)
-	task.SetTitle(title)
-	task.SetDescription(description)
-	task.SetPriority(priority)
-	task.SetDueDate(dueDate)
-	task.SetCompleted(completed)
-
-	json, err := json.MarshalIndent(task, "", "\t")
+func (t Task) MarshalTask() []byte {
+	json, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
 		panic(err)
 	}
@@ -134,21 +87,21 @@ func MarshalTask(uuid, title, description, priority string, dueDate *time.Time, 
 	return json
 }
 
-func WriteTaskJson(json []byte, project Project, task Task, kind string) tea.Cmd {
+func (t Task) WriteTaskJson(json []byte, p Project, kind string) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), project.Id(), task.Id()+".json")
+		file := filepath.Join(viper.GetString("storage.path"), p.Id(), t.Id()+".json")
 
 		if err := os.WriteFile(file, json, 0600); err != nil {
 			return WriteTaskJSONErrorMsg{err}
 		}
 
-		return WriteTaskJSONDoneMsg{Task: task, Kind: kind}
+		return WriteTaskJSONDoneMsg{Task: t, Kind: kind}
 	}
 }
 
-func DeleteTaskFromFS(project Project, task *Task) tea.Cmd {
+func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), project.Id(), task.Id()+".json")
+		file := filepath.Join(viper.GetString("storage.path"), p.Id(), t.Id()+".json")
 
 		err := os.Remove(file)
 		if err != nil {
@@ -159,24 +112,24 @@ func DeleteTaskFromFS(project Project, task *Task) tea.Cmd {
 	}
 }
 
-func TaskToMarkdown(task *Task) string {
-	title := fmt.Sprintf("# %s\n\n", task.Title())
+func (t *Task) TaskToMarkdown() string {
+	title := fmt.Sprintf("# %s\n\n", t.Title())
 
-	description := fmt.Sprintf("## Description\n\n%s\n\n", task.Description())
+	description := fmt.Sprintf("## Description\n\n%s\n\n", t.Description())
 
-	priority := fmt.Sprintf("## Priority\n%s\n\n", strings.ToUpper(task.Priority()))
+	priority := fmt.Sprintf("## Priority\n%s\n\n", strings.ToUpper(t.Priority()))
 
 	dueDate := ""
-	if task.DueDate() != nil {
-		dueDate = fmt.Sprintf("## Due at\n%s\n\n", task.DueDate())
+	if t.DueDate() != nil {
+		dueDate = fmt.Sprintf("## Due at\n%s\n\n", t.DueDate())
 	}
 
 	completed := "## Done\n❌ No\n\n"
-	if task.Completed() {
+	if t.Completed() {
 		completed = "## Done\n✅ Yes\n\n"
 	}
 
-	id := fmt.Sprintf("## ID\n%s", task.Id())
+	id := fmt.Sprintf("## ID\n%s", t.Id())
 
 	return title + description + priority + dueDate + completed + id
 }

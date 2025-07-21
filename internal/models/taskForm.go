@@ -190,20 +190,14 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.task.SetDueDate(nil)
 			}
 
-			json := items.MarshalTask(
-				m.task.Id(),
-				m.task.Title(),
-				m.task.Description(),
-				m.task.Priority(),
-				m.task.DueDate(),
-				m.task.Completed())
+			json := m.task.MarshalTask()
 
 			if storage.FileExists(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")) {
 				cmds = append(
 					cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
-					items.WriteTaskJson(json, *m.listModel.project, *m.task, "update"),
+					m.task.WriteTaskJson(json, *m.listModel.project, "update"),
 					git.CommitCmd(
 						filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
 						"update: "+m.task.Title(),
@@ -214,7 +208,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
-					items.WriteTaskJson(json, *m.listModel.project, *m.task, "create"),
+					m.task.WriteTaskJson(json, *m.listModel.project, "create"),
 					git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
 						"create: "+m.task.Title()),
 				)
@@ -293,7 +287,7 @@ func (m taskFormModel) View() string {
 			Render(s.StatusHeader.Render("Task preview") + "\n\n" +
 				s.Title.Render(m.vars.taskTitle) + " " +
 				s.Priority.Render(m.vars.taskPriority) + " " +
-				s.Completed.Render(items.CompletedString(m.vars.taskCompleted)) + "\n\n" +
+				s.Completed.Render(completedString(m.vars.taskCompleted)) + "\n\n" +
 				m.vars.taskDescription)
 	}
 
