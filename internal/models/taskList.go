@@ -110,12 +110,6 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			BorderForeground(red).Background(red)
 	}
 
-	if taskItem.Completed() {
-		titleStyle = titleStyle.Strikethrough(true).
-			BorderForeground(green)
-		priorityStyle = priorityStyle.BorderForeground(green)
-	}
-
 	if index == m.GlobalIndex() {
 		titleStyle = titleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
@@ -132,8 +126,26 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		priorityStyle.Render("Priority: ") + priorityValueStyle.Render(taskItem.Priority())
 
 	var right string
-	if items.IsToday(taskItem.DueDate()) && !taskItem.Completed() {
-		right = textStyleRed("Due today")
+	if !taskItem.Completed() {
+		right = lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(blue).
+			Foreground(black).
+			Render("open")
+
+		if items.IsToday(taskItem.DueDate()) {
+			right = lipgloss.NewStyle().
+				Padding(0, 1).
+				Background(red).
+				Foreground(black).
+				Render("Due today")
+		}
+	} else {
+		right = lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(green).
+			Foreground(black).
+			Render("done")
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
