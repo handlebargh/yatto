@@ -88,21 +88,30 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	left := listItemStyle.Render(projectItem.Title() + "\n" +
 		projectItem.Description())
 
-	numTasks, err := projectItem.NumTotalTasks()
+	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
 	if err != nil {
 		m.NewStatusMessage(
-			textStyleRed(fmt.Sprintf("Error reading number of tasks for project %s", projectItem.Title())),
+			textStyleRed(fmt.Sprintf("Error gathering task info for project %s", projectItem.Title())),
 		)
 	}
 
-	numCompletedTasks, err := projectItem.NumCompletedTasks()
-	if err != nil {
-		m.NewStatusMessage(
-			textStyleRed(fmt.Sprintf("Error reading number of completed tasks for project %s", projectItem.Title())),
-		)
+	var taskDueMessage string
+	if numDueTasks > 0 {
+		if numDueTasks == 1 {
+			taskDueMessage = textStyleRed("1 task due today |")
+		} else {
+			taskDueMessage = textStyleRed(fmt.Sprintf("%d tasks due today |", numDueTasks))
+		}
 	}
 
-	right := listItemInfoStyle.Render(fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks))
+	taskTotalCompleteMessage := fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
+	if numCompletedTasks == numTasks {
+		taskTotalCompleteMessage = textStyleGreen(taskTotalCompleteMessage)
+	}
+
+	right := listItemInfoStyle.Render(
+		fmt.Sprintf("%s %s", taskDueMessage, taskTotalCompleteMessage),
+	)
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
 		lipgloss.NewStyle().Width(m.Width()/2).Render(left),

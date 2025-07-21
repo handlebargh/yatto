@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/viper"
@@ -112,37 +113,17 @@ func (p Project) WriteProjectJson(json []byte, kind string) tea.Cmd {
 	}
 }
 
-// NumOfTasksInProject calculates the total of tasks
+// NumOfTasksInProject calculates the total number of tasks,
+// the number of completed tasks and the number of tasks due today
 // for a given project.
-func (p Project) NumTotalTasks() (int, error) {
-	entries, err := os.ReadDir(filepath.Join(
-		viper.GetString("storage.path"), p.Id()))
-	if err != nil {
-		return 0, err
-	}
-
-	tasks := 0
-	for _, entry := range entries {
-		if entry.IsDir() || entry.Name() == "project.json" {
-			continue
-		}
-
-		tasks++
-	}
-
-	return tasks, nil
-}
-
-// NumOfCompletedTasksInProject calculates the number of tasks
-// not yet completed for a given project.
-func (p Project) NumCompletedTasks() (int, error) {
+func (p Project) NumOfTasks() (int, int, int, error) {
 	dir := filepath.Join(viper.GetString("storage.path"), p.Id())
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return 0, err
+		return 0, 0, 0, err
 	}
 
-	completedTasks := 0
+	total, completed, due := 0, 0, 0
 	for _, entry := range entries {
 		if entry.IsDir() || entry.Name() == "project.json" {
 			continue
@@ -155,16 +136,30 @@ func (p Project) NumCompletedTasks() (int, error) {
 		}
 
 		var t struct {
-			Completed bool `json:"completed"`
+			DueDate   *time.Time `json:"due_date"`
+			Completed bool       `json:"completed"`
 		}
 		if err := json.Unmarshal(data, &t); err != nil {
-			continue
+			return 0, 0, 0, err
 		}
 
+		total++
+
 		if t.Completed {
-			completedTasks++
+			completed++
+		} else {
+			if isToday(*t.DueDate) {
+				due++
+			}
 		}
 	}
 
-	return completedTasks, nil
+	return total, completed, due, nil
+}
+
+func isToday(t time.Time) bool {
+	now := time.Now()
+	y1, m1, d1 := t.Date()
+	y2, m2, d2 := now.Date()
+	return y1 == y2 && m1 == m2 && d1 == d2
 }
