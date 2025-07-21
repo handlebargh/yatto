@@ -24,22 +24,27 @@ type taskListKeyMap struct {
 	editItem       key.Binding
 	deleteItem     key.Binding
 	sortByPriority key.Binding
+	sortByDueDate  key.Binding
 	toggleComplete key.Binding
 }
 
 func newTaskListKeyMap() *taskListKeyMap {
 	return &taskListKeyMap{
 		toggleComplete: key.NewBinding(
-			key.WithKeys("D"),
-			key.WithHelp("D", "toggle done"),
+			key.WithKeys("C"),
+			key.WithHelp("C", "toggle complete"),
 		),
 		sortByPriority: key.NewBinding(
-			key.WithKeys("s"),
-			key.WithHelp("s", "sort by priority"),
+			key.WithKeys("p"),
+			key.WithHelp("p", "sort by priority"),
+		),
+		sortByDueDate: key.NewBinding(
+			key.WithKeys("d"),
+			key.WithHelp("d", "sort by due date"),
 		),
 		deleteItem: key.NewBinding(
-			key.WithKeys("d"),
-			key.WithHelp("d", "delete"),
+			key.WithKeys("D"),
+			key.WithHelp("D", "delete"),
 		),
 		editItem: key.NewBinding(
 			key.WithKeys("e"),
@@ -184,6 +189,7 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 			listKeys.editItem,
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
+			listKeys.sortByDueDate,
 			listKeys.toggleComplete,
 		}
 	}
@@ -335,7 +341,11 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.sortByPriority):
-				sortTasksByPriority(&m.list)
+				sortTasksByKey(&m.list, "priority")
+				return m, nil
+
+			case key.Matches(msg, m.keys.sortByDueDate):
+				sortTasksByKey(&m.list, "dueDate")
 				return m, nil
 
 			case key.Matches(msg, m.keys.chooseItem):
@@ -454,7 +464,9 @@ func (m taskListModel) View() string {
 	return m.rendered
 }
 
-func sortTasksByPriority(m *list.Model) {
+// Sorts the tasks list by key.
+// Key may be either priority or dueDate.
+func sortTasksByKey(m *list.Model, key string) {
 	// Preserve selected item
 	selected := m.SelectedItem()
 
@@ -466,9 +478,18 @@ func sortTasksByPriority(m *list.Model) {
 	}
 
 	// Sort tasks by priority
-	sort.Slice(tasks, func(i, j int) bool {
-		return tasks[i].PriorityValue() > tasks[j].PriorityValue()
-	})
+	switch key {
+	case "priority":
+		sort.Slice(tasks, func(i, j int) bool {
+			return tasks[i].PriorityValue() > tasks[j].PriorityValue()
+		})
+	case "dueDate":
+		sort.Slice(tasks, func(i, j int) bool {
+			return tasks[i].DueDate().Before(*tasks[j].DueDate())
+		})
+	default:
+		// Do not sort at all.
+	}
 
 	// Convert back to []list.Item
 	sortedItems := make([]list.Item, len(tasks))

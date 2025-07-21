@@ -98,13 +98,13 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	var taskDueMessage string
 	if numDueTasks > 0 {
 		if numDueTasks == 1 {
-			taskDueMessage = textStyleRed("1 task due today |")
+			taskDueMessage = textStyleRed("1 task due today")
 		} else {
-			taskDueMessage = textStyleRed(fmt.Sprintf("%d tasks due today |", numDueTasks))
+			taskDueMessage = textStyleRed(fmt.Sprintf("%d tasks due today", numDueTasks))
 		}
 	}
 
-	taskTotalCompleteMessage := fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
+	taskTotalCompleteMessage := fmt.Sprintf("| %d/%d tasks completed", numCompletedTasks, numTasks)
 	if numCompletedTasks == numTasks {
 		taskTotalCompleteMessage = textStyleGreen(taskTotalCompleteMessage)
 	}
