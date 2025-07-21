@@ -155,7 +155,7 @@ type taskListModel struct {
 func newTaskListModel(project *items.Project, projectModel *projectListModel) taskListModel {
 	listKeys := newTaskListKeyMap()
 
-	tasks := items.ReadTasksFromFS(project)
+	tasks := project.ReadTasksFromFS()
 	items := []list.Item{}
 
 	for _, task := range tasks {
@@ -294,7 +294,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds,
 						m.progress.SetPercent(0.10),
 						tickCmd(),
-						items.DeleteTaskFromFS(*m.project, m.list.SelectedItem().(*items.Task)),
+						m.list.SelectedItem().(*items.Task).DeleteTaskFromFS(*m.project),
 						git.CommitCmd(filepath.Join(m.project.Id(), m.list.SelectedItem().(*items.Task).Id()+".json"),
 							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
 					)
@@ -343,7 +343,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					var err error
 					m.selected = true
 					m.selection = m.list.SelectedItem().(*items.Task)
-					m.markdown = items.TaskToMarkdown(m.selection)
+					m.markdown = m.selection.TaskToMarkdown()
 					m.rendered, err = m.projectModel.renderer.Render(m.markdown)
 					if err != nil {
 						m.mode = 2
@@ -356,19 +356,13 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.toggleComplete):
 				if m.list.SelectedItem() != nil {
 					t := m.list.SelectedItem().(*items.Task)
-					json := items.MarshalTask(
-						t.Id(),
-						t.Title(),
-						t.Description(),
-						t.Priority(),
-						!t.Completed())
-
-					m.list.SelectedItem().(*items.Task).SetCompleted(!m.list.SelectedItem().(*items.Task).Completed())
+					t.SetCompleted(!t.Completed())
+					json := t.MarshalTask()
 
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
 					if t.Completed() {
 						cmds = append(cmds,
-							items.WriteTaskJson(json, *m.project, *t, "complete"),
+							t.WriteTaskJson(json, *m.project, "complete"),
 							git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "complete: "+t.Title()),
 						)
 						m.status = ""
@@ -376,7 +370,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 
 					cmds = append(cmds,
-						items.WriteTaskJson(json, *m.project, *t, "reopen"),
+						t.WriteTaskJson(json, *m.project, "reopen"),
 						git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "reopen: "+t.Title()),
 					)
 					m.status = ""
@@ -473,8 +467,7 @@ func sortTasksByPriority(m *list.Model) {
 
 	// Sort tasks by priority
 	sort.Slice(tasks, func(i, j int) bool {
-		return items.PriorityValue(tasks[i].Priority()) >
-			items.PriorityValue(tasks[j].Priority())
+		return tasks[i].PriorityValue() > tasks[j].PriorityValue()
 	})
 
 	// Convert back to []list.Item

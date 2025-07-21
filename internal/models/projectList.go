@@ -88,21 +88,30 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	left := listItemStyle.Render(projectItem.Title() + "\n" +
 		projectItem.Description())
 
-	numTasks, err := items.NumOfTasksInProject(*projectItem)
+	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
 	if err != nil {
 		m.NewStatusMessage(
-			textStyleRed(fmt.Sprintf("Error reading number of tasks for project %s", projectItem.Title())),
+			textStyleRed(fmt.Sprintf("Error gathering task info for project %s", projectItem.Title())),
 		)
 	}
 
-	numCompletedTasks, err := items.NumOfCompletedTasksInProject(*projectItem)
-	if err != nil {
-		m.NewStatusMessage(
-			textStyleRed(fmt.Sprintf("Error reading number of completed tasks for project %s", projectItem.Title())),
-		)
+	var taskDueMessage string
+	if numDueTasks > 0 {
+		if numDueTasks == 1 {
+			taskDueMessage = textStyleRed("1 task due today |")
+		} else {
+			taskDueMessage = textStyleRed(fmt.Sprintf("%d tasks due today |", numDueTasks))
+		}
 	}
 
-	right := listItemInfoStyle.Render(fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks))
+	taskTotalCompleteMessage := fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
+	if numCompletedTasks == numTasks {
+		taskTotalCompleteMessage = textStyleGreen(taskTotalCompleteMessage)
+	}
+
+	right := listItemInfoStyle.Render(
+		fmt.Sprintf("%s %s", taskDueMessage, taskTotalCompleteMessage),
+	)
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
 		lipgloss.NewStyle().Width(m.Width()/2).Render(left),
@@ -133,7 +142,7 @@ type projectListModel struct {
 func InitialProjectListModel() projectListModel {
 	listKeys := newProjectListKeyMap()
 
-	projects := items.ReadProjectsFromFS()
+	projects := readProjectsFromFS()
 	items := []list.Item{}
 
 	for _, project := range projects {
@@ -269,7 +278,7 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds,
 						m.progress.SetPercent(0.10),
 						tickCmd(),
-						items.DeleteProjectFromFS(m.list.SelectedItem().(*items.Project)),
+						m.list.SelectedItem().(*items.Project).DeleteProjectFromFS(),
 						git.CommitCmd(m.list.SelectedItem().(*items.Project).Id(),
 							"delete: "+m.list.SelectedItem().(*items.Project).Title()),
 					)
