@@ -38,6 +38,7 @@ type Task struct {
 	TaskDescription string     `json:"description,omitempty"`
 	TaskPriority    string     `json:"priority"`
 	TaskDueDate     *time.Time `json:"due_date,omitempty"`
+	TaskLabels      string     `json:"labels,omitempty"`
 	TaskCompleted   bool       `json:"completed"`
 }
 
@@ -51,9 +52,11 @@ func (t Task) Priority() string                   { return t.TaskPriority }
 func (t *Task) SetPriority(priority string)       { t.TaskPriority = priority }
 func (t Task) DueDate() *time.Time                { return t.TaskDueDate }
 func (t *Task) SetDueDate(dueDate *time.Time)     { t.TaskDueDate = dueDate }
+func (t Task) Labels() string                     { return t.TaskLabels }
+func (t *Task) SetLabels(labels string)           { t.TaskLabels = labels }
 func (t Task) Completed() bool                    { return t.TaskCompleted }
 func (t *Task) SetCompleted(completed bool)       { t.TaskCompleted = completed }
-func (t Task) FilterValue() string                { return t.TaskTitle }
+func (t Task) FilterValue() string                { return fmt.Sprintf("%s %s", t.TaskTitle, t.TaskLabels) }
 
 // Converts a time.Time object to string.
 func (t Task) DueDateToString() string {
@@ -124,6 +127,17 @@ func (t *Task) TaskToMarkdown() string {
 		dueDate = fmt.Sprintf("## Due at\n%s\n\n", t.DueDate())
 	}
 
+	labels := "## Labels\n"
+	if t.Labels() != "" {
+		labelsList := strings.SplitSeq(t.Labels(), ",")
+		for label := range labelsList {
+			labels += label + "\n\n"
+		}
+		labels += "\n"
+	} else {
+		labels += "no labels\n\n"
+	}
+
 	completed := "## Done\n❌ No\n\n"
 	if t.Completed() {
 		completed = "## Done\n✅ Yes\n\n"
@@ -131,5 +145,5 @@ func (t *Task) TaskToMarkdown() string {
 
 	id := fmt.Sprintf("## ID\n%s", t.Id())
 
-	return title + description + priority + dueDate + completed + id
+	return title + description + priority + dueDate + labels + completed + id
 }

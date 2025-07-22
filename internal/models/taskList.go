@@ -90,7 +90,8 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		Padding(0, 1).
 		Width(60)
 
-	priorityStyle := lipgloss.NewStyle().
+	labelsStyle := lipgloss.NewStyle().
+		Foreground(blue).
 		Padding(0, 1)
 
 	priorityValueStyle := lipgloss.NewStyle().
@@ -100,17 +101,17 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	switch taskItem.Priority() {
 	case "low":
 		titleStyle = titleStyle.BorderForeground(indigo)
-		priorityStyle = priorityStyle.BorderForeground(indigo)
+		labelsStyle = labelsStyle.BorderForeground(indigo)
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(indigo).Background(indigo)
 	case "medium":
 		titleStyle = titleStyle.BorderForeground(orange)
-		priorityStyle = priorityStyle.BorderForeground(orange)
+		labelsStyle = labelsStyle.BorderForeground(orange)
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(orange).Background(orange)
 	case "high":
 		titleStyle = titleStyle.BorderForeground(red)
-		priorityStyle = priorityStyle.BorderForeground(red)
+		labelsStyle = labelsStyle.BorderForeground(red)
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(red).Background(red)
 	}
@@ -119,38 +120,33 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		titleStyle = titleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			MarginLeft(0)
-		priorityStyle = priorityStyle.
+		labelsStyle = labelsStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			MarginLeft(0)
 	} else {
 		titleStyle = titleStyle.MarginLeft(1)
-		priorityStyle = priorityStyle.MarginLeft(1)
+		labelsStyle = labelsStyle.MarginLeft(1)
 	}
 
 	left := titleStyle.Render(taskItem.Title()) + "\n" +
-		priorityStyle.Render("Priority: ") + priorityValueStyle.Render(taskItem.Priority())
+		labelsStyle.Render(taskItem.Labels())
 
-	var right string
-	if !taskItem.Completed() {
-		right = lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(blue).
-			Foreground(black).
-			Render("open")
+	right := priorityValueStyle.Render(taskItem.Priority())
 
-		if items.IsToday(taskItem.DueDate()) {
-			right = lipgloss.NewStyle().
-				Padding(0, 1).
-				Background(red).
-				Foreground(black).
-				Render("Due today")
-		}
-	} else {
+	if taskItem.Completed() {
 		right = lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(green).
 			Foreground(black).
 			Render("done")
+	}
+
+	if items.IsToday(taskItem.DueDate()) {
+		right = lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(red).
+			Foreground(black).
+			Render("Due today")
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
