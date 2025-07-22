@@ -38,6 +38,14 @@ func getColorCode(color string) lipgloss.AdaptiveColor {
 	}
 }
 
+func taskSortValue(t *items.Task) int {
+	base := 10 - t.PriorityValue()
+	if t.Completed() {
+		base += 100
+	}
+	return base
+}
+
 func tickCmd() tea.Cmd {
 	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
 		return tickMsg(t)

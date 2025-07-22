@@ -25,6 +25,7 @@ type taskListKeyMap struct {
 	deleteItem     key.Binding
 	sortByPriority key.Binding
 	sortByDueDate  key.Binding
+	sortByState    key.Binding
 	toggleComplete key.Binding
 }
 
@@ -41,6 +42,10 @@ func newTaskListKeyMap() *taskListKeyMap {
 		sortByDueDate: key.NewBinding(
 			key.WithKeys("d"),
 			key.WithHelp("d", "sort by due date"),
+		),
+		sortByState: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("s", "sort by state"),
 		),
 		deleteItem: key.NewBinding(
 			key.WithKeys("D"),
@@ -212,6 +217,7 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
 			listKeys.sortByDueDate,
+			listKeys.sortByState,
 			listKeys.toggleComplete,
 		}
 	}
@@ -370,6 +376,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				sortTasksByKey(&m.list, "dueDate")
 				return m, nil
 
+			case key.Matches(msg, m.keys.sortByState):
+				sortTasksByKey(&m.list, "state")
+				return m, nil
+
 			case key.Matches(msg, m.keys.chooseItem):
 				if m.list.SelectedItem() != nil {
 					var err error
@@ -487,7 +497,7 @@ func (m taskListModel) View() string {
 }
 
 // Sorts the tasks list by key.
-// Key may be either priority or dueDate.
+// Key may be either priority, dueDate or state.
 func sortTasksByKey(m *list.Model, key string) {
 	// Preserve selected item
 	selected := m.SelectedItem()
@@ -496,15 +506,19 @@ func sortTasksByKey(m *list.Model, key string) {
 	listItems := m.Items()
 	tasks := make([]*items.Task, len(listItems))
 	for i, item := range listItems {
-		tasks[i] = item.(*items.Task)
+		task, ok := item.(*items.Task)
+		if !ok {
+			continue
+		}
+		tasks[i] = task
 	}
 
-	// Sort tasks by priority
 	switch key {
 	case "priority":
 		sort.Slice(tasks, func(i, j int) bool {
 			return tasks[i].PriorityValue() > tasks[j].PriorityValue()
 		})
+
 	case "dueDate":
 		sort.Slice(tasks, func(i, j int) bool {
 			if tasks[i].DueDate() == nil {
@@ -517,6 +531,12 @@ func sortTasksByKey(m *list.Model, key string) {
 
 			return tasks[i].DueDate().Before(*tasks[j].DueDate())
 		})
+
+	case "state":
+		sort.Slice(tasks, func(i, j int) bool {
+			return taskSortValue(tasks[i]) < taskSortValue(tasks[j])
+		})
+
 	default:
 		// Do not sort at all.
 	}
@@ -529,9 +549,11 @@ func sortTasksByKey(m *list.Model, key string) {
 	m.SetItems(sortedItems)
 
 	// Re-select the same item
-	if selected != nil {
+	selectedTask, ok := selected.(*items.Task)
+	if ok {
 		for i, item := range sortedItems {
-			if item == selected {
+			task, ok := item.(*items.Task)
+			if ok && task.Id() == selectedTask.Id() {
 				m.Select(i)
 				break
 			}
