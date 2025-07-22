@@ -1,3 +1,10 @@
+## v0.9.0 (2025-07-22)
+
+### Feat
+
+- add task labels
+- add sorting by task state
+
 ## v0.8.0 (2025-07-21)
 
 ### Feat
