@@ -32,6 +32,7 @@ type taskFormVars struct {
 	taskDescription string
 	taskPriority    string
 	taskDueDate     string
+	taskLabels      string
 	taskCompleted   bool
 }
 
@@ -42,6 +43,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		taskDescription: t.Description(),
 		taskPriority:    t.Priority(),
 		taskDueDate:     t.DueDateToString(),
+		taskLabels:      t.Labels(),
 		taskCompleted:   t.Completed(),
 	}
 
@@ -112,6 +114,18 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 					return nil
 				}),
 
+			huh.NewInput().
+				Key("labels").
+				Title("Enter labels:").
+				Value(&m.vars.taskLabels).
+				Description("Comma separated list of labels.").
+				Validate(func(str string) error {
+					if len(str) > 60 {
+						return errors.New("labels too long (only 60 character allowed)")
+					}
+					return nil
+				}),
+
 			huh.NewConfirm().
 				Title(confirmQuestion).
 				Affirmative("Yes").
@@ -176,6 +190,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.task.SetTitle(m.vars.taskTitle)
 			m.task.SetDescription(m.vars.taskDescription)
 			m.task.SetPriority(m.vars.taskPriority)
+			m.task.SetLabels(m.vars.taskLabels)
 			m.task.SetCompleted(m.vars.taskCompleted)
 
 			if m.vars.taskDueDate != "" {
