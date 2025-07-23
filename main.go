@@ -90,7 +90,6 @@ func initConfig(home string, configPath *string) {
 	viper.SetDefault("git.default_branch", "main")
 	viper.SetDefault("git.remote.enable", false)
 	viper.SetDefault("git.remote.name", "origin")
-	viper.SetDefault("git.remote.push_on_commit", false)
 
 	if *configPath != "" {
 		viper.SetConfigFile(*configPath)
