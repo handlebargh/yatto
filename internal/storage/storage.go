@@ -22,7 +22,7 @@ func CreateStorageDir() {
 
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("An error occured while reading input. Please try again", err)
+			fmt.Println("An error occurred while reading input. Please try again", err)
 			return
 		}
 

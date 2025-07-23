@@ -477,7 +477,7 @@ func (m taskListModel) View() string {
 
 	// Display git error view
 	if m.mode == modeGitError {
-		content := "An error occured while executing git:\n\n" +
+		content := "An error occurred while executing git:\n\n" +
 			m.err.Error() + "\n\n" +
 			"Please commit manually!"
 
