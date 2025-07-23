@@ -12,7 +12,8 @@ Type "yatto" Sleep 500ms  Enter
 Sleep 2s
 
 Enter Sleep 1s
-Type "/readme" Enter Sleep 1s
+Type "/readme" Sleep 2s
+Enter
 Type "e" Sleep 500ms
 Enter Sleep 500ms
 Enter Sleep 500ms
@@ -21,4 +22,5 @@ Enter Sleep 500ms
 Enter Sleep 500ms
 Enter Sleep 500ms
 Enter Sleep 3s
-Enter Sleep 3s
+Type "C" Sleep 3s
+Enter Sleep 2s
