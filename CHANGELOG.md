@@ -1,3 +1,14 @@
+## v0.9.1 (2025-07-24)
+
+### Fix
+
+- allow past dates when editing task
+- show done label even when task was due at the same day
+
+### Refactor
+
+- remove obsolete config variable
+
 ## v0.9.0 (2025-07-22)
 
 ### Feat
