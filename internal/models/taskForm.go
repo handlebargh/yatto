@@ -107,7 +107,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 						return errors.New("invalid date format")
 					}
 
-					if t.Before(time.Now()) {
+					if !m.edit && t.Before(time.Now()) {
 						return errors.New("date must not be in the past")
 					}
 
