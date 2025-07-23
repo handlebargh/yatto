@@ -7,6 +7,8 @@
 a separate JSON file on your filesystem and manages the
 task directory as a Git repository for versioning, synchronization and collaboration.
 
+<img alt="YATTO demo" src="docs/demo.gif" width="600" />
+
 ## Features
 
 - **TUI-based** interface powered by the Bubble Tea framework
