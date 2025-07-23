@@ -2,6 +2,10 @@
 
 ## Yet Another Terrific Task Organizer
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/handlebargh/yatto)](https://goreportcard.com/report/github.com/handlebargh/yatto)
+![GitHub License](https://img.shields.io/github/license/handlebargh/yatto?color=blue)
+![GitHub Release](https://img.shields.io/github/v/release/handlebargh/yatto?color=blue)
+
 **YATTO** is a terminal-based to-do application built with
 [Bubble Tea](https://github.com/charmbracelet/bubbletea). It stores each task as
 a separate JSON file on your filesystem and manages the
