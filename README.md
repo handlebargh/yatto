@@ -17,6 +17,14 @@ task directory as a Git repository for versioning, synchronization and collabora
   - Full version history of all tasks
   - Safe collaboration and backup
   - Sync across machines
+- Every change is immediately committed and - if a remote is configured - pushed.
+- **Tasks attributes** include due dates and searchable labels.
+- Tasks can be **sorted** by different attributes.
+
+## Roadmap
+
+- **In progress state**: Mark tasks that are being worked on.
+- **Sub-tasks**: Create tasks associated with a parent task.
 
 ## Requirements
 
@@ -32,7 +40,7 @@ go install github.com/handlebargh/yatto@latest
 
 ### Binary
 
-Take a look at the releases.
+Take a look at the [releases](https://github.com/handlebargh/yatto/releases/latest).
 
 ## Configuration
 
@@ -47,10 +55,15 @@ default_branch = 'main'
 [git.remote]
 enable = false
 name = 'origin'
-push_on_commit = false
 
 [storage]
 path = '${HOME}/.yatto'
+```
+
+A config file may also be supplied by adding the `-config` flag:
+
+```bash
+yatto -config $PATH_TO_CONFIG_FILE
 ```
 
 ## Task Storage
@@ -61,34 +74,35 @@ Tasks are saved in a directory like:
 ${HOME}/.yatto
 ```
 
-Each task is a simple JSON file.
+Each task is a simple JSON file, while projects are directories holding their associated tasks.
 
 You can change the task storage directory in the config file.
 
-## Git-Enabled workflow
-
-- Automatically create a Git repo in the task directory
-- Commit every add/delete/update
-- Allow you to sync across devices (via Git remote)
-- Make accidental deletions recoverable via history
-
 ### Git remotes
 
-If you set a Git remote URL in the config file **after**
-you have already created tasks, you will have to navigate
-to the task storage directory and push the repository manually
-in order to keep the application running.
+To set up a remote
 
-To do so, inside the storage directory run this command:
+1. Create a new repository on the Git host of your choice.
 
-```bash
-git push -u origin main
+The repository must be empty, meaning that nothing must be committed at creation
+(uncheck README, .gitignore and license files).
+
+2. Enable remotes in the config
+
+```toml
+[git.remote]
+enable = true
 ```
 
-## Built With
+3. Run yatto at least once to create the task storage directory.
 
-- [Go](https://go.dev)
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) - a fun, functional TUI framework
+4. Add the remote and push the local repository
+
+```bash
+cd ${HOME}/.yatto
+git remote add $GIT_REMOTE_URL
+git push -u origin main
+```
 
 ## License
 
