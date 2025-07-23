@@ -133,20 +133,20 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	right := priorityValueStyle.Render(taskItem.Priority())
 
-	if taskItem.Completed() {
-		right = lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(green).
-			Foreground(black).
-			Render("done")
-	}
-
 	if items.IsToday(taskItem.DueDate()) {
 		right = lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(red).
 			Foreground(black).
 			Render("Due today")
+	}
+
+	if taskItem.Completed() {
+		right = lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(green).
+			Foreground(black).
+			Render("done")
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
