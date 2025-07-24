@@ -277,7 +277,7 @@ func (m taskFormModel) View() string {
 	case true:
 		s.Completed = s.Completed.Background(green)
 	case false:
-		s.Completed = s.Completed.Background(red)
+		s.Completed = s.Completed.Background(blue)
 	}
 
 	var header string
