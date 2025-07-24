@@ -1,3 +1,9 @@
+## v0.9.2 (2025-07-24)
+
+### Fix
+
+- **deps**: update dependencies
+
 ## v0.9.1 (2025-07-24)
 
 ### Fix
