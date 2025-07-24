@@ -18,9 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package models defines the Bubble Tea-based
-// TUI models for managing and interacting with
-// task and project lists.
 package models
 
 import (
