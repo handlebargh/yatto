@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package main initializes and runs the Yatto TUI application.
+// It handles configuration, git synchronization (optional), and loads the project list UI.
 package main
 
 import (
@@ -36,8 +38,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+// red is an adaptive color used to indicate errors in the UI.
 var red = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
 
+// spinnerModel defines the model used for displaying a spinner while syncing with a remote Git repository.
 type spinnerModel struct {
 	spinner spinner.Model
 	err     error
@@ -45,6 +49,7 @@ type spinnerModel struct {
 	height  int
 }
 
+// Init initializes the spinner model and starts the Git pull command.
 func (m spinnerModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
@@ -52,6 +57,8 @@ func (m spinnerModel) Init() tea.Cmd {
 	)
 }
 
+// Update handles messages received during the spinner's lifecycle,
+// such as window resize, spinner ticks, Git pull results, and user input.
 func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -85,6 +92,8 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// View renders the spinner UI, displaying a loading animation or an error message,
+// centered in the terminal window.
 func (m spinnerModel) View() string {
 	var content string
 	if m.err != nil {
@@ -104,6 +113,8 @@ func (m spinnerModel) View() string {
 	)
 }
 
+// initConfig sets default values for application configuration and
+// attempts to load configuration from a file.
 func initConfig(home string, configPath *string) {
 	viper.SetDefault("storage.path", filepath.Join(home, ".yatto"))
 
@@ -120,6 +131,8 @@ func initConfig(home string, configPath *string) {
 	}
 }
 
+// main is the entry point of the Yatto application. It sets up configuration,
+// creates storage directories, optionally performs a Git sync, and starts the TUI.
 func main() {
 	configPath := flag.String("config", "", "Path to the config file")
 	flag.Parse()
