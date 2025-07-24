@@ -18,10 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package items provides internal types and utilities for managing task and project items,
+// including creation, serialization, deletion, and formatting.
+// Projects are stored as directories, each containing a JSON file with project metadata
+// and multiple task files.
+// Tasks are stored as JSON files and support basic metadata like priority, labels, and due dates.
 package items
 
 import "time"
 
+// IsToday returns true if the given time is not nil and falls on today's date
+// (year, month, and day match the current local date). Returns false if the
+// input is nil or the date does not match.
 func IsToday(t *time.Time) bool {
 	if t == nil {
 		return false

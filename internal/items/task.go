@@ -18,6 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package items provides internal types and utilities for managing task and project items,
+// including creation, serialization, deletion, and formatting.
+// Projects are stored as directories, each containing a JSON file with project metadata
+// and multiple task files.
+// Tasks are stored as JSON files and support basic metadata like priority, labels, and due dates.
 package items
 
 import (
@@ -40,18 +45,30 @@ var uuidRegex = regexp.MustCompile(
 )
 
 type (
+	// WriteTaskJSONDoneMsg indicates successful write of a Task JSON file.
 	WriteTaskJSONDoneMsg struct {
 		Task Task
 		Kind string
 	}
+
+	// WriteTaskJSONErrorMsg is returned when a Task fails to serialize or write to disk.
 	WriteTaskJSONErrorMsg struct{ Err error }
-	TaskDeleteDoneMsg     struct{}
-	TaskDeleteErrorMsg    struct{ Err error }
+
+	// TaskDeleteDoneMsg indicates successful deletion of a Task from disk.
+	TaskDeleteDoneMsg struct{}
+
+	// TaskDeleteErrorMsg is returned when a Task fails to delete from disk.
+	TaskDeleteErrorMsg struct{ Err error }
 )
 
+// Error implements the error interface for WriteTaskJSONErrorMsg.
 func (e WriteTaskJSONErrorMsg) Error() string { return e.Err.Error() }
-func (e TaskDeleteErrorMsg) Error() string    { return e.Err.Error() }
 
+// Error implements the error interface for TaskDeleteErrorMsg.
+func (e TaskDeleteErrorMsg) Error() string { return e.Err.Error() }
+
+// Task represents a to-do item with metadata like title, due date, priority,
+// and labels. Tasks are serialized to and from JSON files in storage.
 type Task struct {
 	TaskId          string     `json:"id"`
 	TaskTitle       string     `json:"title"`
@@ -62,23 +79,53 @@ type Task struct {
 	TaskCompleted   bool       `json:"completed"`
 }
 
-func (t Task) Id() string                         { return t.TaskId }
-func (t *Task) SetId(id string)                   { t.TaskId = id }
-func (t Task) Title() string                      { return t.TaskTitle }
-func (t *Task) SetTitle(title string)             { t.TaskTitle = title }
-func (t Task) Description() string                { return t.TaskDescription }
-func (t *Task) SetDescription(description string) { t.TaskDescription = description }
-func (t Task) Priority() string                   { return t.TaskPriority }
-func (t *Task) SetPriority(priority string)       { t.TaskPriority = priority }
-func (t Task) DueDate() *time.Time                { return t.TaskDueDate }
-func (t *Task) SetDueDate(dueDate *time.Time)     { t.TaskDueDate = dueDate }
-func (t Task) Labels() string                     { return t.TaskLabels }
-func (t *Task) SetLabels(labels string)           { t.TaskLabels = labels }
-func (t Task) Completed() bool                    { return t.TaskCompleted }
-func (t *Task) SetCompleted(completed bool)       { t.TaskCompleted = completed }
-func (t Task) FilterValue() string                { return fmt.Sprintf("%s %s", t.TaskTitle, t.TaskLabels) }
+// Id returns the task's ID.
+func (t Task) Id() string { return t.TaskId }
 
-// Converts a time.Time object to string.
+// SetId sets the task's ID.
+func (t *Task) SetId(id string) { t.TaskId = id }
+
+// Title returns the task's title.
+func (t Task) Title() string { return t.TaskTitle }
+
+// SetTitle sets the task's title.
+func (t *Task) SetTitle(title string) { t.TaskTitle = title }
+
+// Description returns the task's description.
+func (t Task) Description() string { return t.TaskDescription }
+
+// SetDescription sets the task's description.
+func (t *Task) SetDescription(description string) { t.TaskDescription = description }
+
+// Priority returns the task's priority.
+func (t Task) Priority() string { return t.TaskPriority }
+
+// SetPriority sets the task's priority.
+func (t *Task) SetPriority(priority string) { t.TaskPriority = priority }
+
+// DueDate returns the task's due date, if any.
+func (t Task) DueDate() *time.Time { return t.TaskDueDate }
+
+// SetDueDate sets the task's due date.
+func (t *Task) SetDueDate(dueDate *time.Time) { t.TaskDueDate = dueDate }
+
+// Labels returns the task's label string.
+func (t Task) Labels() string { return t.TaskLabels }
+
+// SetLabels sets the task's labels.
+func (t *Task) SetLabels(labels string) { t.TaskLabels = labels }
+
+// Completed returns true if the task is marked as done.
+func (t Task) Completed() bool { return t.TaskCompleted }
+
+// SetCompleted sets the task's completion status.
+func (t *Task) SetCompleted(completed bool) { t.TaskCompleted = completed }
+
+// FilterValue returns a string used for filtering/search, combining title and labels.
+func (t Task) FilterValue() string { return fmt.Sprintf("%s %s", t.TaskTitle, t.TaskLabels) }
+
+// DueDateToString formats the task's due date as a string using DueDateLayout.
+// Returns an empty string if no due date is set.
 func (t Task) DueDateToString() string {
 	if t.TaskDueDate != nil {
 		return t.DueDate().Format(DueDateLayout)
@@ -87,7 +134,8 @@ func (t Task) DueDateToString() string {
 	return ""
 }
 
-// Function to convert priority to a numerical value for sorting.
+// PriorityValue returns a numeric value for the task's priority.
+// Useful for sorting tasks by urgency.
 func (t Task) PriorityValue() int {
 	switch t.Priority() {
 	case "high":
@@ -101,6 +149,8 @@ func (t Task) PriorityValue() int {
 	}
 }
 
+// MarshalTask returns a pretty-printed JSON representation of the task.
+// Panics if serialization fails.
 func (t Task) MarshalTask() []byte {
 	json, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
@@ -110,6 +160,8 @@ func (t Task) MarshalTask() []byte {
 	return json
 }
 
+// WriteTaskJson writes the given task JSON to disk under the project directory,
+// using the task's ID as the filename. Returns a Tea message on success or error.
 func (t Task) WriteTaskJson(json []byte, p Project, kind string) tea.Cmd {
 	return func() tea.Msg {
 		file := filepath.Join(viper.GetString("storage.path"), p.Id(), t.Id()+".json")
@@ -122,6 +174,8 @@ func (t Task) WriteTaskJson(json []byte, p Project, kind string) tea.Cmd {
 	}
 }
 
+// DeleteTaskFromFS deletes the task's JSON file from the given project directory.
+// Returns a Tea message on success or failure.
 func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
 	return func() tea.Msg {
 		file := filepath.Join(viper.GetString("storage.path"), p.Id(), t.Id()+".json")
@@ -135,6 +189,8 @@ func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
 	}
 }
 
+// TaskToMarkdown returns a Markdown-formatted string representing the task,
+// including metadata like description, due date, priority, labels, and completion status.
 func (t *Task) TaskToMarkdown() string {
 	title := fmt.Sprintf("# %s\n\n", t.Title())
 
