@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package models defines the Bubble Tea-based
+// TUI models for managing and interacting with
+// task and project lists.
 package models
 
 import (
@@ -33,6 +36,8 @@ import (
 	"github.com/handlebargh/yatto/internal/storage"
 )
 
+// projectFormModel defines the Bubble Tea model for a form-based interface
+// used to create or edit a project.
 type projectFormModel struct {
 	form          *huh.Form
 	project       *items.Project
@@ -45,6 +50,8 @@ type projectFormModel struct {
 	vars          *projectFormVars
 }
 
+// projectFormVars holds the temporary values that are populated and modified
+// in the project form UI.
 type projectFormVars struct {
 	confirm            bool
 	projectTitle       string
@@ -52,6 +59,8 @@ type projectFormVars struct {
 	projectColor       string
 }
 
+// newProjectFormModel initializes and returns a new projectFormModel instance,
+// optionally in edit mode.
 func newProjectFormModel(p *items.Project, listModel *projectListModel, edit bool) projectFormModel {
 	v := projectFormVars{
 		confirm:            true,
@@ -122,10 +131,12 @@ func newProjectFormModel(p *items.Project, listModel *projectListModel, edit boo
 	return m
 }
 
+// Init initializes the form model and returns the initial command to run.
 func (m projectFormModel) Init() tea.Cmd {
 	return m.form.Init()
 }
 
+// Update processes incoming messages and updates the model state accordingly.
 func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -199,6 +210,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+// View renders the project form UI.
 func (m projectFormModel) View() string {
 	if m.cancel {
 		centeredStyle := lipgloss.NewStyle().
@@ -241,6 +253,7 @@ func (m projectFormModel) View() string {
 	return s.Base.Render(header + "\n" + form + "\n\n" + footer)
 }
 
+// errorView returns a string representation of validation error messages.
 func (m projectFormModel) errorView() string {
 	var s string
 	for _, err := range m.form.Errors() {
@@ -249,6 +262,8 @@ func (m projectFormModel) errorView() string {
 	return s
 }
 
+// appBoundaryView returns a formatted header with colored boundaries,
+// used for visual separation in the UI.
 func (m projectFormModel) appBoundaryView(text string) string {
 	var color lipgloss.AdaptiveColor
 	if m.edit {
@@ -266,6 +281,7 @@ func (m projectFormModel) appBoundaryView(text string) string {
 	)
 }
 
+// appErrorBoundaryView returns a styled horizontal boundary with error-specific colors.
 func (m projectFormModel) appErrorBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,

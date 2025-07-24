@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package models defines the Bubble Tea-based
+// TUI models for managing and interacting with
+// task and project lists.
 package models
 
 import (
@@ -27,14 +30,24 @@ import (
 )
 
 type (
-	tickMsg        time.Time
-	mode           int
+	// tickMsg is a message type used to trigger time-based updates, such as animations.
+	tickMsg time.Time
+
+	// mode defines the state of the TUI, used for contextual behavior (e.g., normal, confirm delete, error).
+	mode int
+
+	// doneWaitingMsg signals that the progress bar has finished its post-completion delay.
 	doneWaitingMsg struct{}
 )
 
 const (
+	// modeNormal indicates the default UI mode.
 	modeNormal mode = iota
+
+	// modeConfirmDelete indicates the UI is prompting for delete confirmation.
 	modeConfirmDelete
+
+	// modeGitError indicates a Git-related error has occurred and should be displayed.
 	modeGitError
 )
 
@@ -48,22 +61,27 @@ var (
 )
 
 var (
+	// appStyle defines the base padding for the entire application.
 	appStyle = lipgloss.NewStyle().Padding(1, 2)
 
+	// titleStyleProjects styles the title header for the project list.
 	titleStyleProjects = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#000000")).
 				Background(green).
 				Padding(0, 1)
 
+		// textStyleGreen renders strings using the green foreground color.
 	textStyleGreen = lipgloss.NewStyle().
 			Foreground(green).
 			Render
 
+		// textStyleRed renders strings using the red foreground color.
 	textStyleRed = lipgloss.NewStyle().
 			Foreground(red).
 			Render
 )
 
+// Styles defines a reusable collection of lipgloss styles used in task and project forms.
 type Styles struct {
 	Base,
 	HeaderText,
@@ -77,6 +95,8 @@ type Styles struct {
 	Help lipgloss.Style
 }
 
+// NewStyles returns a new instance of Styles configured using the provided lipgloss.Renderer.
+// It defines base padding, bold headers, status boxes, error highlights, and more UI styling presets.
 func NewStyles(lg *lipgloss.Renderer) *Styles {
 	s := Styles{}
 	s.Base = lg.NewStyle().

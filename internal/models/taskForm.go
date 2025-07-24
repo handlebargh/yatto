@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package models defines the Bubble Tea-based
+// TUI models for managing and interacting with
+// task and project lists.
 package models
 
 import (
@@ -34,6 +37,8 @@ import (
 	"github.com/handlebargh/yatto/internal/storage"
 )
 
+// taskFormModel defines the Bubble Tea model for a form-based interface
+// used to create or edit a task.
 type taskFormModel struct {
 	form          *huh.Form
 	task          *items.Task
@@ -46,6 +51,8 @@ type taskFormModel struct {
 	vars          *taskFormVars
 }
 
+// taskFormVars holds the temporary values that are populated and modified
+// in the task form UI.
 type taskFormVars struct {
 	confirm         bool
 	taskTitle       string
@@ -56,6 +63,8 @@ type taskFormVars struct {
 	taskCompleted   bool
 }
 
+// newTaskFormModel initializes and returns a new taskFormModel instance,
+// optionally in edit mode.
 func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFormModel {
 	v := taskFormVars{
 		confirm:         true,
@@ -164,10 +173,12 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	return m
 }
 
+// Init initializes the form model and returns the initial command to run.
 func (m taskFormModel) Init() tea.Cmd {
 	return m.form.Init()
 }
 
+// Update processes incoming messages and updates the model state accordingly.
 func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -260,6 +271,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+// View renders the task form UI and the task preview, depending on the current state.
 func (m taskFormModel) View() string {
 	if m.cancel {
 		centeredStyle := lipgloss.NewStyle().
@@ -341,6 +353,7 @@ func (m taskFormModel) View() string {
 	return s.Base.Render(header + "\n" + body + "\n\n" + footer)
 }
 
+// errorView returns a string representation of validation error messages.
 func (m taskFormModel) errorView() string {
 	var s string
 	for _, err := range m.form.Errors() {
@@ -349,6 +362,8 @@ func (m taskFormModel) errorView() string {
 	return s
 }
 
+// appBoundaryView returns a formatted header with colored boundaries,
+// used for visual separation in the UI.
 func (m taskFormModel) appBoundaryView(text string) string {
 	var color lipgloss.AdaptiveColor
 	if m.edit {
@@ -366,6 +381,7 @@ func (m taskFormModel) appBoundaryView(text string) string {
 	)
 }
 
+// appErrorBoundaryView returns a styled horizontal boundary with error-specific colors.
 func (m taskFormModel) appErrorBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,

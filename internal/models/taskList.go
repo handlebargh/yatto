@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package models defines the Bubble Tea-based
+// TUI models for managing and interacting with
+// task and project lists.
 package models
 
 import (
@@ -37,6 +40,7 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 )
 
+// taskListKeyMap defines the key bindings used in the task list view.
 type taskListKeyMap struct {
 	toggleHelpMenu key.Binding
 	addItem        key.Binding
@@ -49,6 +53,7 @@ type taskListKeyMap struct {
 	toggleComplete key.Binding
 }
 
+// newTaskListKeyMap initializes and returns a new key map for task list actions.
 func newTaskListKeyMap() *taskListKeyMap {
 	return &taskListKeyMap{
 		toggleComplete: key.NewBinding(
@@ -90,10 +95,12 @@ func newTaskListKeyMap() *taskListKeyMap {
 	}
 }
 
+// customTaskDelegate is a custom list delegate for rendering task items.
 type customTaskDelegate struct {
 	list.DefaultDelegate
 }
 
+// Render draws a single task item within the task list.
 func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	taskItem, ok := item.(*items.Task)
 	if !ok {
@@ -180,6 +187,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	}
 }
 
+// taskListModel represents the Bubble Tea model for the task list view.
 type taskListModel struct {
 	list             list.Model
 	project          *items.Project
@@ -200,6 +208,7 @@ type taskListModel struct {
 	rendered string
 }
 
+// newTaskListModel creates a new taskListModel for the given project.
 func newTaskListModel(project *items.Project, projectModel *projectListModel) taskListModel {
 	listKeys := newTaskListKeyMap()
 
@@ -248,10 +257,12 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	}
 }
 
+// Init initializes the taskListModel and returns an initial command.
 func (m taskListModel) Init() tea.Cmd {
 	return tickCmd()
 }
 
+// Update handles incoming messages and updates the taskListModel accordingly.
 func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -468,6 +479,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+// View returns the string representation of the task list view.
 func (m taskListModel) View() string {
 	centeredStyle := lipgloss.NewStyle().
 		Width(m.width).
@@ -512,8 +524,8 @@ func (m taskListModel) View() string {
 	return m.rendered
 }
 
-// Sorts the tasks list by key.
-// Key may be either priority, dueDate or state.
+// sortTasksByKey sorts the tasks in the list model by a specified key.
+// Valid keys include "priority", "dueDate", and "state".
 func sortTasksByKey(m *list.Model, key string) {
 	// Preserve selected item
 	selected := m.SelectedItem()

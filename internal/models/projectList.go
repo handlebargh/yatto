@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package models defines the Bubble Tea-based
+// TUI models for managing and interacting with
+// task and project lists.
 package models
 
 import (
@@ -36,6 +39,8 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 )
 
+// projectListKeyMap defines the key bindings
+// used in the project list UI model.
 type projectListKeyMap struct {
 	toggleHelpMenu key.Binding
 	addProject     key.Binding
@@ -44,6 +49,8 @@ type projectListKeyMap struct {
 	deleteProject  key.Binding
 }
 
+// newProjectListKeyMap returns a new set of key
+// bindings for project list operations.
 func newProjectListKeyMap() *projectListKeyMap {
 	return &projectListKeyMap{
 		deleteProject: key.NewBinding(
@@ -69,10 +76,14 @@ func newProjectListKeyMap() *projectListKeyMap {
 	}
 }
 
+// customProjectDelegate implements a custom
+// renderer for items in the project list.
 type customProjectDelegate struct {
 	list.DefaultDelegate
 }
 
+// Render renders a custom project item in the list,
+// including its task summary and status indicators.
 func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	projectItem, ok := item.(*items.Project)
 	if !ok {
@@ -143,6 +154,8 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	}
 }
 
+// projectListModel defines the TUI model used to
+// manage and interact with projects.
 type projectListModel struct {
 	list             list.Model
 	selected         bool
@@ -158,6 +171,8 @@ type projectListModel struct {
 	renderer *glamour.TermRenderer
 }
 
+// InitialProjectListModel returns an initialized projectListModel
+// with all necessary state and UI settings.
 func InitialProjectListModel() projectListModel {
 	listKeys := newProjectListKeyMap()
 
@@ -198,6 +213,8 @@ func InitialProjectListModel() projectListModel {
 	}
 }
 
+// Init initializes the Bubble Tea program
+// for the project list model.
 func (m projectListModel) Init() tea.Cmd {
 	return tea.Batch(
 		tickCmd(),
@@ -205,6 +222,8 @@ func (m projectListModel) Init() tea.Cmd {
 	)
 }
 
+// Update handles incoming messages and updates
+// the project list model state accordingly.
 func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -376,6 +395,8 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+// View renders the current UI state of the project list,
+// including list view, progress bar, and any status messages.
 func (m projectListModel) View() string {
 	centeredStyle := lipgloss.NewStyle().
 		Width(m.width).

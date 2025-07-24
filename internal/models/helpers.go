@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package models defines the Bubble Tea-based
+// TUI models for managing and interacting with
+// task and project lists.
 package models
 
 import (
@@ -33,6 +36,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// completedString returns a string representation of the task completion state.
+// It returns "done" if completed is true, otherwise "open".
 func completedString(completed bool) string {
 	if completed {
 		return "done"
@@ -41,6 +46,9 @@ func completedString(completed bool) string {
 	return "open"
 }
 
+// getColorCode maps a project color name to its corresponding lipgloss.AdaptiveColor.
+// Supported colors include: green, orange, red, blue, indigo.
+// Defaults to blue if the color is unrecognized.
 func getColorCode(color string) lipgloss.AdaptiveColor {
 	switch color {
 	case "green":
@@ -58,6 +66,8 @@ func getColorCode(color string) lipgloss.AdaptiveColor {
 	}
 }
 
+// taskSortValue returns a numeric value used to sort tasks by priority and completion status.
+// Lower values indicate higher priority. Completed tasks are deprioritized by adding a fixed offset.
 func taskSortValue(t *items.Task) int {
 	base := 10 - t.PriorityValue()
 	if t.Completed() {
@@ -66,12 +76,18 @@ func taskSortValue(t *items.Task) int {
 	return base
 }
 
+// tickCmd returns a Bubble Tea command that sends a tickMsg every second.
+// Used to drive periodic updates in the TUI, such as progress animations.
 func tickCmd() tea.Cmd {
 	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
 
+// readProjectsFromFS reads all project directories from the configured storage path.
+// It deserializes each project's `project.json` file into an items.Project object.
+// Returns a slice of all successfully read projects.
+// Panics if the storage directory can't be read or if project files are invalid.
 func readProjectsFromFS() []items.Project {
 	storageDir := viper.GetString("storage.path")
 	entries, err := os.ReadDir(storageDir)
