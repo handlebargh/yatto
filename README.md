@@ -3,6 +3,7 @@
 ## Yet Another Terrific Task Organizer
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/handlebargh/yatto)](https://goreportcard.com/report/github.com/handlebargh/yatto)
+[![go reference](https://pkg.go.dev/badge/github.com/handlebargh/yatto)](https://pkg.go.dev/github.com/handlebargh/yatto)
 [![GitHub License](https://img.shields.io/github/license/handlebargh/yatto?color=blue)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/handlebargh/yatto?color=blue)](https://github.com/handlebargh/yatto/releases/latest)
 
