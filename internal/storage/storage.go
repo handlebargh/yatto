@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package storage provides the logic to create the storage directory.
 package storage
 
 import (
@@ -30,6 +31,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+// CreateStorageDir checks if the configured storage directory exists,
+// and prompts the user to create it if it does not. If the user confirms,
+// the directory is created with 0700 permissions. Exits the program if the
+// user declines or an error occurs during input.
 func CreateStorageDir() {
 	storageDir := viper.GetString("storage.path")
 
@@ -60,6 +65,8 @@ func CreateStorageDir() {
 	}
 }
 
+// FileExists returns true if the specified file exists within the configured
+// storage directory. It uses os.Stat to check for existence and ignores other errors.
 func FileExists(file string) bool {
 	fullPath := filepath.Join(viper.GetString("storage.path"), file)
 	_, err := os.Stat(fullPath)
