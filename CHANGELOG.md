@@ -1,3 +1,9 @@
+## v0.10.0 (2025-07-26)
+
+### Feat
+
+- add new state in progress and redo task sorting
+
 ## v0.9.2 (2025-07-24)
 
 ### Fix
