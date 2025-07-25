@@ -28,6 +28,7 @@ package items
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -76,6 +77,7 @@ type Task struct {
 	TaskPriority    string     `json:"priority"`
 	TaskDueDate     *time.Time `json:"due_date,omitempty"`
 	TaskLabels      string     `json:"labels,omitempty"`
+	TaskInProgress  bool       `json:"in_progress"`
 	TaskCompleted   bool       `json:"completed"`
 }
 
@@ -115,6 +117,12 @@ func (t Task) Labels() string { return t.TaskLabels }
 // SetLabels sets the task's labels.
 func (t *Task) SetLabels(labels string) { t.TaskLabels = labels }
 
+// InProgress returns true if the task is marked as in progress.
+func (t Task) InProgress() bool { return t.TaskInProgress }
+
+// SetInProgress sets the task's in progress status.
+func (t *Task) SetInProgress(inProgress bool) { t.TaskInProgress = inProgress }
+
 // Completed returns true if the task is marked as done.
 func (t Task) Completed() bool { return t.TaskCompleted }
 
@@ -132,6 +140,25 @@ func (t Task) DueDateToString() string {
 	}
 
 	return ""
+}
+
+// DaysUntilToString returns a string containing the full days from now until the due date.
+// If the date is in the past, it returns a negative value.
+// Returns "no due date" if executed on a task with missing due date.
+func (t Task) DaysUntilToString() string {
+	if t.TaskDueDate != nil {
+		now := time.Now()
+		dueDate := t.DueDate()
+
+		now = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		target := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 0, 0, 0, 0, dueDate.Location())
+
+		diff := target.Sub(now).Hours() / 24
+
+		return fmt.Sprintf("%d", int(math.Floor(diff)))
+	}
+
+	return "no due date"
 }
 
 // PriorityValue returns a numeric value for the task's priority.
@@ -203,15 +230,22 @@ func (t *Task) TaskToMarkdown() string {
 		dueDate = fmt.Sprintf("## Due at\n%s\n\n", t.DueDate())
 	}
 
-	labels := "## Labels\n"
+	labels := ""
 	if t.Labels() != "" {
+		labels = "## Labels\n"
 		labelsList := strings.SplitSeq(t.Labels(), ",")
 		for label := range labelsList {
 			labels += label + "\n\n"
 		}
 		labels += "\n"
-	} else {
-		labels += "no labels\n\n"
+	}
+
+	inProgress := ""
+	if !t.Completed() {
+		inProgress = "## In Progress\n❌ No\n\n"
+		if t.InProgress() {
+			inProgress = "## In Progress\n✅ Yes\n\n"
+		}
 	}
 
 	completed := "## Done\n❌ No\n\n"
@@ -221,5 +255,5 @@ func (t *Task) TaskToMarkdown() string {
 
 	id := fmt.Sprintf("## ID\n%s", t.Id())
 
-	return title + description + priority + dueDate + labels + completed + id
+	return title + description + priority + dueDate + labels + inProgress + completed + id
 }

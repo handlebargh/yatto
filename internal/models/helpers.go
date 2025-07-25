@@ -67,6 +67,11 @@ func getColorCode(color string) lipgloss.AdaptiveColor {
 // Lower values indicate higher priority. Completed tasks are deprioritized by adding a fixed offset.
 func taskSortValue(t *items.Task) int {
 	base := 10 - t.PriorityValue()
+
+	if t.InProgress() {
+		base += 10
+	}
+
 	if t.Completed() {
 		base += 100
 	}
