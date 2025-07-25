@@ -21,10 +21,11 @@
 package models
 
 import (
+	"cmp"
 	"fmt"
 	"io"
 	"path/filepath"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -39,15 +40,16 @@ import (
 
 // taskListKeyMap defines the key bindings used in the task list view.
 type taskListKeyMap struct {
-	toggleHelpMenu key.Binding
-	addItem        key.Binding
-	chooseItem     key.Binding
-	editItem       key.Binding
-	deleteItem     key.Binding
-	sortByPriority key.Binding
-	sortByDueDate  key.Binding
-	sortByState    key.Binding
-	toggleComplete key.Binding
+	toggleHelpMenu   key.Binding
+	addItem          key.Binding
+	chooseItem       key.Binding
+	editItem         key.Binding
+	deleteItem       key.Binding
+	sortByPriority   key.Binding
+	sortByDueDate    key.Binding
+	sortByState      key.Binding
+	toggleInProgress key.Binding
+	toggleComplete   key.Binding
 }
 
 // newTaskListKeyMap initializes and returns a new key map for task list actions.
@@ -57,17 +59,21 @@ func newTaskListKeyMap() *taskListKeyMap {
 			key.WithKeys("C"),
 			key.WithHelp("C", "toggle complete"),
 		),
+		toggleInProgress: key.NewBinding(
+			key.WithKeys("P"),
+			key.WithHelp("P", "toggle in progress"),
+		),
 		sortByPriority: key.NewBinding(
-			key.WithKeys("p"),
-			key.WithHelp("p", "sort by priority"),
+			key.WithKeys("alt+p"),
+			key.WithHelp("alt+p", "sort by priority"),
 		),
 		sortByDueDate: key.NewBinding(
-			key.WithKeys("d"),
-			key.WithHelp("d", "sort by due date"),
+			key.WithKeys("alt+d"),
+			key.WithHelp("alt+d", "sort by due date"),
 		),
 		sortByState: key.NewBinding(
-			key.WithKeys("s"),
-			key.WithHelp("s", "sort by state"),
+			key.WithKeys("alt+s"),
+			key.WithHelp("alt+s", "sort by state"),
 		),
 		deleteItem: key.NewBinding(
 			key.WithKeys("D"),
@@ -157,12 +163,40 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	right := priorityValueStyle.Render(taskItem.Priority())
 
-	if items.IsToday(taskItem.DueDate()) {
+	now := time.Now()
+
+	if taskItem.DueDate() != nil &&
+		taskItem.DueDate().Before(now) &&
+		items.IsToday(taskItem.DueDate()) {
 		right = lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(red).
 			Foreground(black).
 			Render("Due today")
+	}
+
+	if taskItem.DueDate() != nil && taskItem.DueDate().Before(now) {
+		right = right + lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(vividRed).
+			Foreground(black).
+			Render("overdue")
+	}
+
+	if taskItem.InProgress() {
+		right = right + lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(blue).
+			Foreground(black).
+			Render("in progress")
+	}
+
+	if taskItem.DueDate() != nil && !taskItem.DueDate().Before(now) {
+		right = right + lipgloss.NewStyle().
+			Padding(0, 1).
+			Background(yellow).
+			Foreground(black).
+			Render("Due in "+taskItem.DaysUntilToString()+" days")
 	}
 
 	if taskItem.Completed() {
@@ -240,6 +274,7 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 			listKeys.sortByPriority,
 			listKeys.sortByDueDate,
 			listKeys.sortByState,
+			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
 		}
 	}
@@ -304,23 +339,26 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "create":
 			m.list.InsertItem(0, &msg.Task)
 			m.status = "🗸  Task created"
-			return m, m.progress.SetPercent(0.5)
 
 		case "update":
 			m.status = "🗸  Task updated"
-			return m, m.progress.SetPercent(0.5)
+
+		case "start":
+			m.status = "🗸  Task started"
+
+		case "stop":
+			m.status = "🗸  Task stopped"
 
 		case "complete":
 			m.status = "🗸  Task completed"
-			return m, m.progress.SetPercent(0.5)
 
 		case "reopen":
 			m.status = "🗸  Task reopened"
-			return m, m.progress.SetPercent(0.5)
 
 		default:
 			return m, nil
 		}
+		return m, m.progress.SetPercent(0.5)
 
 	case items.WriteTaskJSONErrorMsg:
 		m.mode = 2
@@ -419,10 +457,42 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 
+			case key.Matches(msg, m.keys.toggleInProgress):
+				if m.list.SelectedItem() != nil {
+					t := m.list.SelectedItem().(*items.Task)
+
+					if t.Completed() {
+						return m, m.list.NewStatusMessage(textStyleRed("Cannot set done task in progress"))
+					}
+
+					t.SetInProgress(!t.InProgress())
+					json := t.MarshalTask()
+
+					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
+					if t.InProgress() {
+						cmds = append(cmds,
+							t.WriteTaskJson(json, *m.project, "start"),
+							git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "starting progress: "+t.Title()),
+						)
+						m.status = ""
+						return m, tea.Batch(cmds...)
+					}
+
+					cmds = append(cmds,
+						t.WriteTaskJson(json, *m.project, "stop"),
+						git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "stopping progress: "+t.Title()),
+					)
+					m.status = ""
+					return m, tea.Batch(cmds...)
+				}
+				return m, nil
+
 			case key.Matches(msg, m.keys.toggleComplete):
 				if m.list.SelectedItem() != nil {
 					t := m.list.SelectedItem().(*items.Task)
+					t.SetInProgress(false)
 					t.SetCompleted(!t.Completed())
+
 					json := t.MarshalTask()
 
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
@@ -527,39 +597,59 @@ func sortTasksByKey(m *list.Model, key string) {
 	// Preserve selected item
 	selected := m.SelectedItem()
 
-	// Extract all tasks
 	listItems := m.Items()
-	tasks := make([]*items.Task, len(listItems))
-	for i, item := range listItems {
-		task, ok := item.(*items.Task)
-		if !ok {
-			continue
+
+	var tasks []*items.Task
+	for _, item := range listItems {
+		if task, ok := item.(*items.Task); ok {
+			tasks = append(tasks, task)
 		}
-		tasks[i] = task
 	}
 
 	switch key {
 	case "priority":
-		sort.Slice(tasks, func(i, j int) bool {
-			return tasks[i].PriorityValue() > tasks[j].PriorityValue()
+		slices.SortStableFunc(tasks, func(x, y *items.Task) int {
+			// Push completed tasks to the bottom of the list.
+			if x.Completed() && !y.Completed() {
+				return 1
+			}
+			if !x.Completed() && y.Completed() {
+				return -1
+			}
+
+			// compare y with x because higher priority is represented by bigger integer.
+			return cmp.Compare(y.PriorityValue(), x.PriorityValue())
 		})
 
 	case "dueDate":
-		sort.Slice(tasks, func(i, j int) bool {
-			if tasks[i].DueDate() == nil {
-				return false
+		slices.SortStableFunc(tasks, func(x, y *items.Task) int {
+			dateX := x.DueDate()
+			dateY := y.DueDate()
+
+			// Handle missing due dates.
+			if dateX == nil && dateY != nil {
+				return 1
+			}
+			if dateX != nil && dateY == nil {
+				return -1
+			}
+			if dateX == nil && dateY == nil {
+				return 0
 			}
 
-			if tasks[j].DueDate() == nil {
-				return true
+			if dateX.Before(*dateY) {
+				return -1
+			}
+			if dateX.After(*dateY) {
+				return 1
 			}
 
-			return tasks[i].DueDate().Before(*tasks[j].DueDate())
+			return 0
 		})
 
 	case "state":
-		sort.Slice(tasks, func(i, j int) bool {
-			return taskSortValue(tasks[i]) < taskSortValue(tasks[j])
+		slices.SortStableFunc(tasks, func(x, y *items.Task) int {
+			return cmp.Compare(taskSortValue(x), taskSortValue(y))
 		})
 
 	default:
