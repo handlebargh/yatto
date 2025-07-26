@@ -1,3 +1,10 @@
+## v0.10.2 (2025-07-26)
+
+### Fix
+
+- fix sorting by using multi-sort
+- show label when task is due today
+
 ## v0.10.1 (2025-07-26)
 
 ### Fix
