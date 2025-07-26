@@ -164,18 +164,18 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	right := priorityValueStyle.Render(taskItem.Priority())
 
 	now := time.Now()
+	dueDate := taskItem.DueDate()
 
-	if taskItem.DueDate() != nil &&
-		taskItem.DueDate().Before(now) &&
-		items.IsToday(taskItem.DueDate()) {
+	if dueDate != nil &&
+		items.IsToday(dueDate) {
 		right = lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(red).
+			Background(vividRed).
 			Foreground(black).
-			Render("Due today")
+			Render("due today")
 	}
 
-	if taskItem.DueDate() != nil && taskItem.DueDate().Before(now) {
+	if dueDate != nil && dueDate.Before(now) {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(vividRed).
@@ -191,12 +191,14 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Render("in progress")
 	}
 
-	if taskItem.DueDate() != nil && !taskItem.DueDate().Before(now) {
+	if dueDate != nil &&
+		!dueDate.Before(now) &&
+		!items.IsToday(dueDate) {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(yellow).
 			Foreground(black).
-			Render("Due in "+taskItem.DaysUntilToString()+" days")
+			Render("due in "+taskItem.DaysUntilToString()+" days")
 	}
 
 	if taskItem.Completed() {
