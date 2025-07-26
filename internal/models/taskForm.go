@@ -128,7 +128,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 						return nil
 					}
 
-					t, err := time.Parse(items.DueDateLayout, str)
+					t, err := time.Parse(time.DateTime, str)
 					if err != nil {
 						return errors.New("invalid date format")
 					}
@@ -222,7 +222,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.task.SetCompleted(m.vars.taskCompleted)
 
 			if m.vars.taskDueDate != "" {
-				date, err := time.Parse(items.DueDateLayout, m.vars.taskDueDate)
+				date, err := time.Parse(time.DateTime, m.vars.taskDueDate)
 				if err != nil {
 					// TODO: show an error message
 					return m, nil

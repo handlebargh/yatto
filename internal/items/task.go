@@ -39,8 +39,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const DueDateLayout = "2006-01-02 15:04:05"
-
 var uuidRegex = regexp.MustCompile(
 	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\.json$`,
 )
@@ -136,7 +134,7 @@ func (t Task) FilterValue() string { return fmt.Sprintf("%s %s", t.TaskTitle, t.
 // Returns an empty string if no due date is set.
 func (t Task) DueDateToString() string {
 	if t.TaskDueDate != nil {
-		return t.DueDate().Format(DueDateLayout)
+		return t.DueDate().Format(time.DateTime)
 	}
 
 	return ""
@@ -221,39 +219,41 @@ func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
 func (t *Task) TaskToMarkdown() string {
 	title := fmt.Sprintf("# %s\n\n", t.Title())
 
-	description := fmt.Sprintf("## Description\n\n%s\n\n", t.Description())
-
-	priority := fmt.Sprintf("## Priority\n%s\n\n", strings.ToUpper(t.Priority()))
-
-	dueDate := ""
-	if t.DueDate() != nil {
-		dueDate = fmt.Sprintf("## Due at\n%s\n\n", t.DueDate())
-	}
-
-	labels := ""
-	if t.Labels() != "" {
-		labels = "## Labels\n"
-		labelsList := strings.SplitSeq(t.Labels(), ",")
-		for label := range labelsList {
-			labels += label + "\n\n"
-		}
-		labels += "\n"
+	completed := "✅  **Done**: ❌ No\n\n"
+	if t.Completed() {
+		completed = "✅  **Done**: ✅ Yes\n\n"
 	}
 
 	inProgress := ""
 	if !t.Completed() {
-		inProgress = "## In Progress\n❌ No\n\n"
+		inProgress = "🚧  **In Progress**: ❌ No\n\n"
 		if t.InProgress() {
-			inProgress = "## In Progress\n✅ Yes\n\n"
+			inProgress = "🚧  **In Progress**: ✅ Yes\n\n"
 		}
 	}
+	inProgress += "---\n\n"
 
-	completed := "## Done\n❌ No\n\n"
-	if t.Completed() {
-		completed = "## Done\n✅ Yes\n\n"
+	priority := fmt.Sprintf("🎯  **Priority**: %s\n\n", strings.ToUpper(t.Priority()))
+
+	dueDate := ""
+	if t.DueDate() != nil {
+		dueDate = fmt.Sprintf("📅  **Due At**: %s\n\n", t.DueDate().Format(time.RFC1123))
+	}
+	dueDate += "---\n\n"
+
+	description := fmt.Sprintf("📝  **Description**\n\n%s\n\n---\n\n", t.Description())
+
+	labels := ""
+	if t.Labels() != "" {
+		labels = "🏷️  **Labels**\n\n"
+		labelsSeq := strings.SplitSeq(t.Labels(), ",")
+		for label := range labelsSeq {
+			labels += "- " + label + "\n\n"
+		}
+		labels += "\n\n---\n\n"
 	}
 
-	id := fmt.Sprintf("## ID\n%s", t.Id())
+	id := fmt.Sprintf("🆔  **ID**: %s", t.Id())
 
-	return title + description + priority + dueDate + labels + inProgress + completed + id
+	return title + completed + inProgress + priority + dueDate + description + labels + id
 }

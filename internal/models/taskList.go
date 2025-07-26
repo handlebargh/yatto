@@ -223,8 +223,6 @@ type taskListModel struct {
 	list             list.Model
 	project          *items.Project
 	projectModel     *projectListModel
-	selected         bool
-	selection        *items.Task
 	keys             *taskListKeyMap
 	mode             mode
 	err              error
@@ -233,10 +231,6 @@ type taskListModel struct {
 	waitingAfterDone bool
 	status           string
 	width, height    int
-
-	// Glamour renderer
-	markdown string
-	rendered string
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
@@ -283,7 +277,6 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 		list:         itemList,
 		project:      project,
 		projectModel: projectModel,
-		selected:     false,
 		keys:         listKeys,
 		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
 	}
@@ -417,11 +410,6 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			switch msg.String() {
 			case "esc", "q":
-				if m.selected {
-					m.selected = !m.selected
-					return m, nil
-				}
-
 				return m.projectModel, nil
 			}
 
@@ -444,16 +432,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.chooseItem):
 				if m.list.SelectedItem() != nil {
-					var err error
-					m.selected = true
-					m.selection = m.list.SelectedItem().(*items.Task)
-					m.markdown = m.selection.TaskToMarkdown()
-					m.rendered, err = m.projectModel.renderer.Render(m.markdown)
-					if err != nil {
-						m.mode = 2
-						m.err = err
-						return m, nil
-					}
+					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
+					pagerModel := newTaskPagerModel(markdown, &m)
+
+					return pagerModel, tea.WindowSize()
 				}
 				return m, nil
 
@@ -584,11 +566,7 @@ func (m taskListModel) View() string {
 	}
 
 	// Display list view.
-	if !m.selected {
-		return appStyle.Render(m.list.View())
-	}
-
-	return m.rendered
+	return appStyle.Render(m.list.View())
 }
 
 // sortTasksByKey sorts the tasks in the list model by a specified key.
