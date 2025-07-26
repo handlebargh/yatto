@@ -24,11 +24,12 @@ task directory as a Git repository for versioning, synchronization and collabora
   - Sync across machines
 - Every change is immediately committed and - if a remote is configured - pushed.
 - **Tasks attributes** include due dates and searchable labels.
-- Tasks can be **sorted** by different attributes.
+- Tasks can be:
+  - **sorted** by different attributes
+  - **marked** as in progress
 
 ## Roadmap
 
-- **In progress state**: Mark tasks that are being worked on.
 - **Sub-tasks**: Create tasks associated with a parent task.
 
 ## Requirements
