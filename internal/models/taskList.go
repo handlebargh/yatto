@@ -47,7 +47,6 @@ type taskListKeyMap struct {
 	deleteItem       key.Binding
 	sortByPriority   key.Binding
 	sortByDueDate    key.Binding
-	sortByState      key.Binding
 	toggleInProgress key.Binding
 	toggleComplete   key.Binding
 }
@@ -70,10 +69,6 @@ func newTaskListKeyMap() *taskListKeyMap {
 		sortByDueDate: key.NewBinding(
 			key.WithKeys("alt+d"),
 			key.WithHelp("alt+d", "sort by due date"),
-		),
-		sortByState: key.NewBinding(
-			key.WithKeys("alt+s"),
-			key.WithHelp("alt+s", "sort by state"),
 		),
 		deleteItem: key.NewBinding(
 			key.WithKeys("D"),
@@ -167,8 +162,9 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	dueDate := taskItem.DueDate()
 
 	if dueDate != nil &&
-		items.IsToday(dueDate) {
-		right = lipgloss.NewStyle().
+		items.IsToday(dueDate) &&
+		dueDate.After(now) {
+		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(vividRed).
 			Foreground(black).
@@ -269,7 +265,6 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
 			listKeys.sortByDueDate,
-			listKeys.sortByState,
 			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
 		}
@@ -421,15 +416,11 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.sortByPriority):
-				sortTasksByKey(&m.list, "priority")
+				sortTasksByKeys(&m.list, []string{"state", "priority"})
 				return m, nil
 
 			case key.Matches(msg, m.keys.sortByDueDate):
-				sortTasksByKey(&m.list, "dueDate")
-				return m, nil
-
-			case key.Matches(msg, m.keys.sortByState):
-				sortTasksByKey(&m.list, "state")
+				sortTasksByKeys(&m.list, []string{"state", "dueDate"})
 				return m, nil
 
 			case key.Matches(msg, m.keys.chooseItem):
@@ -571,12 +562,10 @@ func (m taskListModel) View() string {
 	return appStyle.Render(m.list.View())
 }
 
-// sortTasksByKey sorts the tasks in the list model by a specified key.
+// sortTasksByKey sorts the tasks in the list model by a specified keys.
 // Valid keys include "priority", "dueDate", and "state".
-func sortTasksByKey(m *list.Model, key string) {
-	// Preserve selected item
+func sortTasksByKeys(m *list.Model, keys []string) {
 	selected := m.SelectedItem()
-
 	listItems := m.Items()
 
 	var tasks []*items.Task
@@ -586,69 +575,69 @@ func sortTasksByKey(m *list.Model, key string) {
 		}
 	}
 
-	switch key {
-	case "priority":
-		slices.SortStableFunc(tasks, func(x, y *items.Task) int {
-			// Push completed tasks to the bottom of the list.
-			if x.Completed() && !y.Completed() {
-				return 1
+	slices.SortStableFunc(tasks, func(x, y *items.Task) int {
+		for _, key := range keys {
+			switch key {
+			case "priority":
+				// Completed tasks to bottom
+				if x.Completed() && !y.Completed() {
+					return 1
+				}
+				if !x.Completed() && y.Completed() {
+					return -1
+				}
+				// Higher number = higher priority
+				if cmp := cmp.Compare(y.PriorityValue(), x.PriorityValue()); cmp != 0 {
+					return cmp
+				}
+
+			case "dueDate":
+				dx, dy := x.DueDate(), y.DueDate()
+				switch {
+				case dx == nil && dy != nil:
+					return 1
+				case dx != nil && dy == nil:
+					return -1
+				case dx != nil && dy != nil:
+					if dx.Before(*dy) {
+						return -1
+					}
+					if dx.After(*dy) {
+						return 1
+					}
+				}
+
+			case "state":
+				// Completed tasks go to bottom
+				if x.Completed() && !y.Completed() {
+					return 1
+				}
+				if !x.Completed() && y.Completed() {
+					return -1
+				}
+				// In-progress before others
+				if x.InProgress() && !y.InProgress() {
+					return -1
+				}
+				if !x.InProgress() && y.InProgress() {
+					return 1
+				}
 			}
-			if !x.Completed() && y.Completed() {
-				return -1
-			}
+		}
+		return 0
+	})
 
-			// compare y with x because higher priority is represented by bigger integer.
-			return cmp.Compare(y.PriorityValue(), x.PriorityValue())
-		})
-
-	case "dueDate":
-		slices.SortStableFunc(tasks, func(x, y *items.Task) int {
-			dateX := x.DueDate()
-			dateY := y.DueDate()
-
-			// Handle missing due dates.
-			if dateX == nil && dateY != nil {
-				return 1
-			}
-			if dateX != nil && dateY == nil {
-				return -1
-			}
-			if dateX == nil && dateY == nil {
-				return 0
-			}
-
-			if dateX.Before(*dateY) {
-				return -1
-			}
-			if dateX.After(*dateY) {
-				return 1
-			}
-
-			return 0
-		})
-
-	case "state":
-		slices.SortStableFunc(tasks, func(x, y *items.Task) int {
-			return cmp.Compare(taskSortValue(x), taskSortValue(y))
-		})
-
-	default:
-		// Do not sort at all.
-	}
-
-	// Convert back to []list.Item
+	// Convert back to list.Item and re-select
 	sortedItems := make([]list.Item, len(tasks))
 	for i, t := range tasks {
 		sortedItems[i] = t
 	}
 	m.SetItems(sortedItems)
 
-	// Re-select the same item
-	selectedTask, ok := selected.(*items.Task)
-	if ok {
+	// Reselect the previously selected task
+	if selectedTask, ok := selected.(*items.Task); ok {
 		for i, item := range sortedItems {
-			task, ok := item.(*items.Task)
-			if ok && task.Id() == selectedTask.Id() {
+			if task, ok := item.(*items.Task); ok && task.Id() == selectedTask.Id() {
 				m.Select(i)
 				break
 			}

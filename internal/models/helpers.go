@@ -63,21 +63,6 @@ func getColorCode(color string) lipgloss.AdaptiveColor {
 	}
 }
 
-// taskSortValue returns a numeric value used to sort tasks by priority and completion status.
-// Lower values indicate higher priority. Completed tasks are deprioritized by adding a fixed offset.
-func taskSortValue(t *items.Task) int {
-	base := 10 - t.PriorityValue()
-
-	if t.InProgress() {
-		base += 10
-	}
-
-	if t.Completed() {
-		base += 100
-	}
-	return base
-}
-
 // tickCmd returns a Bubble Tea command that sends a tickMsg every second.
 // Used to drive periodic updates in the TUI, such as progress animations.
 func tickCmd() tea.Cmd {
