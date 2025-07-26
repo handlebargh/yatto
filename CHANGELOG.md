@@ -1,3 +1,9 @@
+## v0.10.1 (2025-07-26)
+
+### Fix
+
+- redo task details view and display it in a pager
+
 ## v0.10.0 (2025-07-26)
 
 ### Feat
