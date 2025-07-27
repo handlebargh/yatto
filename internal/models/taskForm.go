@@ -222,7 +222,14 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.task.SetCompleted(m.vars.taskCompleted)
 
 			if m.vars.taskDueDate != "" {
-				date, err := time.Parse(time.DateTime, m.vars.taskDueDate)
+				// Get the local time zone
+				location, err := time.LoadLocation("Local")
+				if err != nil {
+					// TODO: show an error message
+					return m, nil
+				}
+
+				date, err := time.ParseInLocation(time.DateTime, m.vars.taskDueDate, location)
 				if err != nil {
 					// TODO: show an error message
 					return m, nil
