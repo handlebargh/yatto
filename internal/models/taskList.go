@@ -141,7 +141,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			BorderForeground(red).Background(red)
 	}
 
-	if index == m.GlobalIndex() {
+	if index == m.Index() {
 		titleStyle = titleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			MarginLeft(0)
@@ -356,7 +356,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(0.0)
 
 	case items.TaskDeleteDoneMsg:
-		m.list.RemoveItem(m.list.GlobalIndex())
+		selected := m.list.SelectedItem()
+		if selected != nil {
+			m.list.RemoveItem(m.list.Index())
+		}
 		m.status = "🗑  Task deleted"
 		return m, m.progress.SetPercent(0.5)
 
