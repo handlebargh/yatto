@@ -1,3 +1,10 @@
+## v0.10.4 (2025-07-27)
+
+### Fix
+
+- use visible list instead of GlobalIndex
+- correct due date format description
+
 ## v0.10.3 (2025-07-27)
 
 ### Fix
