@@ -121,7 +121,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Key("dueDate").
 				Title("Enter a due date:").
 				Value(&m.vars.taskDueDate).
-				Description("Format: YYYY-MM-DD hh-mm-ss").
+				Description("Format: YYYY-MM-DD hh:mm:ss").
 				Validate(func(str string) error {
 					// Ok if no date is set.
 					if str == "" {
