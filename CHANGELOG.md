@@ -1,3 +1,9 @@
+## v0.10.3 (2025-07-27)
+
+### Fix
+
+- use local time zone for due dates
+
 ## v0.10.2 (2025-07-26)
 
 ### Fix
