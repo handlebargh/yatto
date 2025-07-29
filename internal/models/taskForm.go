@@ -85,7 +85,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	if edit {
 		confirmQuestion = "Edit task?"
 	} else {
-		confirmQuestion = "Create new task?"
+		confirmQuestion = "Create task?"
 	}
 
 	m.form = huh.NewForm(
