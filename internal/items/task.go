@@ -39,6 +39,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const ellipses = "..."
+
 var uuidRegex = regexp.MustCompile(
 	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\.json$`,
 )
@@ -129,6 +131,26 @@ func (t *Task) SetCompleted(completed bool) { t.TaskCompleted = completed }
 
 // FilterValue returns a string used for filtering/search, combining title and labels.
 func (t Task) FilterValue() string { return fmt.Sprintf("%s %s", t.TaskTitle, t.TaskLabels) }
+
+// CropTaskTitle returns the task's title cropped to fit
+// length with a concatenated ellipses.
+func (t Task) CropTaskTitle(length int) string {
+	if len(t.Title()) > length {
+		return t.TaskTitle[:length-len(ellipses)] + ellipses
+	}
+
+	return t.TaskTitle
+}
+
+// CropTaskLabels returns the task's labels cropped to fit
+// length with a concatenated ellipses.
+func (t Task) CropTaskLabels(length int) string {
+	if len(t.Labels()) > length {
+		return t.TaskLabels[:length-len(ellipses)] + ellipses
+	}
+
+	return t.TaskLabels
+}
 
 // DueDateToString formats the task's due date as a string using DueDateLayout.
 // Returns an empty string if no due date is set.

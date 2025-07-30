@@ -38,6 +38,8 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 )
 
+const taskEntryLength = 53
+
 // taskListKeyMap defines the key bindings used in the task list view.
 type taskListKeyMap struct {
 	toggleHelpMenu   key.Binding
@@ -153,8 +155,8 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		labelsStyle = labelsStyle.MarginLeft(1)
 	}
 
-	left := titleStyle.Render(taskItem.Title()) + "\n" +
-		labelsStyle.Render(taskItem.Labels())
+	left := titleStyle.Render(taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
+		labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength))
 
 	right := priorityValueStyle.Render(taskItem.Priority())
 

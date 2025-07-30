@@ -100,15 +100,11 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Key("title").
 				Title("Enter a title:").
 				Value(&m.vars.taskTitle).
-				Description("Give it a short but concise title."+"\n"+
-					"(max 60 characters)").
 				Validate(func(str string) error {
 					if len(strings.TrimSpace(str)) < 1 {
 						return errors.New("title must not be empty")
 					}
-					if len(str) > 60 {
-						return errors.New("title is too long (only 60 character allowed)")
-					}
+
 					return nil
 				}),
 
@@ -144,13 +140,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Key("labels").
 				Title("Enter labels:").
 				Value(&m.vars.taskLabels).
-				Description("Comma separated list of labels.").
-				Validate(func(str string) error {
-					if len(str) > 60 {
-						return errors.New("labels too long (only 60 character allowed)")
-					}
-					return nil
-				}),
+				Description("Comma separated list of labels."),
 
 			huh.NewConfirm().
 				Title(confirmQuestion).
