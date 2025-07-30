@@ -44,10 +44,6 @@ var (
 	// red is an adaptive color used to indicate errors in the UI.
 	red = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
 
-	// version saves the latest git tag at build time.
-	// Defaults to the string "dev"
-	version = "dev"
-
 	// revision saves the git commit the application is built from.
 	revision = "unknown"
 
@@ -58,26 +54,34 @@ var (
 	goVersion = runtime.Version()
 )
 
-// revisionInfo returns the commit sha hash and commit date
+// versionInfo returns the version, commit sha hash and commit date
 // from which the application is built.
-func revisionInfo() (string, string) {
-	bi, ok := debug.ReadBuildInfo()
-	if ok {
-		for _, s := range bi.Settings {
-			switch s.Key {
+func versionInfo() string {
+	buildInfo, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "Unable to read version information."
+	}
+
+	if buildInfo.Main.Version != "" {
+		for _, setting := range buildInfo.Settings {
+			switch setting.Key {
 			case "vcs.revision":
-				revision = s.Value
+				revision = setting.Value
 			case "vcs.time":
-				revisionDate = s.Value
+				revisionDate = setting.Value
 			case "vcs.modified":
-				if s.Value == "true" {
-					revision += "-dirty"
+				if setting.Value == "true" {
+					revision += "+dirty"
 				}
 			}
 		}
+
+		return fmt.Sprintf("Version:\t%s\nRevision:\t%s\nRevisionDate:\t%s\nGoVersion:\t%s\n",
+			buildInfo.Main.Version, revision, revisionDate, goVersion)
 	}
 
-	return revision, revisionDate
+	return fmt.Sprintf("Version:\tunknown\nRevision:\tunknown\nRevisionDate:\tunknown\nGoVersion:\t%s\n",
+		goVersion)
 }
 
 // versionHeader returns the stylized application name
@@ -192,11 +196,7 @@ func main() {
 
 	if *versionFlag {
 		fmt.Println(versionHeader())
-
-		revision, date := revisionInfo()
-		fmt.Printf("Version:\t%s\nRevision:\t%s\nRevisionDate:\t%s\nGoVersion:\t%s\n",
-			version, revision, date, goVersion)
-
+		fmt.Println(versionInfo())
 		os.Exit(0)
 	}
 
