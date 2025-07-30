@@ -27,6 +27,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -38,8 +40,58 @@ import (
 	"github.com/spf13/viper"
 )
 
-// red is an adaptive color used to indicate errors in the UI.
-var red = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
+var (
+	// red is an adaptive color used to indicate errors in the UI.
+	red = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
+
+	// version saves the latest git tag at build time.
+	// Defaults to the string "dev"
+	version = "dev"
+
+	// revision saves the git commit the application is built from.
+	revision = "unknown"
+
+	// revisionDate saves the commit's date.
+	revisionDate = "unknown"
+
+	// goVersion saves the Go version the application is built with.
+	goVersion = runtime.Version()
+)
+
+// revisionInfo returns the commit sha hash and commit date
+// from which the application is built.
+func revisionInfo() (string, string) {
+	bi, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, s := range bi.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				revision = s.Value
+			case "vcs.time":
+				revisionDate = s.Value
+			case "vcs.modified":
+				if s.Value == "true" {
+					revision += "-dirty"
+				}
+			}
+		}
+	}
+
+	return revision, revisionDate
+}
+
+// versionHeader returns the stylized application name
+// and project URL.
+func versionHeader() string {
+	return `
+ ____ ____ ____ ____ ____ 
+||y |||a |||t |||t |||o ||
+||__|||__|||__|||__|||__||
+|/__\|/__\|/__\|/__\|/__\|
+
+https://github.com/handlebargh/yatto
+`
+}
 
 // spinnerModel defines the model used for displaying a spinner while syncing with a remote Git repository.
 type spinnerModel struct {
@@ -135,7 +187,18 @@ func initConfig(home string, configPath *string) {
 // creates storage directories, optionally performs a Git sync, and starts the TUI.
 func main() {
 	configPath := flag.String("config", "", "Path to the config file")
+	versionFlag := flag.Bool("version", false, "Print application version")
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Println(versionHeader())
+
+		revision, date := revisionInfo()
+		fmt.Printf("Version:\t%s\nRevision:\t%s\nRevisionDate:\t%s\nGoVersion:\t%s\n",
+			version, revision, date, goVersion)
+
+		os.Exit(0)
+	}
 
 	home, err := os.UserHomeDir()
 	if err != nil {
