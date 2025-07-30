@@ -1,7 +1,5 @@
 # YATTO
 
-## Yet Another Terrific Task Organizer
-
 [![Go Report Card](https://goreportcard.com/badge/github.com/handlebargh/yatto)](https://goreportcard.com/report/github.com/handlebargh/yatto)
 [![go reference](https://pkg.go.dev/badge/github.com/handlebargh/yatto)](https://pkg.go.dev/github.com/handlebargh/yatto)
 [![GitHub License](https://img.shields.io/github/license/handlebargh/yatto?color=blue)](LICENSE)
@@ -117,3 +115,17 @@ MIT - see [LICENSE](LICENSE)
 ## Contributing
 
 Contributions, feedback, and ideas are welcome! Feel free to open issues or pull requests.
+
+## Project origin
+
+YATTO started as a small coding exercise to improve my proficiency in Go
+and explore the Bubble Tea framework out of curiosity. The idea of building
+a todo app had been on my mind for a while, as it's a popular project to practice
+coding with.
+
+The name I chose - YATTO - stands for Yet Another Terrific Task Organizer.
+Coincidentally (or perhaps fittingly), yatto also means "finally" in Japanese, which felt
+appropriate since I had started several todo app attempts before this one,
+without ever sticking with them.
+
+So here it is: a task organizer I can finally live with.
