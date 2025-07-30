@@ -124,7 +124,7 @@ a todo app had been on my mind for a while, as it's a popular project to practic
 coding with.
 
 The name I chose - YATTO - stands for Yet Another Terrific Task Organizer.
-Coincidentally (or perhaps fittingly), yatto also means "finally" in Japanese, which felt
+Coincidentally (or perhaps fittingly), yatto also means "finally" in Japanese, which feels
 appropriate since I had started several todo app attempts before this one,
 without ever sticking with them.
 
