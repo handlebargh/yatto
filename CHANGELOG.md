@@ -1,3 +1,18 @@
+## v0.11.0 (2025-07-30)
+
+### Feat
+
+- print version information when run with -version flag (#9)
+
+### Fix
+
+- allow task titles and labels of arbitrary length
+
+### Refactor
+
+- show correct version info when installed by go toolchain
+- get rid of an ambiguity that could make believe that this question could lead to another form (#1)
+
 ## v0.10.4 (2025-07-27)
 
 ### Fix
