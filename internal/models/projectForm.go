@@ -28,6 +28,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
@@ -264,9 +265,9 @@ func (m projectFormModel) errorView() string {
 func (m projectFormModel) appBoundaryView(text string) string {
 	var color lipgloss.AdaptiveColor
 	if m.edit {
-		color = orange
+		color = colors.Orange
 	} else {
-		color = green
+		color = colors.Green
 	}
 
 	return lipgloss.PlaceHorizontal(
@@ -285,6 +286,6 @@ func (m projectFormModel) appErrorBoundaryView(text string) string {
 		lipgloss.Left,
 		m.styles.ErrorHeaderText.Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
-		lipgloss.WithWhitespaceForeground(red),
+		lipgloss.WithWhitespaceForeground(colors.Red),
 	)
 }

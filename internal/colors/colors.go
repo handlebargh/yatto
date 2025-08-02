@@ -18,28 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package models
+// package colors defines all color values
+// used by the application.
+package colors
 
-import (
-	"time"
+import "github.com/charmbracelet/lipgloss"
 
-	tea "github.com/charmbracelet/bubbletea"
+var (
+	Red      = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
+	VividRed = lipgloss.AdaptiveColor{Light: "#FE134D", Dark: "#FE134D"}
+	Indigo   = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
+	Green    = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
+	Orange   = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
+	Blue     = lipgloss.AdaptiveColor{Light: "#1e90ff", Dark: "#1e90ff"}
+	Yellow   = lipgloss.AdaptiveColor{Light: "#CCCC00", Dark: "#CCCC00"}
+	Black    = lipgloss.Color("#000000")
 )
-
-// completedString returns a string representation of the task completion state.
-// It returns "done" if completed is true, otherwise "open".
-func completedString(completed bool) string {
-	if completed {
-		return "done"
-	}
-
-	return "open"
-}
-
-// tickCmd returns a Bubble Tea command that sends a tickMsg every second.
-// Used to drive periodic updates in the TUI, such as progress animations.
-func tickCmd() tea.Cmd {
-	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
-		return tickMsg(t)
-	})
-}

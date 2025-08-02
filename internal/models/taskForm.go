@@ -29,6 +29,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
@@ -290,30 +291,30 @@ func (m taskFormModel) View() string {
 	// Status (right side)
 	switch m.vars.taskPriority {
 	case "high":
-		s.Priority = s.Priority.Background(red)
+		s.Priority = s.Priority.Background(colors.Red)
 	case "medium":
-		s.Priority = s.Priority.Background(orange)
+		s.Priority = s.Priority.Background(colors.Orange)
 	case "low":
-		s.Priority = s.Priority.Background(indigo)
+		s.Priority = s.Priority.Background(colors.Indigo)
 	default:
-		s.Priority = s.Priority.Background(indigo)
+		s.Priority = s.Priority.Background(colors.Indigo)
 	}
 
 	switch m.vars.taskCompleted {
 	case true:
-		s.Completed = s.Completed.Background(green)
+		s.Completed = s.Completed.Background(colors.Green)
 	case false:
-		s.Completed = s.Completed.Background(blue)
+		s.Completed = s.Completed.Background(colors.Blue)
 	}
 
 	var header string
 	var color lipgloss.AdaptiveColor
 	if m.edit {
 		header = m.appBoundaryView("Edit task")
-		color = orange
+		color = colors.Orange
 	} else {
 		header = m.appBoundaryView("Create new task")
-		color = green
+		color = colors.Green
 	}
 
 	var status string
@@ -361,9 +362,9 @@ func (m taskFormModel) errorView() string {
 func (m taskFormModel) appBoundaryView(text string) string {
 	var color lipgloss.AdaptiveColor
 	if m.edit {
-		color = orange
+		color = colors.Orange
 	} else {
-		color = green
+		color = colors.Green
 	}
 
 	return lipgloss.PlaceHorizontal(
@@ -382,6 +383,6 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 		lipgloss.Left,
 		m.styles.ErrorHeaderText.Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
-		lipgloss.WithWhitespaceForeground(red),
+		lipgloss.WithWhitespaceForeground(colors.Red),
 	)
 }
