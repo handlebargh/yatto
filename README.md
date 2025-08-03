@@ -147,7 +147,7 @@ The repository must be empty, meaning that nothing must be committed at creation
 
 3. Add the remote and push the local repository.
 
-````bash
+```bash
 cd ${HOME}/.yatto
 git remote add $GIT_REMOTE_URL
 git push -u origin main
@@ -158,7 +158,7 @@ git push -u origin main
 ```toml
 [git.remote]
 enable = true
-````
+```
 
 ## Non-interactive mode
 
