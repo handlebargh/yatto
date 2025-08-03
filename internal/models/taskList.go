@@ -198,7 +198,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Padding(0, 1).
 			Background(colors.Yellow).
 			Foreground(colors.Black).
-			Render("due in "+taskItem.DaysUntilToString()+" days")
+			Render("due in "+taskItem.DaysUntilToString()+" day(s)")
 	}
 
 	if taskItem.Completed() {

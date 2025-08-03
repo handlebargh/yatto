@@ -23,8 +23,10 @@
 package printer
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
@@ -78,13 +80,69 @@ func getProjectTasks(projectsIDs ...string) ([]projectTask, []string) {
 	return result, missing
 }
 
-// PrintTasks prints tasks to the terminal in a stylized, non-interactive format.
+// sortTasks sorts a slice of projectTask items in-place using a stable sort,
+// applying a multi-level comparison based on task state, due date, and priority.
 //
-// If project IDs are provided, it only prints tasks from those projects.
-// If no project IDs are given, it prints tasks from all projects.
+// The sorting precedence is as follows:
+//  1. State: Tasks that are in progress are ordered before those that are not.
+//  2. Due Date: Tasks with earlier due dates come before later ones. Tasks with a due date
+//     are prioritized over tasks without one.
+//  3. Priority: Tasks with higher numeric priority values are ranked higher.
 //
-// If any provided project ID does not exist, an error message is printed to the terminal
-// indicating which project IDs were not found.
+// The sort is stable, preserving the relative order of equal elements across criteria.
+func sortTasks(tasks []projectTask) {
+	slices.SortStableFunc(tasks, func(x, y projectTask) int {
+		for _, key := range []string{"state", "dueDate", "priority"} {
+			switch key {
+			case "priority":
+				// Higher number = higher priority
+				if cmp := cmp.Compare(y.task.PriorityValue(), x.task.PriorityValue()); cmp != 0 {
+					return cmp
+				}
+
+			case "dueDate":
+				dx, dy := x.task.DueDate(), y.task.DueDate()
+				switch {
+				case dx == nil && dy != nil:
+					return 1
+				case dx != nil && dy == nil:
+					return -1
+				case dx != nil && dy != nil:
+					if dx.Before(*dy) {
+						return -1
+					}
+					if dx.After(*dy) {
+						return 1
+					}
+				}
+
+			case "state":
+				// In-progress before others
+				if x.task.InProgress() && !y.task.InProgress() {
+					return -1
+				}
+				if !x.task.InProgress() && y.task.InProgress() {
+					return 1
+				}
+			}
+		}
+		return 0
+	})
+}
+
+// PrintTasks displays a styled list of all non-completed tasks for the given project IDs.
+//
+// For each provided project ID, it attempts to retrieve associated tasks. If any project IDs
+// are not found, an error message is printed for each.
+//
+// The remaining tasks are filtered to exclude completed ones, then sorted by in-progress state,
+// due date, and priority using sortTasks. Each task is printed with:
+//   - A cropped task title
+//   - The project title, color-coded
+//   - Optional labels, color-coded
+//   - Priority, styled by level (low, medium, high)
+//   - Badges indicating task state, including:
+//   - "due today", "overdue", "in progress", or "due in N day(s)"
 func PrintTasks(projectsIDs ...string) {
 	pt, missing := getProjectTasks(projectsIDs...)
 
@@ -98,27 +156,92 @@ func PrintTasks(projectsIDs ...string) {
 		}
 	}
 
+	var pendingTasks []projectTask
 	for _, pt := range pt {
+		if !pt.task.Completed() {
+			pendingTasks = append(pendingTasks, pt)
+		}
+	}
 
-		taskTitle := pt.task.CropTaskTitle(30)
+	sortTasks(pendingTasks)
+
+	for _, pt := range pendingTasks {
+		taskTitle := pt.task.CropTaskTitle(40)
 		projectTitle := lipgloss.NewStyle().
 			Foreground(helpers.GetColorCode(pt.project.Color())).
 			Render(pt.project.Title())
+		taskPriority := pt.task.Priority()
 
 		var taskLabels string
 		if len(pt.task.Labels()) > 0 {
 			taskLabels = lipgloss.NewStyle().
 				Foreground(colors.Blue).
-				Render("\n\t" + pt.task.CropTaskLabels(30))
+				Render("\n  " + pt.task.CropTaskLabels(40))
 		}
 
-		left := lipgloss.NewStyle().Render(
-			"\n\t" +
-				taskTitle + "\n\t" +
-				projectTitle +
-				taskLabels)
+		left := lipgloss.NewStyle().
+			Width(50).
+			Render(
+				"\n  " +
+					taskTitle + "\n  " +
+					projectTitle +
+					taskLabels)
 
-		right := lipgloss.NewStyle().Render()
+		priorityValueStyle := lipgloss.NewStyle().
+			Foreground(colors.Black).
+			Padding(0, 1)
+
+		switch pt.task.Priority() {
+		case "low":
+			priorityValueStyle = priorityValueStyle.Background(colors.Indigo)
+		case "medium":
+			priorityValueStyle = priorityValueStyle.Background(colors.Orange)
+		case "high":
+			priorityValueStyle = priorityValueStyle.Background(colors.Red)
+		}
+
+		right := lipgloss.NewStyle().Render(
+			"\n" + priorityValueStyle.Render(taskPriority),
+		)
+
+		now := time.Now()
+		dueDate := pt.task.DueDate()
+
+		if dueDate != nil &&
+			items.IsToday(dueDate) &&
+			dueDate.After(now) {
+			right = right + lipgloss.NewStyle().
+				Padding(0, 1).
+				Background(colors.VividRed).
+				Foreground(colors.Black).
+				Render("due today")
+		}
+
+		if dueDate != nil && dueDate.Before(now) {
+			right = right + lipgloss.NewStyle().
+				Padding(0, 1).
+				Background(colors.VividRed).
+				Foreground(colors.Black).
+				Render("overdue")
+		}
+
+		if pt.task.InProgress() {
+			right = right + lipgloss.NewStyle().
+				Padding(0, 1).
+				Background(colors.Blue).
+				Foreground(colors.Black).
+				Render("in progress")
+		}
+
+		if dueDate != nil &&
+			!dueDate.Before(now) &&
+			!items.IsToday(dueDate) {
+			right = right + lipgloss.NewStyle().
+				Padding(0, 1).
+				Background(colors.Yellow).
+				Foreground(colors.Black).
+				Render("due in "+pt.task.DaysUntilToString()+" day(s)")
+		}
 
 		row := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 
