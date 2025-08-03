@@ -249,7 +249,7 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	color := helpers.GetColorCode(project.Color())
 
 	titleStyleTasks := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
+		Foreground(colors.BadgeText()).
 		Background(color).
 		Padding(0, 1)
 

@@ -58,7 +58,7 @@ var (
 
 	// titleStyleProjects styles the title header for the project list.
 	titleStyleProjects = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#000000")).
+				Foreground(colors.BadgeText()).
 				Background(colors.Green()).
 				Padding(0, 1)
 
