@@ -120,29 +120,29 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		Width(60)
 
 	labelsStyle := lipgloss.NewStyle().
-		Foreground(colors.Blue).
+		Foreground(colors.Blue()).
 		Padding(0, 1)
 
 	priorityValueStyle := lipgloss.NewStyle().
-		Foreground(colors.Black).
+		Foreground(colors.BadgeText()).
 		Padding(0, 1)
 
 	switch taskItem.Priority() {
 	case "low":
-		titleStyle = titleStyle.BorderForeground(colors.Indigo)
-		labelsStyle = labelsStyle.BorderForeground(colors.Indigo)
+		titleStyle = titleStyle.BorderForeground(colors.Indigo())
+		labelsStyle = labelsStyle.BorderForeground(colors.Indigo())
 		priorityValueStyle = priorityValueStyle.
-			BorderForeground(colors.Indigo).Background(colors.Indigo)
+			BorderForeground(colors.Indigo()).Background(colors.Indigo())
 	case "medium":
-		titleStyle = titleStyle.BorderForeground(colors.Orange)
-		labelsStyle = labelsStyle.BorderForeground(colors.Orange)
+		titleStyle = titleStyle.BorderForeground(colors.Orange())
+		labelsStyle = labelsStyle.BorderForeground(colors.Orange())
 		priorityValueStyle = priorityValueStyle.
-			BorderForeground(colors.Orange).Background(colors.Orange)
+			BorderForeground(colors.Orange()).Background(colors.Orange())
 	case "high":
-		titleStyle = titleStyle.BorderForeground(colors.Red)
-		labelsStyle = labelsStyle.BorderForeground(colors.Red)
+		titleStyle = titleStyle.BorderForeground(colors.Red())
+		labelsStyle = labelsStyle.BorderForeground(colors.Red())
 		priorityValueStyle = priorityValueStyle.
-			BorderForeground(colors.Red).Background(colors.Red)
+			BorderForeground(colors.Red()).Background(colors.Red())
 	}
 
 	if index == m.Index() {
@@ -170,24 +170,24 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		dueDate.After(now) {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(colors.VividRed).
-			Foreground(colors.Black).
+			Background(colors.VividRed()).
+			Foreground(colors.BadgeText()).
 			Render("due today")
 	}
 
 	if dueDate != nil && dueDate.Before(now) {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(colors.VividRed).
-			Foreground(colors.Black).
+			Background(colors.VividRed()).
+			Foreground(colors.BadgeText()).
 			Render("overdue")
 	}
 
 	if taskItem.InProgress() {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(colors.Blue).
-			Foreground(colors.Black).
+			Background(colors.Blue()).
+			Foreground(colors.BadgeText()).
 			Render("in progress")
 	}
 
@@ -196,16 +196,16 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		!items.IsToday(dueDate) {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(colors.Yellow).
-			Foreground(colors.Black).
+			Background(colors.Yellow()).
+			Foreground(colors.BadgeText()).
 			Render("due in "+taskItem.DaysUntilToString()+" day(s)")
 	}
 
 	if taskItem.Completed() {
 		right = lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(colors.Green).
-			Foreground(colors.Black).
+			Background(colors.Green()).
+			Foreground(colors.BadgeText()).
 			Render("done")
 	}
 

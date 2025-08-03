@@ -74,16 +74,16 @@ func ReadProjectsFromFS() []items.Project {
 func GetColorCode(color string) lipgloss.AdaptiveColor {
 	switch color {
 	case "green":
-		return colors.Green
+		return colors.Green()
 	case "orange":
-		return colors.Orange
+		return colors.Orange()
 	case "red":
-		return colors.Red
+		return colors.Red()
 	case "blue":
-		return colors.Blue
+		return colors.Blue()
 	case "indigo":
-		return colors.Indigo
+		return colors.Indigo()
 	default:
-		return colors.Blue
+		return colors.Blue()
 	}
 }

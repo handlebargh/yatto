@@ -180,6 +180,27 @@ func initConfig(home string, configPath *string) {
 	viper.SetDefault("git.remote.enable", false)
 	viper.SetDefault("git.remote.name", "origin")
 
+	// colors
+	viper.SetDefault("colors.red_light", "#FE5F86")
+	viper.SetDefault("colors.red_dark", "#FE5F86")
+	viper.SetDefault("colors.vividRed_light", "#FE134D")
+	viper.SetDefault("colors.vividRed_dark", "#FE134D")
+	viper.SetDefault("colors.indigo_light", "#5A56E0")
+	viper.SetDefault("colors.indigo_dark", "#7571F9")
+	viper.SetDefault("colors.green_light", "#02BA84")
+	viper.SetDefault("colors.green_dark", "#02BF87")
+	viper.SetDefault("colors.orange_light", "#FFB733")
+	viper.SetDefault("colors.orange_dark", "#FFA336")
+	viper.SetDefault("colors.blue_light", "#1e90ff")
+	viper.SetDefault("colors.blue_dark", "#1e90ff")
+	viper.SetDefault("colors.yellow_light", "#CCCC00")
+	viper.SetDefault("colors.yellow_dark", "#CCCC00")
+	viper.SetDefault("colors.badge_text_light", "#000000")
+	viper.SetDefault("colors.badge_text_dark", "#000000")
+
+	// Form themes
+	viper.SetDefault("colors.form.theme", "Base16")
+
 	if *configPath != "" {
 		viper.SetConfigFile(*configPath)
 	} else {

@@ -59,17 +59,17 @@ var (
 	// titleStyleProjects styles the title header for the project list.
 	titleStyleProjects = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#000000")).
-				Background(colors.Green).
+				Background(colors.Green()).
 				Padding(0, 1)
 
 		// textStyleGreen renders strings using the green foreground color.
 	textStyleGreen = lipgloss.NewStyle().
-			Foreground(colors.Green).
+			Foreground(colors.Green()).
 			Render
 
 		// textStyleRed renders strings using the red foreground color.
 	textStyleRed = lipgloss.NewStyle().
-			Foreground(colors.Red).
+			Foreground(colors.Red()).
 			Render
 )
 
@@ -114,7 +114,7 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 	s.Highlight = lg.NewStyle().
 		Foreground(lipgloss.Color("212"))
 	s.ErrorHeaderText = s.HeaderText.
-		Foreground(colors.Red)
+		Foreground(colors.Red())
 	s.Help = lg.NewStyle().
 		Foreground(lipgloss.Color("240"))
 	return &s

@@ -120,7 +120,7 @@ func newProjectFormModel(p *items.Project, listModel *projectListModel, edit boo
 		WithWidth(45).
 		WithShowHelp(false).
 		WithShowErrors(false).
-		WithTheme(huh.ThemeBase16())
+		WithTheme(colors.FormTheme())
 
 	// Workaround for a problem that prevents the form
 	// from being initially completely rendered.
@@ -265,9 +265,9 @@ func (m projectFormModel) errorView() string {
 func (m projectFormModel) appBoundaryView(text string) string {
 	var color lipgloss.AdaptiveColor
 	if m.edit {
-		color = colors.Orange
+		color = colors.Orange()
 	} else {
-		color = colors.Green
+		color = colors.Green()
 	}
 
 	return lipgloss.PlaceHorizontal(
@@ -286,6 +286,6 @@ func (m projectFormModel) appErrorBoundaryView(text string) string {
 		lipgloss.Left,
 		m.styles.ErrorHeaderText.Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
-		lipgloss.WithWhitespaceForeground(colors.Red),
+		lipgloss.WithWhitespaceForeground(colors.Red()),
 	)
 }

@@ -151,7 +151,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		for _, projectId := range missing {
 			fmt.Println(
 				lipgloss.NewStyle().
-					Foreground(colors.Red).
+					Foreground(colors.Red()).
 					Render(fmt.Sprintf("\nerror: project ID %s not found\n", projectId)),
 			)
 		}
@@ -178,7 +178,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		var taskLabels string
 		if len(pt.task.Labels()) > 0 {
 			taskLabels = lipgloss.NewStyle().
-				Foreground(colors.Blue).
+				Foreground(colors.Blue()).
 				Render("\n  " + pt.task.CropTaskLabels(40))
 		}
 
@@ -191,16 +191,16 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 					taskLabels)
 
 		priorityValueStyle := lipgloss.NewStyle().
-			Foreground(colors.Black).
+			Foreground(colors.BadgeText()).
 			Padding(0, 1)
 
 		switch pt.task.Priority() {
 		case "low":
-			priorityValueStyle = priorityValueStyle.Background(colors.Indigo)
+			priorityValueStyle = priorityValueStyle.Background(colors.Indigo())
 		case "medium":
-			priorityValueStyle = priorityValueStyle.Background(colors.Orange)
+			priorityValueStyle = priorityValueStyle.Background(colors.Orange())
 		case "high":
-			priorityValueStyle = priorityValueStyle.Background(colors.Red)
+			priorityValueStyle = priorityValueStyle.Background(colors.Red())
 		}
 
 		right := lipgloss.NewStyle().Render(
@@ -215,24 +215,24 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 			dueDate.After(now) {
 			right = right + lipgloss.NewStyle().
 				Padding(0, 1).
-				Background(colors.VividRed).
-				Foreground(colors.Black).
+				Background(colors.VividRed()).
+				Foreground(colors.BadgeText()).
 				Render("due today")
 		}
 
 		if dueDate != nil && dueDate.Before(now) {
 			right = right + lipgloss.NewStyle().
 				Padding(0, 1).
-				Background(colors.VividRed).
-				Foreground(colors.Black).
+				Background(colors.VividRed()).
+				Foreground(colors.BadgeText()).
 				Render("overdue")
 		}
 
 		if pt.task.InProgress() {
 			right = right + lipgloss.NewStyle().
 				Padding(0, 1).
-				Background(colors.Blue).
-				Foreground(colors.Black).
+				Background(colors.Blue()).
+				Foreground(colors.BadgeText()).
 				Render("in progress")
 		}
 
@@ -241,8 +241,8 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 			!items.IsToday(dueDate) {
 			right = right + lipgloss.NewStyle().
 				Padding(0, 1).
-				Background(colors.Yellow).
-				Foreground(colors.Black).
+				Background(colors.Yellow()).
+				Foreground(colors.BadgeText()).
 				Render("due in "+pt.task.DaysUntilToString()+" day(s)")
 		}
 

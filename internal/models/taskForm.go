@@ -152,7 +152,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		WithWidth(45).
 		WithShowHelp(false).
 		WithShowErrors(false).
-		WithTheme(huh.ThemeBase16())
+		WithTheme(colors.FormTheme())
 
 	// Workaround for a problem that prevents the form
 	// from being initially completely rendered.
@@ -291,30 +291,30 @@ func (m taskFormModel) View() string {
 	// Status (right side)
 	switch m.vars.taskPriority {
 	case "high":
-		s.Priority = s.Priority.Background(colors.Red)
+		s.Priority = s.Priority.Background(colors.Red())
 	case "medium":
-		s.Priority = s.Priority.Background(colors.Orange)
+		s.Priority = s.Priority.Background(colors.Orange())
 	case "low":
-		s.Priority = s.Priority.Background(colors.Indigo)
+		s.Priority = s.Priority.Background(colors.Indigo())
 	default:
-		s.Priority = s.Priority.Background(colors.Indigo)
+		s.Priority = s.Priority.Background(colors.Indigo())
 	}
 
 	switch m.vars.taskCompleted {
 	case true:
-		s.Completed = s.Completed.Background(colors.Green)
+		s.Completed = s.Completed.Background(colors.Green())
 	case false:
-		s.Completed = s.Completed.Background(colors.Blue)
+		s.Completed = s.Completed.Background(colors.Blue())
 	}
 
 	var header string
 	var color lipgloss.AdaptiveColor
 	if m.edit {
 		header = m.appBoundaryView("Edit task")
-		color = colors.Orange
+		color = colors.Orange()
 	} else {
 		header = m.appBoundaryView("Create new task")
-		color = colors.Green
+		color = colors.Green()
 	}
 
 	var status string
@@ -362,9 +362,9 @@ func (m taskFormModel) errorView() string {
 func (m taskFormModel) appBoundaryView(text string) string {
 	var color lipgloss.AdaptiveColor
 	if m.edit {
-		color = colors.Orange
+		color = colors.Orange()
 	} else {
-		color = colors.Green
+		color = colors.Green()
 	}
 
 	return lipgloss.PlaceHorizontal(
@@ -383,6 +383,6 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 		lipgloss.Left,
 		m.styles.ErrorHeaderText.Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
-		lipgloss.WithWhitespaceForeground(colors.Red),
+		lipgloss.WithWhitespaceForeground(colors.Red()),
 	)
 }

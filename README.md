@@ -27,6 +27,7 @@ task directory as a Git repository for versioning, synchronization and collabora
   - **sorted** by due date or priority
   - **marked** as in progress
 - **Non-interactive output**: Print all open tasks from any project
+- Supports **simple theme customization**
 
 ## Roadmap
 
@@ -55,6 +56,27 @@ A configuration file is automatically created at `${HOME}/.config/yatto/config.t
 By default the following settings are written to the file and may be edited.
 
 ```toml
+[colors]
+badge_text_dark = '#000000'
+badge_text_light = '#000000'
+blue_dark = '#1e90ff'
+blue_light = '#1e90ff'
+green_dark = '#02BF87'
+green_light = '#02BA84'
+indigo_dark = '#7571F9'
+indigo_light = '#5A56E0'
+orange_dark = '#FFA336'
+orange_light = '#FFB733'
+red_dark = '#FE5F86'
+red_light = '#FE5F86'
+vividred_dark = '#FE134D'
+vividred_light = '#FE134D'
+yellow_dark = '#CCCC00'
+yellow_light = '#CCCC00'
+
+[colors.form]
+theme = 'Base16'
+
 [git]
 default_branch = 'main'
 
@@ -72,6 +94,32 @@ A config file may also be supplied by adding the `-config` flag:
 
 ```bash
 yatto -config $PATH_TO_CONFIG_FILE
+```
+
+### Colors and themes
+
+Don't like the default colors? Just change them.
+Any color value supported by [lipgloss](https://github.com/charmbracelet/lipgloss?tab=readme-ov-file#colors) will be accepted.
+
+Every color accepts a light and a dark value for either light or dark terminal themes.
+
+If you feel like sharing your theme, just post it in an issue
+and I'll be happy to add it to the repository.
+
+You can also choose from one of the [predefined form themes](https://github.com/charmbracelet/huh?tab=readme-ov-file#themes). The following config values are supported:
+
+- Charm
+- Dracula
+- Catppuccin
+- Base16
+- Base
+
+Set a theme like this:
+
+```toml
+[colors.form]
+theme = 'Catppuccin'
+
 ```
 
 ## Task Storage
@@ -95,16 +143,16 @@ To set up a remote
 The repository must be empty, meaning that nothing must be committed at creation
 (uncheck README, .gitignore and license files).
 
-2. Enable remotes in the config
+2. Run yatto at least once to create the task storage directory.
+
+3. Enable remotes in the config.
 
 ```toml
 [git.remote]
 enable = true
 ```
 
-3. Run yatto at least once to create the task storage directory.
-
-4. Add the remote and push the local repository
+4. Add the remote and push the local repository.
 
 ```bash
 cd ${HOME}/.yatto
