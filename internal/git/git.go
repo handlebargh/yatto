@@ -50,6 +50,9 @@ type (
 
 	// GitPullErrorMsg is returned when a Git pull operation fails.
 	GitPullErrorMsg struct{ Err error }
+
+	// GitPushErrorMsg is returned when a Git push operation fails.
+	GitPushErrorMsg struct{ Err error }
 )
 
 // Error implements the error interface for GitInitErrorMsg.
@@ -60,6 +63,9 @@ func (e GitCommitErrorMsg) Error() string { return e.Err.Error() }
 
 // Error implements the error interface for GitPullErrorMsg.
 func (e GitPullErrorMsg) Error() string { return e.Err.Error() }
+
+// Error implements the error interface for GitPushErrorMsg.
+func (e GitPushErrorMsg) Error() string { return e.Err.Error() }
 
 // InitCmd initializes a Git repository in the configured storage path.
 // It creates a Git repo with the default branch and makes an initial commit
@@ -75,7 +81,8 @@ func InitCmd() tea.Cmd {
 			return GitInitErrorMsg{err}
 		}
 
-		if err := exec.Command("git", "init", "-b", viper.GetString("git.default_branch")).Run(); err != nil {
+		if err := exec.Command("git", "init", "-b",
+			viper.GetString("git.default_branch")).Run(); err != nil {
 			return GitInitErrorMsg{err}
 		}
 
@@ -97,16 +104,18 @@ func InitCmd() tea.Cmd {
 // Returns a GitCommitDoneMsg or GitCommitErrorMsg.
 func CommitCmd(file, message string) tea.Cmd {
 	return func() tea.Msg {
-		if viper.GetBool("git.remote.enable") {
-			err := pull()
-			if err != nil {
-				return GitPullErrorMsg{err}
-			}
+		if err := commit(file, message); err != nil {
+			return GitCommitErrorMsg{err}
 		}
 
-		err := commit(file, message)
-		if err != nil {
-			return GitCommitErrorMsg{err}
+		if viper.GetBool("git.remote.enable") {
+			if err := pull(); err != nil {
+				return GitPullErrorMsg{err}
+			}
+
+			if err := push(); err != nil {
+				return GitPushErrorMsg{err}
+			}
 		}
 
 		return GitCommitDoneMsg{}
@@ -163,10 +172,21 @@ func commit(file, message string) error {
 		return err
 	}
 
-	if viper.GetBool("git.remote.enable") {
-		if err := exec.Command("git", "push", "-u", viper.GetString("git.remote.name"), viper.GetString("git.default_branch")).Run(); err != nil {
-			return err
-		}
+	return nil
+}
+
+// push changes the current working directory to the configured storage path
+// and executes a Git push command to the specified remote and branch.
+// It returns an error if changing the directory or running the Git command fails.
+func push() error {
+	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+		return err
+	}
+
+	if err := exec.Command("git", "push", "-u",
+		viper.GetString("git.remote.name"),
+		viper.GetString("git.default_branch")).Run(); err != nil {
+		return err
 	}
 
 	return nil
