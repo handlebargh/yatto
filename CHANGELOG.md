@@ -1,3 +1,19 @@
+## v0.12.0 (2025-08-03)
+
+### Feat
+
+- allow filtering labels by regexp
+- sort static task list and print with labels
+- add the printer package to print task lists in a non-interactive way to stdout
+
+### Fix
+
+- **deps**: update dependencies
+
+### Refactor
+
+- create separate packages for colors and helpers
+
 ## v0.11.0 (2025-07-30)
 
 ### Feat
