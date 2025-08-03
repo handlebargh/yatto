@@ -145,20 +145,20 @@ The repository must be empty, meaning that nothing must be committed at creation
 
 2. Run yatto at least once to create the task storage directory.
 
-3. Enable remotes in the config.
+3. Add the remote and push the local repository.
 
-```toml
-[git.remote]
-enable = true
-```
-
-4. Add the remote and push the local repository.
-
-```bash
+````bash
 cd ${HOME}/.yatto
 git remote add $GIT_REMOTE_URL
 git push -u origin main
 ```
+
+4. Enable `git.remote` in the config.
+
+```toml
+[git.remote]
+enable = true
+````
 
 ## Non-interactive mode
 
