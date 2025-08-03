@@ -1,3 +1,9 @@
+## v0.13.2 (2025-08-03)
+
+### Fix
+
+- allow printing after pull; do not pull if repo is missing INIT file
+
 ## v0.13.1 (2025-08-03)
 
 ### Fix
