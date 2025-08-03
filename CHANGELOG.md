@@ -1,3 +1,13 @@
+## v0.13.1 (2025-08-03)
+
+### Fix
+
+- must commit before rebase
+
+### Refactor
+
+- don't use hardcoded color
+
 ## v0.13.0 (2025-08-03)
 
 ### Feat
