@@ -63,7 +63,9 @@ enable = false
 name = 'origin'
 
 [storage]
-path = '${HOME}/.yatto'
+# replace with your actual home directory
+# or any other path you'd like to use
+path = '/home/foo/.yatto'
 ```
 
 A config file may also be supplied by adding the `-config` flag:
