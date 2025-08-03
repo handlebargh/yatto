@@ -21,10 +21,12 @@ task directory as a Git repository for versioning, synchronization and collabora
   - Safe collaboration and backup
   - Sync across machines
 - Every change is immediately committed and - if a remote is configured - pushed.
+- Tasks are organized in **projects**
 - **Tasks attributes** include due dates and searchable labels.
 - Tasks can be:
-  - **sorted** by different attributes
+  - **sorted** by due date or priority
   - **marked** as in progress
+- **Non-interactive output**: Print all open tasks from any project
 
 ## Roadmap
 
@@ -106,6 +108,37 @@ enable = true
 cd ${HOME}/.yatto
 git remote add $GIT_REMOTE_URL
 git push -u origin main
+```
+
+## Non-interactive mode
+
+You can print a static list of your tasks to standard output:
+
+```bash
+yatto -print
+
+# Limit to any project you want
+# Get the IDs from the directory names in your storage directory
+# Run this command to print all project's metadata files:
+# find ${HOME}/.yatto -type f -name "project.json" -exec cat {} +
+yatto -print -projects "2023255a-1749-4f6c-9877-0c73ab42e5ab b5811d17-dbc7-4556-886b-92047a27e0f6"
+
+# Filter labels with regular expression
+# The next command will only show tasks that have a label "frontend"
+yatto -print -regex frontend
+```
+
+If you want to print this list whenever you start a new terminal session
+(works with bash) create the file `/etc/profile.d/yatto.sh` with the following content:
+
+```bash
+#!/bin/sh
+
+# If you installed the release binary
+/usr/local/bin/yatto -print
+
+# If you install via go install
+${HOME}/go/bin/yatto -print
 ```
 
 ## License

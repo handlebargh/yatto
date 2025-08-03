@@ -33,6 +33,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/git"
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 )
 
@@ -92,7 +93,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		return
 	}
 
-	color := getColorCode(projectItem.Color())
+	color := helpers.GetColorCode(projectItem.Color())
 
 	// Base styles.
 	listItemStyle := lipgloss.NewStyle().
@@ -173,7 +174,7 @@ type projectListModel struct {
 func InitialProjectListModel() projectListModel {
 	listKeys := newProjectListKeyMap()
 
-	projects := readProjectsFromFS()
+	projects := helpers.ReadProjectsFromFS()
 	items := []list.Item{}
 
 	for _, project := range projects {

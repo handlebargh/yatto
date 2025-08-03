@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/colors"
 )
 
 type (
@@ -52,34 +53,23 @@ const (
 )
 
 var (
-	red      = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
-	vividRed = lipgloss.AdaptiveColor{Light: "#FE134D", Dark: "#FE134D"}
-	indigo   = lipgloss.AdaptiveColor{Light: "#5A56E0", Dark: "#7571F9"}
-	green    = lipgloss.AdaptiveColor{Light: "#02BA84", Dark: "#02BF87"}
-	orange   = lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}
-	blue     = lipgloss.AdaptiveColor{Light: "#1e90ff", Dark: "#1e90ff"}
-	yellow   = lipgloss.AdaptiveColor{Light: "#CCCC00", Dark: "#CCCC00"}
-	black    = lipgloss.Color("#000000")
-)
-
-var (
 	// appStyle defines the base padding for the entire application.
 	appStyle = lipgloss.NewStyle().Padding(1, 2)
 
 	// titleStyleProjects styles the title header for the project list.
 	titleStyleProjects = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#000000")).
-				Background(green).
+				Background(colors.Green).
 				Padding(0, 1)
 
 		// textStyleGreen renders strings using the green foreground color.
 	textStyleGreen = lipgloss.NewStyle().
-			Foreground(green).
+			Foreground(colors.Green).
 			Render
 
 		// textStyleRed renders strings using the red foreground color.
 	textStyleRed = lipgloss.NewStyle().
-			Foreground(red).
+			Foreground(colors.Red).
 			Render
 )
 
@@ -124,7 +114,7 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 	s.Highlight = lg.NewStyle().
 		Foreground(lipgloss.Color("212"))
 	s.ErrorHeaderText = s.HeaderText.
-		Foreground(red)
+		Foreground(colors.Red)
 	s.Help = lg.NewStyle().
 		Foreground(lipgloss.Color("240"))
 	return &s

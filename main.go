@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -36,6 +37,7 @@ import (
 	"github.com/handlebargh/yatto/internal/config"
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/models"
+	"github.com/handlebargh/yatto/internal/printer"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
 )
@@ -192,6 +194,9 @@ func initConfig(home string, configPath *string) {
 func main() {
 	configPath := flag.String("config", "", "Path to the config file")
 	versionFlag := flag.Bool("version", false, "Print application version")
+	printFlag := flag.Bool("print", false, "Print tasks to stdout")
+	printProjects := flag.String("projects", "", "List of project UUIDs to print from")
+	printRegex := flag.String("regex", "", "Regex to be used on task labels")
 	flag.Parse()
 
 	if *versionFlag {
@@ -208,6 +213,14 @@ func main() {
 	initConfig(home, configPath)
 	config.CreateConfigFile(home)
 	storage.CreateStorageDir()
+
+	if *printFlag {
+		// Get a slice of strings from user input.
+		projects := strings.Fields(*printProjects)
+
+		printer.PrintTasks(*printRegex, projects...)
+		os.Exit(0)
+	}
 
 	if viper.GetBool("git.remote.enable") {
 		s := spinner.New()

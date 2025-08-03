@@ -34,7 +34,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
+	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/git"
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 )
 
@@ -118,29 +120,29 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		Width(60)
 
 	labelsStyle := lipgloss.NewStyle().
-		Foreground(blue).
+		Foreground(colors.Blue).
 		Padding(0, 1)
 
 	priorityValueStyle := lipgloss.NewStyle().
-		Foreground(black).
+		Foreground(colors.Black).
 		Padding(0, 1)
 
 	switch taskItem.Priority() {
 	case "low":
-		titleStyle = titleStyle.BorderForeground(indigo)
-		labelsStyle = labelsStyle.BorderForeground(indigo)
+		titleStyle = titleStyle.BorderForeground(colors.Indigo)
+		labelsStyle = labelsStyle.BorderForeground(colors.Indigo)
 		priorityValueStyle = priorityValueStyle.
-			BorderForeground(indigo).Background(indigo)
+			BorderForeground(colors.Indigo).Background(colors.Indigo)
 	case "medium":
-		titleStyle = titleStyle.BorderForeground(orange)
-		labelsStyle = labelsStyle.BorderForeground(orange)
+		titleStyle = titleStyle.BorderForeground(colors.Orange)
+		labelsStyle = labelsStyle.BorderForeground(colors.Orange)
 		priorityValueStyle = priorityValueStyle.
-			BorderForeground(orange).Background(orange)
+			BorderForeground(colors.Orange).Background(colors.Orange)
 	case "high":
-		titleStyle = titleStyle.BorderForeground(red)
-		labelsStyle = labelsStyle.BorderForeground(red)
+		titleStyle = titleStyle.BorderForeground(colors.Red)
+		labelsStyle = labelsStyle.BorderForeground(colors.Red)
 		priorityValueStyle = priorityValueStyle.
-			BorderForeground(red).Background(red)
+			BorderForeground(colors.Red).Background(colors.Red)
 	}
 
 	if index == m.Index() {
@@ -168,24 +170,24 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		dueDate.After(now) {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(vividRed).
-			Foreground(black).
+			Background(colors.VividRed).
+			Foreground(colors.Black).
 			Render("due today")
 	}
 
 	if dueDate != nil && dueDate.Before(now) {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(vividRed).
-			Foreground(black).
+			Background(colors.VividRed).
+			Foreground(colors.Black).
 			Render("overdue")
 	}
 
 	if taskItem.InProgress() {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(blue).
-			Foreground(black).
+			Background(colors.Blue).
+			Foreground(colors.Black).
 			Render("in progress")
 	}
 
@@ -194,16 +196,16 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		!items.IsToday(dueDate) {
 		right = right + lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(yellow).
-			Foreground(black).
-			Render("due in "+taskItem.DaysUntilToString()+" days")
+			Background(colors.Yellow).
+			Foreground(colors.Black).
+			Render("due in "+taskItem.DaysUntilToString()+" day(s)")
 	}
 
 	if taskItem.Completed() {
 		right = lipgloss.NewStyle().
 			Padding(0, 1).
-			Background(green).
-			Foreground(black).
+			Background(colors.Green).
+			Foreground(colors.Black).
 			Render("done")
 	}
 
@@ -244,7 +246,7 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 		items = append(items, &task)
 	}
 
-	color := getColorCode(project.Color())
+	color := helpers.GetColorCode(project.Color())
 
 	titleStyleTasks := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#000000")).
