@@ -99,6 +99,22 @@ https://github.com/handlebargh/yatto
 `
 }
 
+// printTaskList prints a list of tasks based on the provided project names
+// and a regular expression filter.
+//
+// The function takes two strings as input:
+// - printProjects: a space-separated string of project names.
+// - printRegex: a regular expression used to filter tasks.
+//
+// It splits the printProjects string into individual project names, then calls
+// printer.PrintTasks with the regex and the list of projects.
+func printTaskList(printProjects, printRegex string) {
+	// Get a slice of strings from user input.
+	projects := strings.Fields(printProjects)
+
+	printer.PrintTasks(printRegex, projects...)
+}
+
 // spinnerModel defines the model used for displaying a spinner while syncing with a remote Git repository.
 type spinnerModel struct {
 	spinner spinner.Model
@@ -136,6 +152,10 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.Err
 		return m, nil
 
+	case git.GitPullNoInitMsg:
+		m.err = git.ErrorNoInit
+		return m, nil
+
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
 			return m, tea.Interrupt
@@ -155,8 +175,13 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m spinnerModel) View() string {
 	var content string
 	if m.err != nil {
-		content = lipgloss.NewStyle().Foreground(red).Bold(true).Render("Error") +
-			" fetching data from remote"
+		if m.err == git.ErrorNoInit {
+			content = lipgloss.NewStyle().Foreground(red).Bold(true).Render("Error ") +
+				m.err.Error()
+		} else {
+			content = lipgloss.NewStyle().Foreground(red).Bold(true).Render("Error") +
+				" fetching data from remote"
+		}
 	} else {
 		content = fmt.Sprintf("%s Fetching data from remote…", m.spinner.View())
 	}
@@ -216,6 +241,7 @@ func main() {
 	configPath := flag.String("config", "", "Path to the config file")
 	versionFlag := flag.Bool("version", false, "Print application version")
 	printFlag := flag.Bool("print", false, "Print tasks to stdout")
+	pullFlag := flag.Bool("pull", false, "Pull the remote before printing")
 	printProjects := flag.String("projects", "", "List of project UUIDs to print from")
 	printRegex := flag.String("regex", "", "Regex to be used on task labels")
 	flag.Parse()
@@ -235,11 +261,9 @@ func main() {
 	config.CreateConfigFile(home)
 	storage.CreateStorageDir()
 
-	if *printFlag {
-		// Get a slice of strings from user input.
-		projects := strings.Fields(*printProjects)
-
-		printer.PrintTasks(*printRegex, projects...)
+	// Print task list without pulling first.
+	if *printFlag && !*pullFlag {
+		printTaskList(*printProjects, *printRegex)
 		os.Exit(0)
 	}
 
@@ -258,6 +282,12 @@ func main() {
 			fmt.Println("Error running program:", err)
 			os.Exit(1)
 		}
+	}
+
+	// Print task list after pulling.
+	if *printFlag && *pullFlag {
+		printTaskList(*printProjects, *printRegex)
+		os.Exit(0)
 	}
 
 	if _, err := tea.NewProgram(models.InitialProjectListModel(), tea.WithAltScreen()).Run(); err != nil {

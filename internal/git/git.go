@@ -24,12 +24,17 @@
 package git
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
+)
+
+var ErrorNoInit = errors.New(
+	"trying to pull but local repo is not initialized.\nPlease disable git.remote and try again",
 )
 
 type (
@@ -50,6 +55,10 @@ type (
 
 	// GitPullErrorMsg is returned when a Git pull operation fails.
 	GitPullErrorMsg struct{ Err error }
+
+	// GitPullNoInitMsg is returned when a Git pull operation didn't run
+	// because the repository's INIT file is missing.
+	GitPullNoInitMsg struct{}
 
 	// GitPushErrorMsg is returned when a Git push operation fails.
 	GitPushErrorMsg struct{ Err error }
@@ -126,6 +135,11 @@ func CommitCmd(file, message string) tea.Cmd {
 // Returns a GitPullDoneMsg or GitPullErrorMsg.
 func PullCmd() tea.Cmd {
 	return func() tea.Msg {
+		// Don't try to pull of repo is not initialized.
+		if !storage.FileExists("INIT") {
+			return GitPullNoInitMsg{}
+		}
+
 		err := pull()
 		if err != nil {
 			return GitPullErrorMsg{err}

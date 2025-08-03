@@ -149,7 +149,7 @@ The repository must be empty, meaning that nothing must be committed at creation
 
 ```bash
 cd ${HOME}/.yatto
-git remote add $GIT_REMOTE_URL
+git remote add origin $GIT_REMOTE_URL
 git push -u origin main
 ```
 
@@ -190,6 +190,9 @@ If you want to print this list whenever you start a new terminal session
 # If you install via go install
 ${HOME}/go/bin/yatto -print
 ```
+
+> [!TIP]
+> Add the -pull flag to pull from a configured remote before printing.
 
 ## License
 
