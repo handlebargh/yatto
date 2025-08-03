@@ -25,6 +25,7 @@ package printer
 import (
 	"cmp"
 	"fmt"
+	"regexp"
 	"slices"
 	"time"
 
@@ -143,7 +144,7 @@ func sortTasks(tasks []projectTask) {
 //   - Priority, styled by level (low, medium, high)
 //   - Badges indicating task state, including:
 //   - "due today", "overdue", "in progress", or "due in N day(s)"
-func PrintTasks(projectsIDs ...string) {
+func PrintTasks(labelRegex string, projectsIDs ...string) {
 	pt, missing := getProjectTasks(projectsIDs...)
 
 	if len(missing) > 0 {
@@ -156,9 +157,11 @@ func PrintTasks(projectsIDs ...string) {
 		}
 	}
 
+	regex := regexp.MustCompile(labelRegex)
+
 	var pendingTasks []projectTask
 	for _, pt := range pt {
-		if !pt.task.Completed() {
+		if !pt.task.Completed() && regex.MatchString(pt.task.Labels()) {
 			pendingTasks = append(pendingTasks, pt)
 		}
 	}

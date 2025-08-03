@@ -196,6 +196,7 @@ func main() {
 	versionFlag := flag.Bool("version", false, "Print application version")
 	printFlag := flag.Bool("print", false, "Print tasks to stdout")
 	printProjects := flag.String("projects", "", "List of project UUIDs to print from")
+	printRegex := flag.String("regex", "", "Regex to be used on task labels")
 	flag.Parse()
 
 	if *versionFlag {
@@ -217,7 +218,7 @@ func main() {
 		// Get a slice of strings from user input.
 		projects := strings.Fields(*printProjects)
 
-		printer.PrintTasks(projects...)
+		printer.PrintTasks(*printRegex, projects...)
 		os.Exit(0)
 	}
 
