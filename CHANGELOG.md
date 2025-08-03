@@ -1,3 +1,9 @@
+## v0.13.0 (2025-08-03)
+
+### Feat
+
+- make colors customizable and fix wrong instructions in the readme
+
 ## v0.12.0 (2025-08-03)
 
 ### Feat
