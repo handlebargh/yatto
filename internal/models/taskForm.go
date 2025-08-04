@@ -111,7 +111,8 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 
 			huh.NewText().
 				Key("description").
-				Title("Enter a description:").
+				Title("Enter a description:\n"+
+					"(markdown is supported)").
 				Value(&m.vars.taskDescription),
 
 			huh.NewInput().

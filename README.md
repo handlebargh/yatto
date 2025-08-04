@@ -24,6 +24,7 @@ task directory as a Git repository for versioning, synchronization and collabora
 - Tasks are organized in **projects**
 - **Tasks attributes** include due dates and searchable labels.
 - Tasks can be:
+  - written in **markdown**
   - **sorted** by due date or priority
   - **marked** as in progress
 - **Non-interactive output**: Print all open tasks from any project
