@@ -48,7 +48,6 @@ type taskListKeyMap struct {
 	toggleHelpMenu   key.Binding
 	addItem          key.Binding
 	chooseItem       key.Binding
-	chooseItemVim    key.Binding
 	editItem         key.Binding
 	deleteItem       key.Binding
 	sortByPriority   key.Binding
@@ -56,6 +55,8 @@ type taskListKeyMap struct {
 	toggleInProgress key.Binding
 	toggleComplete   key.Binding
 	goBackVim        key.Binding
+	prevPage         key.Binding
+	nextPage         key.Binding
 }
 
 // newTaskListKeyMap initializes and returns a new key map for task list actions.
@@ -90,12 +91,8 @@ func newTaskListKeyMap() *taskListKeyMap {
 			key.WithHelp("e", "edit"),
 		),
 		chooseItem: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "show"),
-		),
-		chooseItemVim: key.NewBinding(
-			key.WithKeys("l"),
-			key.WithHelp("l", "show"),
+			key.WithKeys("enter", "l"),
+			key.WithHelp("enter/l", "show"),
 		),
 		addItem: key.NewBinding(
 			key.WithKeys("a"),
@@ -108,6 +105,14 @@ func newTaskListKeyMap() *taskListKeyMap {
 		goBackVim: key.NewBinding(
 			key.WithKeys("h"),
 			key.WithHelp("h", "go back"),
+		),
+		prevPage: key.NewBinding(
+			key.WithKeys("left", "pgup", "b", "u"),
+			key.WithHelp("←/pgup/b/u", "prev page"),
+		),
+		nextPage: key.NewBinding(
+			key.WithKeys("right", "pgdown", "f", "d"),
+			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
 	}
 }
@@ -277,6 +282,9 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	itemList.Styles.Title = titleStyleTasks
 	// Disable the quit keybindings, so we can implement our own.
 	itemList.DisableQuitKeybindings()
+	// Set our own prev/next page keys.
+	itemList.KeyMap.NextPage = listKeys.nextPage
+	itemList.KeyMap.PrevPage = listKeys.prevPage
 	itemList.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.quit,
@@ -285,16 +293,15 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
-			listKeys.addItem,
 			listKeys.chooseItem,
-			listKeys.chooseItemVim,
+			listKeys.goBackVim,
+			listKeys.addItem,
 			listKeys.editItem,
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
 			listKeys.sortByDueDate,
 			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
-			listKeys.goBackVim,
 		}
 	}
 
@@ -440,7 +447,6 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.quit):
 				return m.projectModel, nil
 
-			switch {
 			case key.Matches(msg, m.keys.goBackVim):
 				return m.projectModel, nil
 
@@ -456,7 +462,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				sortTasksByKeys(&m.list, []string{"state", "dueDate"})
 				return m, nil
 
-			case key.Matches(msg, m.keys.chooseItem) || key.Matches(msg, m.keys.chooseItemVim):
+			case key.Matches(msg, m.keys.chooseItem):
 				if m.list.SelectedItem() != nil {
 					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
 					pagerModel := newTaskPagerModel(markdown, &m)
