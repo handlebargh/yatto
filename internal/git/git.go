@@ -135,7 +135,7 @@ func CommitCmd(file, message string) tea.Cmd {
 // Returns a GitPullDoneMsg or GitPullErrorMsg.
 func PullCmd() tea.Cmd {
 	return func() tea.Msg {
-		// Don't try to pull of repo is not initialized.
+		// Don't try to pull if repo is not initialized.
 		if !storage.FileExists("INIT") {
 			return GitPullNoInitMsg{}
 		}
