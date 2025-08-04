@@ -57,8 +57,8 @@ func newProjectListKeyMap() *projectListKeyMap {
 			key.WithHelp("q/esc", "quit"),
 		),
 		deleteProject: key.NewBinding(
-			key.WithKeys("d"),
-			key.WithHelp("d", "delete project"),
+			key.WithKeys("D"),
+			key.WithHelp("D", "delete project"),
 		),
 		chooseProject: key.NewBinding(
 			key.WithKeys("enter"),
