@@ -64,7 +64,7 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		if k := msg.String(); k == "q" || k == "esc" {
+		if k := msg.String(); k == "q" || k == "esc" || k == "h" {
 			return m.listModel, nil
 		}
 

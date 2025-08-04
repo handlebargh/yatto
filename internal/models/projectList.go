@@ -46,6 +46,11 @@ type projectListKeyMap struct {
 	editProject    key.Binding
 	chooseProject  key.Binding
 	deleteProject  key.Binding
+	toggleHelpMenu key.Binding
+	addProject     key.Binding
+	editProject    key.Binding
+	chooseProject  key.Binding
+	deleteProject  key.Binding
 }
 
 // newProjectListKeyMap returns a new set of key
@@ -75,6 +80,10 @@ func newProjectListKeyMap() *projectListKeyMap {
 		toggleHelpMenu: key.NewBinding(
 			key.WithKeys("H"),
 			key.WithHelp("H", "toggle help"),
+		),
+		chooseProjectVim: key.NewBinding(
+			key.WithKeys("l"),
+			key.WithHelp("l", "choose project"),
 		),
 	}
 }
@@ -207,6 +216,7 @@ func InitialProjectListModel() projectListModel {
 			listKeys.chooseProject,
 			listKeys.deleteProject,
 			listKeys.editProject,
+			listKeys.chooseProjectVim,
 		}
 	}
 
@@ -364,7 +374,7 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.list.SetShowHelp(!m.list.ShowHelp())
 				return m, nil
 
-			case key.Matches(msg, m.keys.chooseProject):
+			case key.Matches(msg, m.keys.chooseProject) || key.Matches(msg, m.keys.chooseProjectVim):
 				if m.list.SelectedItem() != nil {
 					listModel := newTaskListModel(m.list.SelectedItem().(*items.Project), &m)
 					return listModel, tea.WindowSize()

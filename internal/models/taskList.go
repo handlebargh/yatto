@@ -48,12 +48,14 @@ type taskListKeyMap struct {
 	toggleHelpMenu   key.Binding
 	addItem          key.Binding
 	chooseItem       key.Binding
+	chooseItemVim    key.Binding
 	editItem         key.Binding
 	deleteItem       key.Binding
 	sortByPriority   key.Binding
 	sortByDueDate    key.Binding
 	toggleInProgress key.Binding
 	toggleComplete   key.Binding
+	goBackVim        key.Binding
 }
 
 // newTaskListKeyMap initializes and returns a new key map for task list actions.
@@ -91,6 +93,10 @@ func newTaskListKeyMap() *taskListKeyMap {
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "show"),
 		),
+		chooseItemVim: key.NewBinding(
+			key.WithKeys("l"),
+			key.WithHelp("l", "show"),
+		),
 		addItem: key.NewBinding(
 			key.WithKeys("a"),
 			key.WithHelp("a", "add item"),
@@ -98,6 +104,10 @@ func newTaskListKeyMap() *taskListKeyMap {
 		toggleHelpMenu: key.NewBinding(
 			key.WithKeys("H"),
 			key.WithHelp("H", "toggle help"),
+		),
+		goBackVim: key.NewBinding(
+			key.WithKeys("h"),
+			key.WithHelp("h", "go back"),
 		),
 	}
 }
@@ -277,12 +287,14 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 			listKeys.toggleHelpMenu,
 			listKeys.addItem,
 			listKeys.chooseItem,
+			listKeys.chooseItemVim,
 			listKeys.editItem,
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
 			listKeys.sortByDueDate,
 			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
+			listKeys.goBackVim,
 		}
 	}
 
@@ -428,6 +440,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.quit):
 				return m.projectModel, nil
 
+			switch {
+			case key.Matches(msg, m.keys.goBackVim):
+				return m.projectModel, nil
+
 			case key.Matches(msg, m.keys.toggleHelpMenu):
 				m.list.SetShowHelp(!m.list.ShowHelp())
 				return m, nil
@@ -440,7 +456,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				sortTasksByKeys(&m.list, []string{"state", "dueDate"})
 				return m, nil
 
-			case key.Matches(msg, m.keys.chooseItem):
+			case key.Matches(msg, m.keys.chooseItem) || key.Matches(msg, m.keys.chooseItemVim):
 				if m.list.SelectedItem() != nil {
 					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
 					pagerModel := newTaskPagerModel(markdown, &m)
