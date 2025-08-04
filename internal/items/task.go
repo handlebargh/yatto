@@ -213,7 +213,7 @@ func (t Task) WriteTaskJson(json []byte, p Project, kind string) tea.Cmd {
 	return func() tea.Msg {
 		file := filepath.Join(viper.GetString("storage.path"), p.Id(), t.Id()+".json")
 
-		if err := os.WriteFile(file, json, 0600); err != nil {
+		if err := os.WriteFile(file, json, 0o600); err != nil {
 			return WriteTaskJSONErrorMsg{err}
 		}
 

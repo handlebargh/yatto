@@ -55,7 +55,7 @@ func CreateStorageDir() {
 
 		if input == "yes" || input == "y" {
 			// Create storage directory.
-			err := os.MkdirAll(storageDir, 0700)
+			err := os.MkdirAll(storageDir, 0o700)
 			if err != nil {
 				panic(fmt.Errorf("fatal error creating storage directory: %w", err))
 			}

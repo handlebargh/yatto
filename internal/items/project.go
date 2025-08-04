@@ -158,12 +158,12 @@ func (p Project) WriteProjectJson(json []byte, kind string) tea.Cmd {
 
 		// ensure project directory
 		dir := filepath.Join(storageDir, p.Id())
-		if err := os.MkdirAll(dir, 0700); err != nil {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
 
 		file := filepath.Join(storageDir, p.Id(), "project.json")
-		if err := os.WriteFile(file, json, 0600); err != nil {
+		if err := os.WriteFile(file, json, 0o600); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
 

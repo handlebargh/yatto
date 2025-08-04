@@ -95,7 +95,7 @@ func InitCmd() tea.Cmd {
 			return GitInitErrorMsg{err}
 		}
 
-		if err := os.WriteFile("INIT", nil, 0600); err != nil {
+		if err := os.WriteFile("INIT", nil, 0o600); err != nil {
 			return GitInitErrorMsg{err}
 		}
 
