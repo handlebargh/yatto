@@ -40,6 +40,7 @@ import (
 // projectListKeyMap defines the key bindings
 // used in the project list UI model.
 type projectListKeyMap struct {
+	quit           key.Binding
 	toggleHelpMenu key.Binding
 	addProject     key.Binding
 	editProject    key.Binding
@@ -51,6 +52,10 @@ type projectListKeyMap struct {
 // bindings for project list operations.
 func newProjectListKeyMap() *projectListKeyMap {
 	return &projectListKeyMap{
+		quit: key.NewBinding(
+			key.WithKeys("q", "esc"),
+			key.WithHelp("q/esc", "quit"),
+		),
 		deleteProject: key.NewBinding(
 			key.WithKeys("d"),
 			key.WithHelp("d", "delete project"),
@@ -188,6 +193,13 @@ func InitialProjectListModel() projectListModel {
 	itemList.SetStatusBarItemName("project", "projects")
 	itemList.Title = "Projects"
 	itemList.Styles.Title = titleStyleProjects
+	// Disable the quit keybindings, so we can implement our own.
+	itemList.DisableQuitKeybindings()
+	itemList.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			listKeys.quit,
+		}
+	}
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
@@ -339,17 +351,15 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 
-			switch msg.String() {
-			case "esc", "q":
+			switch {
+			case key.Matches(msg, m.keys.quit):
 				if m.selected {
 					m.selected = !m.selected
 					return m, nil
 				}
 
 				return m, tea.Quit
-			}
 
-			switch {
 			case key.Matches(msg, m.keys.toggleHelpMenu):
 				m.list.SetShowHelp(!m.list.ShowHelp())
 				return m, nil
