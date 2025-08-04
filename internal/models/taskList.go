@@ -44,6 +44,7 @@ const taskEntryLength = 53
 
 // taskListKeyMap defines the key bindings used in the task list view.
 type taskListKeyMap struct {
+	quit             key.Binding
 	toggleHelpMenu   key.Binding
 	addItem          key.Binding
 	chooseItem       key.Binding
@@ -58,6 +59,10 @@ type taskListKeyMap struct {
 // newTaskListKeyMap initializes and returns a new key map for task list actions.
 func newTaskListKeyMap() *taskListKeyMap {
 	return &taskListKeyMap{
+		quit: key.NewBinding(
+			key.WithKeys("q", "esc"),
+			key.WithHelp("q/esc", "go back"),
+		),
 		toggleComplete: key.NewBinding(
 			key.WithKeys("C"),
 			key.WithHelp("C", "toggle complete"),
@@ -260,6 +265,13 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	itemList.SetStatusBarItemName("task", "tasks")
 	itemList.Title = project.Title()
 	itemList.Styles.Title = titleStyleTasks
+	// Disable the quit keybindings, so we can implement our own.
+	itemList.DisableQuitKeybindings()
+	itemList.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			listKeys.quit,
+		}
+	}
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
@@ -412,12 +424,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 
-			switch msg.String() {
-			case "esc", "q":
-				return m.projectModel, nil
-			}
-
 			switch {
+			case key.Matches(msg, m.keys.quit):
+				return m.projectModel, nil
+
 			case key.Matches(msg, m.keys.toggleHelpMenu):
 				m.list.SetShowHelp(!m.list.ShowHelp())
 				return m, nil
