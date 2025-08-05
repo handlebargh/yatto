@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -64,7 +65,8 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		if k := msg.String(); k == "q" || k == "esc" {
+		switch {
+		case key.Matches(msg, m.listModel.keys.quit) || key.Matches(msg, m.listModel.keys.goBackVim):
 			return m.listModel, nil
 		}
 

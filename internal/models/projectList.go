@@ -46,6 +46,8 @@ type projectListKeyMap struct {
 	editProject    key.Binding
 	chooseProject  key.Binding
 	deleteProject  key.Binding
+	prevPage       key.Binding
+	nextPage       key.Binding
 }
 
 // newProjectListKeyMap returns a new set of key
@@ -61,8 +63,8 @@ func newProjectListKeyMap() *projectListKeyMap {
 			key.WithHelp("D", "delete project"),
 		),
 		chooseProject: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "choose project"),
+			key.WithKeys("enter", "l"),
+			key.WithHelp("enter/l", "choose project"),
 		),
 		addProject: key.NewBinding(
 			key.WithKeys("a"),
@@ -75,6 +77,14 @@ func newProjectListKeyMap() *projectListKeyMap {
 		toggleHelpMenu: key.NewBinding(
 			key.WithKeys("H"),
 			key.WithHelp("H", "toggle help"),
+		),
+		prevPage: key.NewBinding(
+			key.WithKeys("left", "pgup", "b", "u"),
+			key.WithHelp("←/pgup/b/u", "prev page"),
+		),
+		nextPage: key.NewBinding(
+			key.WithKeys("right", "pgdown", "f", "d"),
+			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
 	}
 }
@@ -195,6 +205,9 @@ func InitialProjectListModel() projectListModel {
 	itemList.Styles.Title = titleStyleProjects
 	// Disable the quit keybindings, so we can implement our own.
 	itemList.DisableQuitKeybindings()
+	// Set our own prev/next page keys.
+	itemList.KeyMap.NextPage = listKeys.nextPage
+	itemList.KeyMap.PrevPage = listKeys.prevPage
 	itemList.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.quit,
@@ -203,10 +216,10 @@ func InitialProjectListModel() projectListModel {
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
-			listKeys.addProject,
 			listKeys.chooseProject,
-			listKeys.deleteProject,
+			listKeys.addProject,
 			listKeys.editProject,
+			listKeys.deleteProject,
 		}
 	}
 

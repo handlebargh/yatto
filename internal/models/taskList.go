@@ -54,6 +54,9 @@ type taskListKeyMap struct {
 	sortByDueDate    key.Binding
 	toggleInProgress key.Binding
 	toggleComplete   key.Binding
+	goBackVim        key.Binding
+	prevPage         key.Binding
+	nextPage         key.Binding
 }
 
 // newTaskListKeyMap initializes and returns a new key map for task list actions.
@@ -88,8 +91,8 @@ func newTaskListKeyMap() *taskListKeyMap {
 			key.WithHelp("e", "edit"),
 		),
 		chooseItem: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "show"),
+			key.WithKeys("enter", "l"),
+			key.WithHelp("enter/l", "show"),
 		),
 		addItem: key.NewBinding(
 			key.WithKeys("a"),
@@ -98,6 +101,18 @@ func newTaskListKeyMap() *taskListKeyMap {
 		toggleHelpMenu: key.NewBinding(
 			key.WithKeys("H"),
 			key.WithHelp("H", "toggle help"),
+		),
+		goBackVim: key.NewBinding(
+			key.WithKeys("h"),
+			key.WithHelp("h", "go back"),
+		),
+		prevPage: key.NewBinding(
+			key.WithKeys("left", "pgup", "b", "u"),
+			key.WithHelp("←/pgup/b/u", "prev page"),
+		),
+		nextPage: key.NewBinding(
+			key.WithKeys("right", "pgdown", "f", "d"),
+			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
 	}
 }
@@ -267,6 +282,9 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	itemList.Styles.Title = titleStyleTasks
 	// Disable the quit keybindings, so we can implement our own.
 	itemList.DisableQuitKeybindings()
+	// Set our own prev/next page keys.
+	itemList.KeyMap.NextPage = listKeys.nextPage
+	itemList.KeyMap.PrevPage = listKeys.prevPage
 	itemList.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.quit,
@@ -275,8 +293,9 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	itemList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleHelpMenu,
-			listKeys.addItem,
 			listKeys.chooseItem,
+			listKeys.goBackVim,
+			listKeys.addItem,
 			listKeys.editItem,
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
@@ -426,6 +445,9 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			switch {
 			case key.Matches(msg, m.keys.quit):
+				return m.projectModel, nil
+
+			case key.Matches(msg, m.keys.goBackVim):
 				return m.projectModel, nil
 
 			case key.Matches(msg, m.keys.toggleHelpMenu):
