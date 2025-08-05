@@ -22,10 +22,13 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -33,20 +36,26 @@ import (
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
+	"github.com/muesli/reflow/wrap"
 )
+
+// statusWidth holds the width of the task preview box.
+const statusWidth = 40
 
 // taskFormModel defines the Bubble Tea model for a form-based interface
 // used to create or edit a task.
 type taskFormModel struct {
-	form          *huh.Form
-	task          *items.Task
-	listModel     *taskListModel
-	edit          bool
-	cancel        bool
-	width, height int
-	lg            *lipgloss.Renderer
-	styles        *Styles
-	vars          *taskFormVars
+	form           *huh.Form
+	task           *items.Task
+	listModel      *taskListModel
+	statusViewport viewport.Model
+	hasFocusOnForm bool
+	edit           bool
+	cancel         bool
+	width, height  int
+	lg             *lipgloss.Renderer
+	styles         *Styles
+	vars           *taskFormVars
 }
 
 // taskFormVars holds the temporary values that are populated and modified
@@ -79,6 +88,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	m.vars = &v
 	m.task = t
 	m.listModel = listModel
+	m.hasFocusOnForm = true
 	m.lg = lipgloss.DefaultRenderer()
 	m.styles = NewStyles(m.lg)
 
@@ -150,7 +160,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Negative("No").
 				Value(&m.vars.confirm),
 		)).
-		WithWidth(45).
+		WithWidth(60).
 		WithShowHelp(false).
 		WithShowErrors(false).
 		WithTheme(colors.FormTheme())
@@ -171,17 +181,41 @@ func (m taskFormModel) Init() tea.Cmd {
 func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		h, v := appStyle.GetFrameSize()
-		m.width = msg.Width - h
-		m.height = msg.Height - v
-	}
+	if m.hasFocusOnForm {
+		// Send input to form.
+		title := fmt.Sprintf("%s %s %s",
+			m.styles.Title.Render(m.vars.taskTitle),
+			m.styles.Priority.Render(m.vars.taskPriority),
+			m.styles.Completed.Render(completedString(m.vars.taskCompleted)))
 
-	form, cmd := m.form.Update(msg)
-	if f, ok := form.(*huh.Form); ok {
-		m.form = f
+		// We need to wrap our content so it fits into the statusViewport.
+		content := m.styles.StatusHeader.Render("Task preview") + "\n\n" +
+			wrap.String(title, statusWidth-3) + "\n\n" +
+			wrap.String(m.vars.taskDescription, statusWidth-3)
+
+		m.statusViewport.SetContent(content)
+		// Always auto-scroll to bottom.
+		m.statusViewport.GotoBottom()
+
+		form, cmd := m.form.Update(msg)
+		if f, ok := form.(*huh.Form); ok {
+			m.form = f
+			cmds = append(cmds, cmd)
+		}
+	} else {
+		// Send input to viewport.
+		var cmd tea.Cmd
+		m.statusViewport, cmd = m.statusViewport.Update(msg)
 		cmds = append(cmds, cmd)
+
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			switch keyMsg.String() {
+			case "g", "home":
+				m.statusViewport.GotoTop()
+			case "G", "end":
+				m.statusViewport.GotoBottom()
+			}
+		}
 	}
 
 	switch msg := msg.(type) {
@@ -201,67 +235,78 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "esc":
 			return m.listModel, nil
-		}
-	}
-
-	if m.form.State == huh.StateCompleted {
-		// Write task only if form has been confirmed.
-		if m.vars.confirm {
-			m.task.SetTitle(m.vars.taskTitle)
-			m.task.SetDescription(m.vars.taskDescription)
-			m.task.SetPriority(m.vars.taskPriority)
-			m.task.SetLabels(m.vars.taskLabels)
-			m.task.SetCompleted(m.vars.taskCompleted)
-
-			if m.vars.taskDueDate != "" {
-				// Get the local time zone
-				location, err := time.LoadLocation("Local")
-				if err != nil {
-					// TODO: show an error message
-					return m, nil
-				}
-
-				date, err := time.ParseInLocation(time.DateTime, m.vars.taskDueDate, location)
-				if err != nil {
-					// TODO: show an error message
-					return m, nil
-				}
-
-				m.task.SetDueDate(&date)
-			} else {
-				m.task.SetDueDate(nil)
-			}
-
-			json := m.task.MarshalTask()
-
-			if storage.FileExists(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")) {
-				cmds = append(
-					cmds,
-					m.listModel.progress.SetPercent(0.10),
-					tickCmd(),
-					m.task.WriteTaskJson(json, *m.listModel.project, "update"),
-					git.CommitCmd(
-						filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
-						"update: "+m.task.Title(),
-					),
-				)
-				m.listModel.status = ""
-			} else {
-				cmds = append(cmds,
-					m.listModel.progress.SetPercent(0.10),
-					tickCmd(),
-					m.task.WriteTaskJson(json, *m.listModel.project, "create"),
-					git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
-						"create: "+m.task.Title()),
-				)
-				m.listModel.status = ""
-			}
-		} else {
-			m.cancel = true
-			return m, nil
+		case "tab":
+			m.hasFocusOnForm = !m.hasFocusOnForm
 		}
 
-		return m.listModel, tea.Batch(cmds...)
+		if m.form.State == huh.StateCompleted {
+			// Write task only if form has been confirmed.
+			if m.vars.confirm {
+				m.task.SetTitle(m.vars.taskTitle)
+				m.task.SetDescription(m.vars.taskDescription)
+				m.task.SetPriority(m.vars.taskPriority)
+				m.task.SetLabels(m.vars.taskLabels)
+				m.task.SetCompleted(m.vars.taskCompleted)
+
+				if m.vars.taskDueDate != "" {
+					// Get the local time zone
+					location, err := time.LoadLocation("Local")
+					if err != nil {
+						// TODO: show an error message
+						return m, nil
+					}
+
+					date, err := time.ParseInLocation(time.DateTime, m.vars.taskDueDate, location)
+					if err != nil {
+						// TODO: show an error message
+						return m, nil
+					}
+
+					m.task.SetDueDate(&date)
+				} else {
+					m.task.SetDueDate(nil)
+				}
+
+				json := m.task.MarshalTask()
+
+				if storage.FileExists(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")) {
+					cmds = append(
+						cmds,
+						m.listModel.progress.SetPercent(0.10),
+						tickCmd(),
+						m.task.WriteTaskJson(json, *m.listModel.project, "update"),
+						git.CommitCmd(
+							filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
+							"update: "+m.task.Title(),
+						),
+					)
+					m.listModel.status = ""
+				} else {
+					cmds = append(cmds,
+						m.listModel.progress.SetPercent(0.10),
+						tickCmd(),
+						m.task.WriteTaskJson(json, *m.listModel.project, "create"),
+						git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
+							"create: "+m.task.Title()),
+					)
+					m.listModel.status = ""
+				}
+			} else {
+				m.cancel = true
+				return m, nil
+			}
+
+			return m.listModel, tea.Batch(cmds...)
+		}
+
+	case tea.WindowSizeMsg:
+		h, v := appStyle.GetFrameSize()
+		m.width = msg.Width - h
+		m.height = msg.Height - v
+
+		m.statusViewport = viewport.New(statusWidth, m.height-10)
+		m.statusViewport.KeyMap = viewport.DefaultKeyMap()
+		m.statusViewport.MouseWheelEnabled = true
 	}
 
 	return m, tea.Batch(cmds...)
@@ -318,21 +363,15 @@ func (m taskFormModel) View() string {
 		color = colors.Green()
 	}
 
-	var status string
-	{
-		const statusWidth = 40
-		statusMarginLeft := m.width - statusWidth - lipgloss.Width(form) - s.Status.GetMarginRight()
-		status = s.Status.
-			Height(lipgloss.Height(form)).
-			Width(statusWidth).
-			MarginLeft(statusMarginLeft).
-			BorderForeground(color).
-			Render(s.StatusHeader.Render("Task preview") + "\n\n" +
-				s.Title.Render(m.vars.taskTitle) + " " +
-				s.Priority.Render(m.vars.taskPriority) + " " +
-				s.Completed.Render(completedString(m.vars.taskCompleted)) + "\n\n" +
-				m.vars.taskDescription)
-	}
+	statusMarginLeft := m.width - statusWidth - lipgloss.Width(form) - s.Status.GetMarginRight()
+
+	statusView := m.statusViewport.View()
+
+	status := s.Status.
+		MarginLeft(statusMarginLeft).
+		BorderForeground(color).
+		Width(statusWidth).
+		Render(statusView)
 
 	errors := m.form.Errors()
 
@@ -341,7 +380,15 @@ func (m taskFormModel) View() string {
 	}
 	body := lipgloss.JoinHorizontal(lipgloss.Left, form, status)
 
-	footer := m.appBoundaryView(m.form.Help().ShortHelpView(m.form.KeyBinds()))
+	// Set a key used to change focus.
+	focusKey := key.NewBinding(
+		key.WithKeys("tab"),
+		key.WithHelp("tab", "change focus"),
+	)
+
+	unifiedKeyBinds := append(m.form.KeyBinds(), focusKey)
+
+	footer := m.appBoundaryView(m.form.Help().ShortHelpView(unifiedKeyBinds))
 	if len(errors) > 0 {
 		footer = m.appErrorBoundaryView("")
 	}
