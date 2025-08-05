@@ -35,7 +35,7 @@ import (
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
-	"github.com/muesli/reflow/wrap"
+	"github.com/muesli/reflow/wordwrap"
 )
 
 const (
@@ -58,6 +58,7 @@ type taskFormModel struct {
 	task            *items.Task
 	listModel       *taskListModel
 	previewViewport viewport.Model
+	userScrolled    bool
 	edit            bool
 	cancel          bool
 	width, height   int
@@ -192,6 +193,14 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if f, ok := form.(*huh.Form); ok {
 		m.form = f
 		cmds = append(cmds, cmd)
+
+		// Refresh preview box content.
+		m.previewViewport.SetContent(m.generatePreviewContent())
+
+		// Auto-scroll to bottom.
+		if !m.userScrolled {
+			m.previewViewport.GotoBottom()
+		}
 	}
 
 	switch msg := msg.(type) {
@@ -203,6 +212,18 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.previewViewport = viewport.New(previewWidth, m.height-previewVerticalPadding)
 
 	case tea.KeyMsg:
+		// Scroll the preview box
+		switch msg.Type {
+		case tea.KeyPgUp:
+			m.previewViewport.ScrollUp(5)
+			m.previewViewport.SetContent(m.generatePreviewContent())
+			m.userScrolled = true
+		case tea.KeyPgDown:
+			m.previewViewport.ScrollDown(5)
+			m.previewViewport.SetContent(m.generatePreviewContent())
+			m.userScrolled = true
+		}
+
 		if m.cancel {
 			switch msg.String() {
 			case "y", "Y":
@@ -323,27 +344,11 @@ func (m taskFormModel) View() string {
 
 	previewMarginLeft := max(0, m.width-previewWidth-lipgloss.Width(form)-s.Status.GetMarginRight())
 
-	title := fmt.Sprintf("%s %s %s",
-		m.styles.Title.Render(m.vars.taskTitle),
-		m.styles.Priority.Render(m.vars.taskPriority),
-		m.styles.Completed.Render(completedString(m.vars.taskCompleted)))
-
-	// We need to wrap our content so it fits into the statusViewport.
-	content := m.styles.StatusHeader.Render("Task preview") + "\n\n" +
-		wrap.String(title, previewWidth-previewContentPadding) + "\n\n" +
-		wrap.String(m.vars.taskDescription, previewWidth-previewContentPadding)
-
-	m.previewViewport.SetContent(content)
-	// Always auto-scroll to bottom.
-	m.previewViewport.GotoBottom()
-
-	previewView := m.previewViewport.View()
-
 	status := s.Status.
 		MarginLeft(previewMarginLeft).
 		BorderForeground(color).
 		Width(previewWidth).
-		Render(previewView)
+		Render(m.previewViewport.View())
 
 	errors := m.form.Errors()
 
@@ -405,6 +410,18 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 		lipgloss.WithWhitespaceChars("❯"),
 		lipgloss.WithWhitespaceForeground(colors.Red()),
 	)
+}
+
+func (m taskFormModel) generatePreviewContent() string {
+	title := fmt.Sprintf("%s %s %s",
+		m.styles.Title.Render(m.vars.taskTitle),
+		m.styles.Priority.Render(m.vars.taskPriority),
+		m.styles.Completed.Render(completedString(m.vars.taskCompleted)))
+
+	// We need to wrap our content so it fits into the statusViewport.
+	return m.styles.StatusHeader.Render("Task preview") + "\n\n" +
+		wordwrap.String(title, previewWidth-previewContentPadding) + "\n\n" +
+		wordwrap.String(m.vars.taskDescription, previewWidth-previewContentPadding)
 }
 
 // formVarsToTask converts form input variables into a Task object.
