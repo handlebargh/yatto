@@ -412,6 +412,14 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 	)
 }
 
+// generatePreviewContent generates the formatted string content for the task preview pane.
+// It includes the task title, priority, completion status, and description, all styled
+// and wrapped to fit within the width of the preview viewport.
+//
+// The title line is rendered with appropriate styles for title, priority, and completion status,
+// and both the title and description are word-wrapped to avoid overflow.
+//
+// Returns the full preview string, ready to be set as the viewport's content.
 func (m taskFormModel) generatePreviewContent() string {
 	title := fmt.Sprintf("%s %s %s",
 		m.styles.Title.Render(m.vars.taskTitle),
