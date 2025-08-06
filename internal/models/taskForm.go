@@ -189,6 +189,20 @@ func (m taskFormModel) Init() tea.Cmd {
 func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if m.cancel {
+			switch msg.String() {
+			case "y", "Y":
+				m.cancel = false
+				return m.listModel, nil
+			case "n", "N":
+				m.cancel = false
+				return m, nil
+			}
+		}
+	}
+
 	form, cmd := m.form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
 		m.form = f
@@ -229,41 +243,24 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		if m.cancel {
-			switch msg.String() {
-			case "y", "Y":
-				return m.listModel, nil
-			case "n", "N":
-				m := newTaskFormModel(m.task, m.listModel, m.edit)
-				return m, tea.WindowSize()
-			}
-		}
-
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc":
 			m.cancel = true
 
+			return m, nil
+		}
+	}
+
+	if m.form.State == huh.StateCompleted {
+		if m.vars.confirm {
 			err := m.formVarsToTask()
 			if err != nil {
 				// TODO: we should probably return a message here.
 				return m, nil
 			}
 
-			return m, nil
-		}
-	}
-
-	if m.form.State == huh.StateCompleted {
-		err := m.formVarsToTask()
-		if err != nil {
-			// TODO: we should probably return a message here.
-			return m, nil
-		}
-
-		// Write task only if form has been confirmed.
-		if m.vars.confirm {
 			json := m.task.MarshalTask()
 
 			taskPath := filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")
