@@ -225,7 +225,12 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyPgDown:
 			m.previewViewport.ScrollDown(previewLinesToScroll)
 			m.previewViewport.SetContent(m.generatePreviewContent())
-			m.userScrolled = true
+
+			if m.previewViewport.AtBottom() {
+				m.userScrolled = false // Re-enable auto-scroll
+			} else {
+				m.userScrolled = true
+			}
 		}
 
 		if m.cancel {
