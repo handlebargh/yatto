@@ -1,3 +1,16 @@
+## v0.14.0 (2025-08-06)
+
+### Feat
+
+- allow editing task from within task view (#23)
+- add vim-like keybinds (#20)
+- create keybinds for quit/go back
+
+### Fix
+
+- use viewport model on task preview box (#22)
+- require upper case D to delete a project
+
 ## v0.13.2 (2025-08-03)
 
 ### Fix
