@@ -253,39 +253,41 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return m, nil
 		}
+	}
 
-		if m.form.State == huh.StateCompleted {
-			err := m.formVarsToTask()
-			if err != nil {
-				// TODO: we should probably return a message here.
-				return m, nil
-			}
-
-			// Write task only if form has been confirmed.
-			if m.vars.confirm {
-				json := m.task.MarshalTask()
-
-				taskPath := filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")
-
-				action := "create"
-				if storage.FileExists(taskPath) {
-					action = "update"
-				}
-				cmds = append(
-					cmds,
-					m.listModel.progress.SetPercent(0.10),
-					tickCmd(),
-					m.task.WriteTaskJson(json, *m.listModel.project, action),
-					git.CommitCmd(
-						taskPath,
-						fmt.Sprintf("%s: %s", action, m.task.Title()),
-					),
-				)
-				m.listModel.status = ""
-			}
-
-			return m.listModel, tea.Batch(cmds...)
+	if m.form.State == huh.StateCompleted {
+		err := m.formVarsToTask()
+		if err != nil {
+			// TODO: we should probably return a message here.
+			return m, nil
 		}
+
+		// Write task only if form has been confirmed.
+		if m.vars.confirm {
+			json := m.task.MarshalTask()
+
+			taskPath := filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")
+
+			action := "create"
+			if storage.FileExists(taskPath) {
+				action = "update"
+			}
+			cmds = append(
+				cmds,
+				m.listModel.progress.SetPercent(0.10),
+				tickCmd(),
+				m.task.WriteTaskJson(json, *m.listModel.project, action),
+				git.CommitCmd(
+					taskPath,
+					fmt.Sprintf("%s: %s", action, m.task.Title()),
+				),
+			)
+			m.listModel.status = ""
+		} else {
+			return m.listModel, nil
+		}
+
+		return m.listModel, tea.Batch(cmds...)
 	}
 
 	return m, tea.Batch(cmds...)
