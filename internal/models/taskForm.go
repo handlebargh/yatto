@@ -245,7 +245,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cancel = true
 
 			var err error
-			m.task, err = formVarsToTask(m.vars)
+			m.task, err = formVarsToTask(m.task, m.vars)
 			if err != nil {
 				// TODO: we should probably return a message here.
 				return m, nil
@@ -256,7 +256,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.form.State == huh.StateCompleted {
 			var err error
-			m.task, err = formVarsToTask(m.vars)
+			m.task, err = formVarsToTask(m.task, m.vars)
 			if err != nil {
 				// TODO: we should probably return a message here.
 				return m, nil
@@ -436,18 +436,17 @@ func (m taskFormModel) generatePreviewContent() string {
 		wordwrap.String(m.vars.taskDescription, previewWidth-previewContentPadding)
 }
 
-// formVarsToTask converts form input variables into a Task object.
+// formVarsToTask populates an existing Task object using values from a taskFormVars struct.
 //
-// It maps the fields from the provided taskFormVars struct to a new items.Task,
-// setting the title, description, priority, labels, and completion status.
+// It sets the task's title, description, priority, labels, and completion status
+// using the corresponding fields from the form input.
 //
-// If a due date string is provided, it attempts to parse it using the local
-// time zone. If parsing fails or the time zone cannot be loaded, an error is returned.
+// If a due date string is provided, it attempts to parse it using the local time zone.
+// If parsing succeeds, the due date is set; otherwise, an error is returned. If no due date
+// is provided, the task's due date is cleared.
 //
-// Returns the constructed *items.Task and any error encountered during date parsing.
-func formVarsToTask(v *taskFormVars) (*items.Task, error) {
-	var t items.Task
-
+// Returns the updated *items.Task and any error encountered during date parsing or time zone loading.
+func formVarsToTask(t *items.Task, v *taskFormVars) (*items.Task, error) {
 	t.SetTitle(v.taskTitle)
 	t.SetDescription(v.taskDescription)
 	t.SetPriority(v.taskPriority)
@@ -458,12 +457,12 @@ func formVarsToTask(v *taskFormVars) (*items.Task, error) {
 		// Get the local time zone
 		location, err := time.LoadLocation("Local")
 		if err != nil {
-			return &t, err
+			return t, err
 		}
 
 		date, err := time.ParseInLocation(time.DateTime, v.taskDueDate, location)
 		if err != nil {
-			return &t, err
+			return t, err
 		}
 
 		t.SetDueDate(&date)
@@ -471,5 +470,5 @@ func formVarsToTask(v *taskFormVars) (*items.Task, error) {
 		t.SetDueDate(nil)
 	}
 
-	return &t, nil
+	return t, nil
 }
