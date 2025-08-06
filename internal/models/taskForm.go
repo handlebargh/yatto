@@ -283,7 +283,6 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					),
 				)
 				m.listModel.status = ""
-
 			}
 
 			return m.listModel, tea.Batch(cmds...)
