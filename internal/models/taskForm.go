@@ -22,10 +22,12 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -33,20 +35,40 @@ import (
 	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
+	"github.com/muesli/reflow/wordwrap"
+)
+
+const (
+	// previewWidth defines the width of the task preview box.
+	previewWidth = 40
+
+	// previewVerticalPadding positions the status box
+	// between header and footer.
+	previewVerticalPadding = 10
+
+	// previewContentPadding centers text horizontally inside
+	// the staus box.
+	previewContentPadding = 3
+
+	// previewLinesToScroll defines how many lines
+	// to scroll when pressing pageUP/pageDOWN.
+	previewLinesToScroll = 5
 )
 
 // taskFormModel defines the Bubble Tea model for a form-based interface
 // used to create or edit a task.
 type taskFormModel struct {
-	form          *huh.Form
-	task          *items.Task
-	listModel     *taskListModel
-	edit          bool
-	cancel        bool
-	width, height int
-	lg            *lipgloss.Renderer
-	styles        *Styles
-	vars          *taskFormVars
+	form            *huh.Form
+	task            *items.Task
+	listModel       *taskListModel
+	previewViewport viewport.Model
+	userScrolled    bool
+	edit            bool
+	cancel          bool
+	width, height   int
+	lg              *lipgloss.Renderer
+	styles          *Styles
+	vars            *taskFormVars
 }
 
 // taskFormVars holds the temporary values that are populated and modified
@@ -150,14 +172,10 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Negative("No").
 				Value(&m.vars.confirm),
 		)).
-		WithWidth(45).
+		WithWidth(60).
 		WithShowHelp(false).
 		WithShowErrors(false).
 		WithTheme(colors.FormTheme())
-
-	// Workaround for a problem that prevents the form
-	// from being initially completely rendered.
-	m.form.PrevField()
 
 	return m
 }
@@ -172,27 +190,56 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		h, v := appStyle.GetFrameSize()
-		m.width = msg.Width - h
-		m.height = msg.Height - v
+	case tea.KeyMsg:
+		if m.cancel {
+			switch msg.String() {
+			case "y", "Y":
+				m.cancel = false
+				return m.listModel, nil
+			case "n", "N":
+				m.cancel = false
+				return m, nil
+			}
+		}
 	}
 
 	form, cmd := m.form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
 		m.form = f
 		cmds = append(cmds, cmd)
+
+		// Refresh preview box content.
+		m.previewViewport.SetContent(m.generatePreviewContent())
+
+		// Auto-scroll to bottom.
+		if !m.userScrolled {
+			m.previewViewport.GotoBottom()
+		}
 	}
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		h, v := appStyle.GetFrameSize()
+		m.width = msg.Width - h
+		m.height = msg.Height - v
+
+		m.previewViewport = viewport.New(previewWidth, m.height-previewVerticalPadding)
+
 	case tea.KeyMsg:
-		if m.cancel {
-			switch msg.String() {
-			case "y", "Y":
-				return m.listModel, nil
-			case "n", "N":
-				m := newTaskFormModel(m.task, m.listModel, m.edit)
-				return m, tea.WindowSize()
+		// Scroll the preview box
+		switch msg.Type {
+		case tea.KeyPgUp:
+			m.previewViewport.ScrollUp(previewLinesToScroll)
+			m.previewViewport.SetContent(m.generatePreviewContent())
+			m.userScrolled = true
+		case tea.KeyPgDown:
+			m.previewViewport.ScrollDown(previewLinesToScroll)
+			m.previewViewport.SetContent(m.generatePreviewContent())
+
+			if m.previewViewport.AtBottom() {
+				m.userScrolled = false // Re-enable auto-scroll
+			} else {
+				m.userScrolled = true
 			}
 		}
 
@@ -200,65 +247,41 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc":
-			return m.listModel, nil
+			m.cancel = true
+
+			return m, nil
 		}
 	}
 
 	if m.form.State == huh.StateCompleted {
-		// Write task only if form has been confirmed.
 		if m.vars.confirm {
-			m.task.SetTitle(m.vars.taskTitle)
-			m.task.SetDescription(m.vars.taskDescription)
-			m.task.SetPriority(m.vars.taskPriority)
-			m.task.SetLabels(m.vars.taskLabels)
-			m.task.SetCompleted(m.vars.taskCompleted)
-
-			if m.vars.taskDueDate != "" {
-				// Get the local time zone
-				location, err := time.LoadLocation("Local")
-				if err != nil {
-					// TODO: show an error message
-					return m, nil
-				}
-
-				date, err := time.ParseInLocation(time.DateTime, m.vars.taskDueDate, location)
-				if err != nil {
-					// TODO: show an error message
-					return m, nil
-				}
-
-				m.task.SetDueDate(&date)
-			} else {
-				m.task.SetDueDate(nil)
+			err := m.formVarsToTask()
+			if err != nil {
+				// TODO: we should probably return a message here.
+				return m, nil
 			}
 
 			json := m.task.MarshalTask()
 
-			if storage.FileExists(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")) {
-				cmds = append(
-					cmds,
-					m.listModel.progress.SetPercent(0.10),
-					tickCmd(),
-					m.task.WriteTaskJson(json, *m.listModel.project, "update"),
-					git.CommitCmd(
-						filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
-						"update: "+m.task.Title(),
-					),
-				)
-				m.listModel.status = ""
-			} else {
-				cmds = append(cmds,
-					m.listModel.progress.SetPercent(0.10),
-					tickCmd(),
-					m.task.WriteTaskJson(json, *m.listModel.project, "create"),
-					git.CommitCmd(filepath.Join(m.listModel.project.Id(), m.task.Id()+".json"),
-						"create: "+m.task.Title()),
-				)
-				m.listModel.status = ""
+			taskPath := filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")
+
+			action := "create"
+			if storage.FileExists(taskPath) {
+				action = "update"
 			}
+			cmds = append(
+				cmds,
+				m.listModel.progress.SetPercent(0.10),
+				tickCmd(),
+				m.task.WriteTaskJson(json, *m.listModel.project, action),
+				git.CommitCmd(
+					taskPath,
+					fmt.Sprintf("%s: %s", action, m.task.Title()),
+				),
+			)
+			m.listModel.status = ""
 		} else {
-			m.cancel = true
-			return m, nil
+			return m.listModel, nil
 		}
 
 		return m.listModel, tea.Batch(cmds...)
@@ -287,7 +310,7 @@ func (m taskFormModel) View() string {
 
 	// Form (left side)
 	v := strings.TrimSuffix(m.form.View(), "\n\n")
-	form := m.lg.NewStyle().Margin(1, 0).Render(v)
+	form := s.Base.Margin(1, 0).Render(v)
 
 	// Status (right side)
 	switch m.vars.taskPriority {
@@ -318,21 +341,13 @@ func (m taskFormModel) View() string {
 		color = colors.Green()
 	}
 
-	var status string
-	{
-		const statusWidth = 40
-		statusMarginLeft := m.width - statusWidth - lipgloss.Width(form) - s.Status.GetMarginRight()
-		status = s.Status.
-			Height(lipgloss.Height(form)).
-			Width(statusWidth).
-			MarginLeft(statusMarginLeft).
-			BorderForeground(color).
-			Render(s.StatusHeader.Render("Task preview") + "\n\n" +
-				s.Title.Render(m.vars.taskTitle) + " " +
-				s.Priority.Render(m.vars.taskPriority) + " " +
-				s.Completed.Render(completedString(m.vars.taskCompleted)) + "\n\n" +
-				m.vars.taskDescription)
-	}
+	previewMarginLeft := max(0, m.width-previewWidth-lipgloss.Width(form)-s.Status.GetMarginRight())
+
+	status := s.Status.
+		MarginLeft(previewMarginLeft).
+		BorderForeground(color).
+		Width(previewWidth).
+		Render(m.previewViewport.View())
 
 	errors := m.form.Errors()
 
@@ -346,7 +361,15 @@ func (m taskFormModel) View() string {
 		footer = m.appErrorBoundaryView("")
 	}
 
-	return s.Base.Render(header + "\n" + body + "\n\n" + footer)
+	var b strings.Builder
+
+	b.WriteString(header)
+	b.WriteString("\n")
+	b.WriteString(body)
+	b.WriteString("\n\n")
+	b.WriteString(footer)
+
+	return s.Base.Render(b.String())
 }
 
 // errorView returns a string representation of validation error messages.
@@ -386,4 +409,61 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 		lipgloss.WithWhitespaceChars("❯"),
 		lipgloss.WithWhitespaceForeground(colors.Red()),
 	)
+}
+
+// generatePreviewContent generates the formatted string content for the task preview pane.
+// It includes the task title, priority, completion status, and description, all styled
+// and wrapped to fit within the width of the preview viewport.
+//
+// The title line is rendered with appropriate styles for title, priority, and completion status,
+// and both the title and description are word-wrapped to avoid overflow.
+//
+// Returns the full preview string, ready to be set as the viewport's content.
+func (m taskFormModel) generatePreviewContent() string {
+	title := fmt.Sprintf("%s %s %s",
+		m.styles.Title.Render(m.vars.taskTitle),
+		m.styles.Priority.Render(m.vars.taskPriority),
+		m.styles.Completed.Render(completedString(m.vars.taskCompleted)))
+
+	// We need to wrap our content so it fits into the statusViewport.
+	return m.styles.StatusHeader.Render("Task preview") + "\n\n" +
+		wordwrap.String(title, previewWidth-previewContentPadding) + "\n\n" +
+		wordwrap.String(m.vars.taskDescription, previewWidth-previewContentPadding)
+}
+
+// formVarsToTask updates the associated Task object using values from the taskFormVars struct.
+//
+// It sets the task's title, description, priority, labels, and completion status
+// based on the corresponding fields in the form input.
+//
+// If a due date string is provided, it attempts to parse it using the local time zone.
+// On successful parsing, the due date is set on the task. If parsing fails, an error is returned.
+// If no due date is provided, the task's due date is cleared (set to nil).
+//
+// Returns an error if the local time zone cannot be loaded or if the due date string cannot be parsed.
+func (m taskFormModel) formVarsToTask() error {
+	m.task.SetTitle(m.vars.taskTitle)
+	m.task.SetDescription(m.vars.taskDescription)
+	m.task.SetPriority(m.vars.taskPriority)
+	m.task.SetLabels(m.vars.taskLabels)
+	m.task.SetCompleted(m.vars.taskCompleted)
+
+	if m.vars.taskDueDate != "" {
+		// Get the local time zone
+		location, err := time.LoadLocation("Local")
+		if err != nil {
+			return err
+		}
+
+		date, err := time.ParseInLocation(time.DateTime, m.vars.taskDueDate, location)
+		if err != nil {
+			return err
+		}
+
+		m.task.SetDueDate(&date)
+	} else {
+		m.task.SetDueDate(nil)
+	}
+
+	return nil
 }
