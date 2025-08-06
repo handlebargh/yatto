@@ -249,8 +249,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.cancel = true
 
-			var err error
-			m.task, err = formVarsToTask(m.task, m.vars)
+			err := m.formVarsToTask()
 			if err != nil {
 				// TODO: we should probably return a message here.
 				return m, nil
@@ -260,8 +259,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.form.State == huh.StateCompleted {
-			var err error
-			m.task, err = formVarsToTask(m.task, m.vars)
+			err := m.formVarsToTask()
 			if err != nil {
 				// TODO: we should probably return a message here.
 				return m, nil
@@ -438,39 +436,39 @@ func (m taskFormModel) generatePreviewContent() string {
 		wordwrap.String(m.vars.taskDescription, previewWidth-previewContentPadding)
 }
 
-// formVarsToTask populates an existing Task object using values from a taskFormVars struct.
+// formVarsToTask updates the associated Task object using values from the taskFormVars struct.
 //
 // It sets the task's title, description, priority, labels, and completion status
-// using the corresponding fields from the form input.
+// based on the corresponding fields in the form input.
 //
 // If a due date string is provided, it attempts to parse it using the local time zone.
-// If parsing succeeds, the due date is set; otherwise, an error is returned. If no due date
-// is provided, the task's due date is cleared.
+// On successful parsing, the due date is set on the task. If parsing fails, an error is returned.
+// If no due date is provided, the task's due date is cleared (set to nil).
 //
-// Returns the updated *items.Task and any error encountered during date parsing or time zone loading.
-func formVarsToTask(t *items.Task, v *taskFormVars) (*items.Task, error) {
-	t.SetTitle(v.taskTitle)
-	t.SetDescription(v.taskDescription)
-	t.SetPriority(v.taskPriority)
-	t.SetLabels(v.taskLabels)
-	t.SetCompleted(v.taskCompleted)
+// Returns an error if the local time zone cannot be loaded or if the due date string cannot be parsed.
+func (m taskFormModel) formVarsToTask() error {
+	m.task.SetTitle(m.vars.taskTitle)
+	m.task.SetDescription(m.vars.taskDescription)
+	m.task.SetPriority(m.vars.taskPriority)
+	m.task.SetLabels(m.vars.taskLabels)
+	m.task.SetCompleted(m.vars.taskCompleted)
 
-	if v.taskDueDate != "" {
+	if m.vars.taskDueDate != "" {
 		// Get the local time zone
 		location, err := time.LoadLocation("Local")
 		if err != nil {
-			return t, err
+			return err
 		}
 
-		date, err := time.ParseInLocation(time.DateTime, v.taskDueDate, location)
+		date, err := time.ParseInLocation(time.DateTime, m.vars.taskDueDate, location)
 		if err != nil {
-			return t, err
+			return err
 		}
 
-		t.SetDueDate(&date)
+		m.task.SetDueDate(&date)
 	} else {
-		t.SetDueDate(nil)
+		m.task.SetDueDate(nil)
 	}
 
-	return t, nil
+	return nil
 }
