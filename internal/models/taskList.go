@@ -541,6 +541,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return formModel, tea.WindowSize()
 				}
 
+				return m, nil
+
 			case key.Matches(msg, m.keys.addItem):
 				task := &items.Task{
 					TaskId:          uuid.NewString(),
