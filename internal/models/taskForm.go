@@ -284,8 +284,6 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				)
 				m.listModel.status = ""
 
-			} else {
-				return m.listModel, tea.WindowSize()
 			}
 
 			return m.listModel, tea.Batch(cmds...)
