@@ -28,6 +28,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/items"
 )
 
 // taskPagerModel represents the Bubble Tea model for the task detail view.
@@ -68,6 +69,15 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.listModel.keys.quit) || key.Matches(msg, m.listModel.keys.goBackVim):
 			return m.listModel, nil
+
+		case key.Matches(msg, m.listModel.keys.editItem):
+			if m.listModel.list.SelectedItem() != nil {
+				// Switch to formModel for editing.
+				formModel := newTaskFormModel(m.listModel.list.SelectedItem().(*items.Task), m.listModel, true)
+				return formModel, tea.WindowSize()
+			}
+
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
