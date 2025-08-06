@@ -39,16 +39,20 @@ import (
 )
 
 const (
-	// previewWidth holds the width of the task preview box.
+	// previewWidth defines the width of the task preview box.
 	previewWidth = 40
 
 	// previewVerticalPadding positions the status box
-	// between header and footer
+	// between header and footer.
 	previewVerticalPadding = 10
 
 	// previewContentPadding centers text horizontally inside
-	// the staus box
+	// the staus box.
 	previewContentPadding = 3
+
+	// previewLinesToScroll defines how many lines
+	// to scroll when pressing pageUP/pageDOWN.
+	previewLinesToScroll = 5
 )
 
 // taskFormModel defines the Bubble Tea model for a form-based interface
@@ -215,11 +219,11 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Scroll the preview box
 		switch msg.Type {
 		case tea.KeyPgUp:
-			m.previewViewport.ScrollUp(5)
+			m.previewViewport.ScrollUp(previewLinesToScroll)
 			m.previewViewport.SetContent(m.generatePreviewContent())
 			m.userScrolled = true
 		case tea.KeyPgDown:
-			m.previewViewport.ScrollDown(5)
+			m.previewViewport.ScrollDown(previewLinesToScroll)
 			m.previewViewport.SetContent(m.generatePreviewContent())
 			m.userScrolled = true
 		}
