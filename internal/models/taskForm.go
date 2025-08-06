@@ -177,10 +177,6 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		WithShowErrors(false).
 		WithTheme(colors.FormTheme())
 
-	// Workaround for a problem that prevents the form
-	// from being initially completely rendered.
-	m.form.PrevField()
-
 	return m
 }
 
