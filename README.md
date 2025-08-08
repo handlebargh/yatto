@@ -200,7 +200,7 @@ MIT - see [LICENSE](LICENSE)
 
 ## Contributing
 
-Contributions, feedback, and ideas are welcome! Feel free to open issues or pull requests.
+Contributions, feedback, and ideas are welcome! See [how to contribute](CONTRIBUTING.md) to this repository.
 
 ## Project origin
 
