@@ -1,7 +1,7 @@
 # Contributing to This Project
 
 Thanks for your interest in contributing!
-We welcome pull requests, bug reports, and new ideas.
+Pull requests, bug reports, and new ideas are welcome.
 
 ## Commit Messages
 
@@ -16,7 +16,7 @@ I also recommend (and use) [Commitizen](https://commitizen-tools.github.io/commi
 - Start in **lower case** and finish **without** period.
 
 - If you can, add more detail in the commit body - this helps reviewers and future maintainers understand why a change was made, not just what was changed.
-Use the body to include:
+  Use the body to include:
   - The reasoning or motivation behind the change.
   - Any limitations, trade-offs, or side effects.
   - References to related issues and PRs.
