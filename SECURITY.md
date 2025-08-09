@@ -18,6 +18,13 @@ If you discover a vulnerability:
 
 1. **Do not** open a public GitHub issue.
 2. Please report security vulnerabilities via [GitHub Security Advisories](https://github.com/handlebargh/yatto/security/advisories/new)
+3. Alternatively, you can send an email to **handlebargh@proton.me** with the necessary information, including:
+   - A description of the vulnerability
+   - Steps to reproduce the issue
+   - Any relevant logs, error messages, or proof-of-concept code
+
+If you report a valid vulnerability and would like to be publicly acknowledged, please let me know.
+I will credit you in the security section of the release notes, unless you request to remain anonymous.
 
 ## Responsible Disclosure
 
