@@ -17,12 +17,7 @@ Reports of potential security issues are welcome - for example:
 If you discover a vulnerability:
 
 1. **Do not** open a public GitHub issue.
-2. Use private vulnerability reporting or email your report to: **security@yatto.app**
-   Include:
-   - Steps to reproduce
-   - A clear description of the issue
-   - Potential impact
-   - Whether you want to be acknowledged or stay anonymous
+2. Please report security vulnerabilities via [GitHub Security Advisories](https://github.com/handlebargh/yatto/security/advisories/new)
 
 ## Responsible Disclosure
 
