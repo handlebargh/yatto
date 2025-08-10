@@ -1,9 +1,5 @@
 # YATTO
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/handlebargh/yatto)](https://goreportcard.com/report/github.com/handlebargh/yatto)
-[![GitHub License](https://img.shields.io/github/license/handlebargh/yatto?color=blue)](LICENSE)
-[![GitHub Release](https://img.shields.io/github/v/release/handlebargh/yatto?color=blue)](https://github.com/handlebargh/yatto/releases/latest)
-
 **YATTO** is a terminal-based to-do application built with
 [Bubble Tea](https://github.com/charmbracelet/bubbletea). It stores each task as
 a separate JSON file on your filesystem and manages the
@@ -44,6 +40,13 @@ task directory as a Git repository for versioning, synchronization and collabora
 ```bash
 go install github.com/handlebargh/yatto@latest
 ```
+
+### [Eget](https://github.com/zyedidia/eget)
+
+```bash
+eget handlebargh/yatto
+```
+
 
 ### Binary
 
@@ -178,17 +181,18 @@ yatto -print -projects "2023255a-1749-4f6c-9877-0c73ab42e5ab b5811d17-dbc7-4556-
 yatto -print -regex frontend
 ```
 
-If you want to print this list whenever you start a new terminal session
-(works with bash) create the file `/etc/profile.d/yatto.sh` with the following content:
+If you want to print this list whenever you run an interactive shell,
+open your `~/.bashrc` (or `~/.zshrc`) and add the following scriptlet:
 
 ```bash
-#!/bin/sh
-
-# If you installed the release binary
-/usr/local/bin/yatto -print
-
-# If you install via go install
-${HOME}/go/bin/yatto -print
+# Print yatto task list only in interactive shells
+case $- in
+    *i*)
+        if command -v yatto >/dev/null 2>&1; then
+            yatto -print
+        fi
+        ;;
+esac
 ```
 
 > [!TIP]
@@ -202,16 +206,7 @@ MIT - see [LICENSE](LICENSE)
 
 Contributions, feedback, and ideas are welcome! See [how to contribute](CONTRIBUTING.md) to this repository.
 
-## Project origin
+## Acknowledgements
 
-YATTO started as a small coding exercise to improve my proficiency in Go
-and explore the Bubble Tea framework out of curiosity. The idea of building
-a todo app had been on my mind for a while, as it's a popular project to practice
-coding with.
-
-The name I chose - YATTO - stands for Yet Another Terrific Task Organizer.
-Coincidentally (or perhaps fittingly), yatto also means "finally" in Japanese, which feels
-appropriate since I had started several todo app attempts before this one,
-without ever sticking with them.
-
-So here it is: a task organizer I can finally live with.
+Huge thanks to the [Charm](https://charm.land/) team for their incredible open-source libraries,
+which power much of this project.
