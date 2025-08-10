@@ -47,7 +47,6 @@ go install github.com/handlebargh/yatto@latest
 eget handlebargh/yatto
 ```
 
-
 ### Binary
 
 Take a look at the [releases](https://github.com/handlebargh/yatto/releases/latest).
@@ -182,7 +181,7 @@ yatto -print -regex frontend
 ```
 
 If you want to print this list whenever you run an interactive shell,
-open your `~/.bashrc` (or `~/.zshrc`) and add the following scriptlet:
+open your `~/.bashrc` (or `~/.zshrc`) and add the following snippet:
 
 ```bash
 # Print yatto task list only in interactive shells
@@ -210,3 +209,4 @@ Contributions, feedback, and ideas are welcome! See [how to contribute](CONTRIBU
 
 Huge thanks to the [Charm](https://charm.land/) team for their incredible open-source libraries,
 which power much of this project.
+
