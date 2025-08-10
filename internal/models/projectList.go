@@ -172,7 +172,6 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 type projectListModel struct {
 	list             list.Model
 	selected         bool
-	taskLabels       map[string]int
 	keys             *projectListKeyMap
 	mode             mode
 	err              error
@@ -225,20 +224,16 @@ func InitialProjectListModel() projectListModel {
 		}
 	}
 
-	// Read labels from tasks across all projects.
-	labels := helpers.GetAllLabels()
-
 	renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
 	if err != nil {
 		panic(err)
 	}
 
 	return projectListModel{
-		list:       itemList,
-		taskLabels: labels,
-		keys:       listKeys,
-		renderer:   renderer,
-		progress:   progress.New(progress.WithGradient("#FFA336", "#02BF87")),
+		list:     itemList,
+		keys:     listKeys,
+		renderer: renderer,
+		progress: progress.New(progress.WithGradient("#FFA336", "#02BF87")),
 	}
 }
 

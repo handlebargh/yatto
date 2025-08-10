@@ -118,7 +118,7 @@ func GetAllLabels() map[string]int {
 			return nil
 		}
 
-		for _, label := range labelsStringToSlice(task.Labels) {
+		for _, label := range LabelsStringToSlice(task.Labels) {
 			labelCount[label]++
 		}
 
@@ -140,7 +140,7 @@ func GetAllLabels() map[string]int {
 //	input := "work, urgent ,home "
 //	output := labelsStringToSlice(input)
 //	// output: []string{"work", "urgent", "home"}
-func labelsStringToSlice(labels string) []string {
+func LabelsStringToSlice(labels string) []string {
 	var result []string
 
 	for _, label := range strings.Split(labels, ",") {

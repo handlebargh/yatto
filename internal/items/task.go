@@ -106,11 +106,23 @@ func (t Task) DueDate() *time.Time { return t.TaskDueDate }
 // SetDueDate sets the task's due date.
 func (t *Task) SetDueDate(dueDate *time.Time) { t.TaskDueDate = dueDate }
 
-// Labels returns the task's label string.
-func (t Task) Labels() string { return t.TaskLabels }
+// LabelsString returns the task's label string.
+func (t Task) LabelsString() string { return t.TaskLabels }
 
-// SetLabels sets the task's labels.
-func (t *Task) SetLabels(labels string) { t.TaskLabels = labels }
+// SetLabelsString sets the task's labels string.
+func (t *Task) SetLabelsString(labels string) { t.TaskLabels = labels }
+
+// LabelsList returns the task's labels as slice of string.
+func (t *Task) LabelsList() []string {
+	var result []string
+
+	for _, label := range strings.Split(t.TaskLabels, ",") {
+		if label != "" {
+			result = append(result, strings.TrimSpace(label))
+		}
+	}
+	return result
+}
 
 // InProgress returns true if the task is marked as in progress.
 func (t Task) InProgress() bool { return t.TaskInProgress }
@@ -140,7 +152,7 @@ func (t Task) CropTaskTitle(length int) string {
 // CropTaskLabels returns the task's labels cropped to fit
 // length with a concatenated ellipses.
 func (t Task) CropTaskLabels(length int) string {
-	if len(t.Labels()) > length {
+	if len(t.LabelsString()) > length {
 		return t.TaskLabels[:length-len(ellipses)] + ellipses
 	}
 
@@ -261,9 +273,9 @@ func (t *Task) TaskToMarkdown() string {
 	description := fmt.Sprintf("📝  **Description**\n\n%s\n\n---\n\n", t.Description())
 
 	labels := ""
-	if t.Labels() != "" {
+	if t.LabelsString() != "" {
 		labels = "🏷️  **Labels**\n\n"
-		labelsSeq := strings.SplitSeq(t.Labels(), ",")
+		labelsSeq := strings.SplitSeq(t.LabelsString(), ",")
 		for label := range labelsSeq {
 			labels += "- " + label + "\n\n"
 		}
