@@ -25,8 +25,10 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
@@ -66,6 +68,88 @@ func ReadProjectsFromFS() []items.Project {
 	}
 
 	return projects
+}
+
+// GetAllLabels walks the task storage directory (as configured by the
+// "storage.path" setting in Viper), reads all task JSON files whose
+// filenames match the UUID pattern, and extracts their labels.
+//
+// Each label found is counted, and the function returns a map where the
+// keys are label strings and the values are the number of times each
+// label appears across all tasks.
+//
+// Task files are expected to contain a "labels" field as a comma-separated
+// string. This string is split and trimmed by labelsStringToSlice before
+// counting.
+//
+// Errors encountered while reading or parsing individual files are logged
+// to standard error, but do not stop processing of other files.
+func GetAllLabels() map[string]int {
+	storageDir := viper.GetString("storage.path")
+
+	// Store labels in a map and track their occurrence.
+	labelCount := make(map[string]int)
+
+	err := filepath.WalkDir(storageDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		if !items.UUIDRegex.MatchString(filepath.Base(path)) {
+			return nil
+		}
+
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			fmt.Fprintf(os.Stderr, "error reading task labels at file %s: %v\n", path, readErr)
+			return nil
+		}
+
+		var task struct {
+			Labels string `json:"labels"`
+		}
+
+		if parseErr := json.Unmarshal(data, &task); parseErr != nil {
+			fmt.Fprintf(os.Stderr, "error parsing json at file %s: %v\n", path, parseErr)
+			return nil
+		}
+
+		for _, label := range labelsStringToSlice(task.Labels) {
+			labelCount[label]++
+		}
+
+		return nil
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error reading task labels: %v\n", err)
+	}
+
+	return labelCount
+}
+
+// labelsStringToSlice splits a comma-separated labels string into a slice of
+// individual labels. Each label in the result is trimmed of leading and trailing
+// whitespace. Empty entries are discarded.
+//
+// Example:
+//
+//	input := "work, urgent ,home "
+//	output := labelsStringToSlice(input)
+//	// output: []string{"work", "urgent", "home"}
+func labelsStringToSlice(labels string) []string {
+	var result []string
+
+	for _, label := range strings.Split(labels, ",") {
+		if label != "" {
+			result = append(result, strings.TrimSpace(label))
+		}
+	}
+
+	return result
 }
 
 // GetColorCode maps a project color name to its corresponding lipgloss.AdaptiveColor.

@@ -20,7 +20,14 @@
 
 package items
 
-import "time"
+import (
+	"regexp"
+	"time"
+)
+
+var UUIDRegex = regexp.MustCompile(
+	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\.json$`,
+)
 
 // IsToday returns true if the given time is not nil and falls on today's date
 // (year, month, and day match the current local date). Returns false if the
