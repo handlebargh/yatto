@@ -190,13 +190,13 @@ func InitialProjectListModel() projectListModel {
 	listKeys := newProjectListKeyMap()
 
 	projects := helpers.ReadProjectsFromFS()
-	items := []list.Item{}
+	listItems := []list.Item{}
 
 	for _, project := range projects {
-		items = append(items, &project)
+		listItems = append(listItems, &project)
 	}
 
-	itemList := list.New(items, customProjectDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
+	itemList := list.New(listItems, customProjectDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)

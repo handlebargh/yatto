@@ -260,10 +260,10 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	listKeys := newTaskListKeyMap()
 
 	tasks := project.ReadTasksFromFS()
-	items := []list.Item{}
+	listItems := []list.Item{}
 
 	for _, task := range tasks {
-		items = append(items, &task)
+		listItems = append(listItems, &task)
 	}
 
 	color := helpers.GetColorCode(project.Color())
@@ -273,7 +273,7 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 		Background(color).
 		Padding(0, 1)
 
-	itemList := list.New(items, customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
+	itemList := list.New(listItems, customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
