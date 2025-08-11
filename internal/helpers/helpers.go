@@ -84,7 +84,7 @@ func ReadProjectsFromFS() []items.Project {
 //
 // Errors encountered while reading or parsing individual files are logged
 // to standard error, but do not stop processing of other files.
-func GetAllLabels() map[string]int {
+func AllLabels() map[string]int {
 	storageDir := viper.GetString("storage.path")
 
 	// Store labels in a map and track their occurrence.

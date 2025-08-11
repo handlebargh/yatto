@@ -106,7 +106,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	m.vars = &v
 	m.task = t
 	m.listModel = listModel
-	m.taskLabels = helpers.GetAllLabels()
+	m.taskLabels = helpers.AllLabels()
 	m.lg = lipgloss.DefaultRenderer()
 	m.styles = NewStyles(m.lg)
 
