@@ -70,7 +70,7 @@ func ReadProjectsFromFS() []items.Project {
 	return projects
 }
 
-// GetAllLabels walks the task storage directory (as configured by the
+// AllLabels walks the task storage directory (as configured by the
 // "storage.path" setting in Viper), reads all task JSON files whose
 // filenames match the UUID pattern, and extracts their labels.
 //
