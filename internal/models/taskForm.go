@@ -481,7 +481,7 @@ func (m taskFormModel) formVarsToTask() error {
 	}
 
 	// Save as comma-separated string
-	m.task.SetLabelsString(strings.Join(uniqueLabels, ", "))
+	m.task.SetLabelsString(strings.Join(uniqueLabels, ","))
 
 	m.task.SetCompleted(m.vars.taskCompleted)
 

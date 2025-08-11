@@ -149,14 +149,16 @@ func (t Task) CropTaskTitle(length int) string {
 	return t.TaskTitle
 }
 
-// CropTaskLabels returns the task's labels cropped to fit
-// length with a concatenated ellipses.
+// CropTaskLabels returns the task's labels as string.
+// Labels are separated by comma + whitespace.
+// If the returned string would exceed length
+// it is cropped and an ellipses is appended to fit length.
 func (t Task) CropTaskLabels(length int) string {
 	if len(t.LabelsString()) > length {
-		return t.TaskLabels[:length-len(ellipses)] + ellipses
+		return strings.ReplaceAll(t.TaskLabels[:length-len(ellipses)]+ellipses, ",", ", ")
 	}
 
-	return t.TaskLabels
+	return strings.ReplaceAll(t.TaskLabels, ",", ", ")
 }
 
 // DueDateToString formats the task's due date as a string using DueDateLayout.
