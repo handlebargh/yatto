@@ -79,43 +79,38 @@ func ReadProjectsFromFS() []items.Project {
 // label appears across all tasks.
 //
 // Task files are expected to contain a "labels" field as a comma-separated
-// string. This string is split and trimmed by labelsStringToSlice before
+// string. This string is split and trimmed by LabelsStringToSlice before
 // counting.
 //
-// Errors encountered while reading or parsing individual files are logged
-// to standard error, but do not stop processing of other files.
+// It is assumed that all matching files are readable and contain valid JSON.
+// If this invariant is violated (e.g., a file is unreadable or cannot be
+// parsed), the function will panic immediately rather than attempting to
+// recover.
 func AllLabels() map[string]int {
 	storageDir := viper.GetString("storage.path")
 
-	// Store labels in a map and track their occurrence.
+	// Store labels in a map and track their frequency.
 	labelCount := make(map[string]int)
 
-	err := filepath.WalkDir(storageDir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(storageDir, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			panic(fmt.Sprintf("unexpected FS walk error at %s: %v", path, walkErr))
+		}
+
+		if d.IsDir() || !items.UUIDRegex.MatchString(filepath.Base(path)) {
+			return nil
+		}
+
+		data, err := os.ReadFile(path)
 		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		if !items.UUIDRegex.MatchString(filepath.Base(path)) {
-			return nil
-		}
-
-		data, readErr := os.ReadFile(path)
-		if readErr != nil {
-			fmt.Fprintf(os.Stderr, "error reading task labels at file %s: %v\n", path, readErr)
-			return nil
+			panic(fmt.Sprintf("unexpected read error for %s: %v", path, err))
 		}
 
 		var task struct {
 			Labels string `json:"labels"`
 		}
-
-		if parseErr := json.Unmarshal(data, &task); parseErr != nil {
-			fmt.Fprintf(os.Stderr, "error parsing json at file %s: %v\n", path, parseErr)
-			return nil
+		if err := json.Unmarshal(data, &task); err != nil {
+			panic(fmt.Sprintf("unexpected JSON parse error for %s: %v", path, err))
 		}
 
 		for _, label := range LabelsStringToSlice(task.Labels) {
@@ -125,7 +120,7 @@ func AllLabels() map[string]int {
 		return nil
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading task labels: %v\n", err)
+		panic(fmt.Sprintf("unexpected error walking storage dir %s: %v", storageDir, err))
 	}
 
 	return labelCount
