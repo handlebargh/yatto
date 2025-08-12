@@ -1,3 +1,9 @@
+## v0.15.0 (2025-08-12)
+
+### Feat
+
+- add multi-select for choosing existing labels (#25)
+
 ## v0.14.0 (2025-08-06)
 
 ### Feat
