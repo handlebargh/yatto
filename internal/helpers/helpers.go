@@ -25,8 +25,10 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
@@ -66,6 +68,83 @@ func ReadProjectsFromFS() []items.Project {
 	}
 
 	return projects
+}
+
+// AllLabels walks the task storage directory (as configured by the
+// "storage.path" setting in Viper), reads all task JSON files whose
+// filenames match the UUID pattern, and extracts their labels.
+//
+// Each label found is counted, and the function returns a map where the
+// keys are label strings and the values are the number of times each
+// label appears across all tasks.
+//
+// Task files are expected to contain a "labels" field as a comma-separated
+// string. This string is split and trimmed by LabelsStringToSlice before
+// counting.
+//
+// It is assumed that all matching files are readable and contain valid JSON.
+// If this invariant is violated (e.g., a file is unreadable or cannot be
+// parsed), the function will panic immediately rather than attempting to
+// recover.
+func AllLabels() map[string]int {
+	storageDir := viper.GetString("storage.path")
+
+	// Store labels in a map and track their frequency.
+	labelCount := make(map[string]int)
+
+	err := filepath.WalkDir(storageDir, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			panic(fmt.Sprintf("unexpected FS walk error at %s: %v", path, walkErr))
+		}
+
+		if d.IsDir() || !items.UUIDRegex.MatchString(filepath.Base(path)) {
+			return nil
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			panic(fmt.Sprintf("unexpected read error for %s: %v", path, err))
+		}
+
+		var task struct {
+			Labels string `json:"labels"`
+		}
+		if err := json.Unmarshal(data, &task); err != nil {
+			panic(fmt.Sprintf("unexpected JSON parse error for %s: %v", path, err))
+		}
+
+		for _, label := range LabelsStringToSlice(task.Labels) {
+			labelCount[label]++
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error walking storage dir %s: %v", storageDir, err))
+	}
+
+	return labelCount
+}
+
+// labelsStringToSlice splits a comma-separated labels string into a slice of
+// individual labels. Each label in the result is trimmed of leading and trailing
+// whitespace. Empty entries are discarded.
+//
+// Example:
+//
+//	input := "work, urgent ,home "
+//	output := labelsStringToSlice(input)
+//	// output: []string{"work", "urgent", "home"}
+func LabelsStringToSlice(labels string) []string {
+	var result []string
+
+	for _, label := range strings.Split(labels, ",") {
+		if label != "" {
+			result = append(result, strings.TrimSpace(label))
+		}
+	}
+
+	return result
 }
 
 // GetColorCode maps a project color name to its corresponding lipgloss.AdaptiveColor.

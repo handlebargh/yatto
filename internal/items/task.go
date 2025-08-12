@@ -31,7 +31,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -40,10 +39,6 @@ import (
 )
 
 const ellipses = "..."
-
-var uuidRegex = regexp.MustCompile(
-	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\.json$`,
-)
 
 type (
 	// WriteTaskJSONDoneMsg indicates successful write of a Task JSON file.
@@ -111,11 +106,23 @@ func (t Task) DueDate() *time.Time { return t.TaskDueDate }
 // SetDueDate sets the task's due date.
 func (t *Task) SetDueDate(dueDate *time.Time) { t.TaskDueDate = dueDate }
 
-// Labels returns the task's label string.
-func (t Task) Labels() string { return t.TaskLabels }
+// LabelsString returns the task's label string.
+func (t Task) LabelsString() string { return t.TaskLabels }
 
-// SetLabels sets the task's labels.
-func (t *Task) SetLabels(labels string) { t.TaskLabels = labels }
+// SetLabelsString sets the task's labels string.
+func (t *Task) SetLabelsString(labels string) { t.TaskLabels = labels }
+
+// LabelsList returns the task's labels as slice of string.
+func (t *Task) LabelsList() []string {
+	var result []string
+
+	for _, label := range strings.Split(t.TaskLabels, ",") {
+		if label != "" {
+			result = append(result, strings.TrimSpace(label))
+		}
+	}
+	return result
+}
 
 // InProgress returns true if the task is marked as in progress.
 func (t Task) InProgress() bool { return t.TaskInProgress }
@@ -142,14 +149,16 @@ func (t Task) CropTaskTitle(length int) string {
 	return t.TaskTitle
 }
 
-// CropTaskLabels returns the task's labels cropped to fit
-// length with a concatenated ellipses.
+// CropTaskLabels returns the task's labels as string.
+// Labels are separated by comma + whitespace.
+// If the returned string would exceed length
+// it is cropped and an ellipses is appended to fit length.
 func (t Task) CropTaskLabels(length int) string {
-	if len(t.Labels()) > length {
-		return t.TaskLabels[:length-len(ellipses)] + ellipses
+	if len(t.LabelsString()) > length {
+		return strings.ReplaceAll(t.TaskLabels[:length-len(ellipses)]+ellipses, ",", ", ")
 	}
 
-	return t.TaskLabels
+	return strings.ReplaceAll(t.TaskLabels, ",", ", ")
 }
 
 // DueDateToString formats the task's due date as a string using DueDateLayout.
@@ -266,9 +275,9 @@ func (t *Task) TaskToMarkdown() string {
 	description := fmt.Sprintf("📝  **Description**\n\n%s\n\n---\n\n", t.Description())
 
 	labels := ""
-	if t.Labels() != "" {
+	if t.LabelsString() != "" {
 		labels = "🏷️  **Labels**\n\n"
-		labelsSeq := strings.SplitSeq(t.Labels(), ",")
+		labelsSeq := strings.SplitSeq(t.LabelsString(), ",")
 		for label := range labelsSeq {
 			labels += "- " + label + "\n\n"
 		}

@@ -161,7 +161,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 
 	var pendingTasks []projectTask
 	for _, pt := range pt {
-		if !pt.task.Completed() && regex.MatchString(pt.task.Labels()) {
+		if !pt.task.Completed() && regex.MatchString(pt.task.LabelsString()) {
 			pendingTasks = append(pendingTasks, pt)
 		}
 	}
@@ -176,7 +176,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		taskPriority := pt.task.Priority()
 
 		var taskLabels string
-		if len(pt.task.Labels()) > 0 {
+		if len(pt.task.LabelsString()) > 0 {
 			taskLabels = lipgloss.NewStyle().
 				Foreground(colors.Blue()).
 				Render("\n  " + pt.task.CropTaskLabels(40))

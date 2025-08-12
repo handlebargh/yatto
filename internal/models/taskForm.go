@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/git"
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/muesli/reflow/wordwrap"
@@ -61,6 +63,7 @@ type taskFormModel struct {
 	form            *huh.Form
 	task            *items.Task
 	listModel       *taskListModel
+	taskLabels      map[string]int
 	previewViewport viewport.Model
 	userScrolled    bool
 	edit            bool
@@ -74,26 +77,28 @@ type taskFormModel struct {
 // taskFormVars holds the temporary values that are populated and modified
 // in the task form UI.
 type taskFormVars struct {
-	confirm         bool
-	taskTitle       string
-	taskDescription string
-	taskPriority    string
-	taskDueDate     string
-	taskLabels      string
-	taskCompleted   bool
+	confirm            bool
+	taskTitle          string
+	taskDescription    string
+	taskPriority       string
+	taskDueDate        string
+	taskLabels         string
+	taskLabelsSelected []string
+	taskCompleted      bool
 }
 
 // newTaskFormModel initializes and returns a new taskFormModel instance,
 // optionally in edit mode.
 func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFormModel {
 	v := taskFormVars{
-		confirm:         true,
-		taskTitle:       t.Title(),
-		taskDescription: t.Description(),
-		taskPriority:    t.Priority(),
-		taskDueDate:     t.DueDateToString(),
-		taskLabels:      t.Labels(),
-		taskCompleted:   t.Completed(),
+		confirm:            true,
+		taskTitle:          t.Title(),
+		taskDescription:    t.Description(),
+		taskPriority:       t.Priority(),
+		taskDueDate:        t.DueDateToString(),
+		taskLabels:         "", // Clear labels as we have them already selected.
+		taskLabelsSelected: t.LabelsList(),
+		taskCompleted:      t.Completed(),
 	}
 
 	m := taskFormModel{}
@@ -101,6 +106,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	m.vars = &v
 	m.task = t
 	m.listModel = listModel
+	m.taskLabels = helpers.AllLabels()
 	m.lg = lipgloss.DefaultRenderer()
 	m.styles = NewStyles(m.lg)
 
@@ -136,7 +142,8 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Title("Enter a description:\n"+
 					"(markdown is supported)").
 				Value(&m.vars.taskDescription),
-
+		),
+		huh.NewGroup(
 			huh.NewInput().
 				Key("dueDate").
 				Title("Enter a due date:").
@@ -159,13 +166,21 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 
 					return nil
 				}),
+		),
+		huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Key("existingLabels").
+				Title("Choose labels:").
+				Height(15).
+				OptionsFunc(m.sortLabelsOptions, nil),
 
 			huh.NewInput().
 				Key("labels").
-				Title("Enter labels:").
+				Title("Enter additional labels:").
 				Value(&m.vars.taskLabels).
-				Description("Comma separated list of labels."),
-
+				Description("Comma-separated list of labels."),
+		),
+		huh.NewGroup(
 			huh.NewConfirm().
 				Title(confirmQuestion).
 				Affirmative("Yes").
@@ -431,25 +446,46 @@ func (m taskFormModel) generatePreviewContent() string {
 		wordwrap.String(m.vars.taskDescription, previewWidth-previewContentPadding)
 }
 
-// formVarsToTask updates the associated Task object using values from the taskFormVars struct.
+// formVarsToTask updates the Task object with values from the form variables.
 //
-// It sets the task's title, description, priority, labels, and completion status
-// based on the corresponding fields in the form input.
+// It sets the task's title, description, priority, completion status, and due date.
+// For labels, it merges labels selected via the multi-select widget with additional
+// labels entered as a comma-separated string, deduplicates them (case-insensitive),
+// trims whitespace, and stores them as a single comma-separated string on the task.
 //
-// If a due date string is provided, it attempts to parse it using the local time zone.
-// On successful parsing, the due date is set on the task. If parsing fails, an error is returned.
-// If no due date is provided, the task's due date is cleared (set to nil).
-//
-// Returns an error if the local time zone cannot be loaded or if the due date string cannot be parsed.
+// Returns an error if the due date string cannot be parsed or the local time zone
+// cannot be loaded.
 func (m taskFormModel) formVarsToTask() error {
 	m.task.SetTitle(m.vars.taskTitle)
 	m.task.SetDescription(m.vars.taskDescription)
 	m.task.SetPriority(m.vars.taskPriority)
-	m.task.SetLabels(m.vars.taskLabels)
+
+	// Merge labels from MultiSelect (selected) and freeform input (typed)
+	typedLabels := helpers.LabelsStringToSlice(m.vars.taskLabels)
+	allLabels := append([]string{}, m.form.Get("existingLabels").([]string)...)
+	allLabels = append(allLabels, typedLabels...)
+
+	// Deduplicate (case-insensitive) & trim
+	labelSet := make(map[string]struct{})
+	uniqueLabels := make([]string, 0, len(allLabels))
+	for _, label := range allLabels {
+		l := strings.TrimSpace(label)
+		if l == "" {
+			continue // skip empty labels
+		}
+		key := strings.ToLower(l) // comparison key
+		if _, exists := labelSet[key]; !exists {
+			labelSet[key] = struct{}{}
+			uniqueLabels = append(uniqueLabels, l) // keep original casing
+		}
+	}
+
+	// Save as comma-separated string
+	m.task.SetLabelsString(strings.Join(uniqueLabels, ","))
+
 	m.task.SetCompleted(m.vars.taskCompleted)
 
 	if m.vars.taskDueDate != "" {
-		// Get the local time zone
 		location, err := time.LoadLocation("Local")
 		if err != nil {
 			return err
@@ -466,4 +502,73 @@ func (m taskFormModel) formVarsToTask() error {
 	}
 
 	return nil
+}
+
+// sortLabelsOptions returns a slice of huh.Option[string] representing the task labels,
+// sorted with the following priority:
+//  1. Labels currently selected in the form appear first.
+//  2. Labels are then sorted by descending frequency (most frequent first).
+//  3. Labels with the same frequency are sorted alphabetically (case-insensitive).
+//
+// The function trims whitespace from label keys and ignores empty labels.
+// Selected labels are marked as selected in the returned options.
+//
+// This method converts the internal map of label frequencies into a sorted slice
+// suitable for display in a multi-select UI widget.
+func (m taskFormModel) sortLabelsOptions() []huh.Option[string] {
+	// Convert map to slice of key-value pairs, trimming whitespace and skipping empties
+	type kv struct {
+		Label     string
+		Frequency int
+	}
+
+	var sortedLabels []kv
+	for rawLabel, freq := range m.taskLabels {
+		label := strings.TrimSpace(rawLabel)
+		if label == "" {
+			continue // skip empty labels
+		}
+		sortedLabels = append(sortedLabels, kv{Label: label, Frequency: freq})
+	}
+
+	// Convert selected slice to a set
+	selectedSet := make(map[string]struct{}, len(m.vars.taskLabelsSelected))
+	for _, s := range m.vars.taskLabelsSelected {
+		selectedSet[strings.TrimSpace(s)] = struct{}{}
+	}
+
+	// Sort: selected first, then by frequency descending, then alphabetical
+	slices.SortFunc(sortedLabels, func(a, b kv) int {
+		_, aSelected := selectedSet[a.Label]
+		_, bSelected := selectedSet[b.Label]
+
+		// Selected labels come first
+		if aSelected && !bSelected {
+			return -1
+		}
+
+		if bSelected && !aSelected {
+			return 1
+		}
+
+		// Sort by frequency descending
+		if a.Frequency != b.Frequency {
+			return b.Frequency - a.Frequency
+		}
+
+		// Case-insensitive alphabetical
+		return strings.Compare(strings.ToLower(a.Label), strings.ToLower(b.Label))
+	})
+
+	// Build sorted options
+	opts := make([]huh.Option[string], 0, len(sortedLabels))
+	for _, item := range sortedLabels {
+		opt := huh.NewOption[string](item.Label, item.Label)
+		if _, selected := selectedSet[item.Label]; selected {
+			opt = opt.Selected(true)
+		}
+		opts = append(opts, opt)
+	}
+
+	return opts
 }

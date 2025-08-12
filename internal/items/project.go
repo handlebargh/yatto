@@ -103,7 +103,7 @@ func (p *Project) ReadTasksFromFS() []Task {
 
 	var tasks []Task
 	for _, entry := range taskFiles {
-		if entry.IsDir() || !uuidRegex.MatchString(entry.Name()) {
+		if entry.IsDir() || !UUIDRegex.MatchString(entry.Name()) {
 			continue
 		}
 
