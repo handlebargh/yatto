@@ -1,0 +1,32 @@
+[colors]
+badge_text_dark = "#000000"
+badge_text_light = "#000000"
+blue_dark = "#1e90ff"
+blue_light = "#1e90ff"
+green_dark = "#02BF87"
+green_light = "#02BA84"
+indigo_dark = "#7571F9"
+indigo_light = "#5A56E0"
+orange_dark = "#FFA336"
+orange_light = "#FFB733"
+red_dark = "#FE5F86"
+red_light = "#FE5F86"
+vividred_dark = "#FE134D"
+vividred_light = "#FE134D"
+yellow_dark = "#CCCC00"
+yellow_light = "#CCCC00"
+
+[colors.form]
+theme = "Base16"
+
+[git]
+default_branch = "main"
+
+[git.remote]
+enable = false
+name = "origin"
+
+[storage]
+# replace with your actual home directory
+# or any other path you'd like to use
+path = "/home/<me>/.yatto"
