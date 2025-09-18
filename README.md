@@ -41,6 +41,13 @@ task directory as a Git repository for versioning, synchronization and collabora
 go install github.com/handlebargh/yatto@latest
 ```
 
+### Homwbrew
+
+```bash
+brew tap handlebargh/yatto
+brew install yatto
+```
+
 ### [Eget](https://github.com/zyedidia/eget)
 
 ```bash
@@ -209,4 +216,3 @@ Contributions, feedback, and ideas are welcome! See [how to contribute](CONTRIBU
 
 Huge thanks to the [Charm](https://charm.land/) team for their incredible open-source libraries,
 which power much of this project.
-
