@@ -44,7 +44,7 @@ go install github.com/handlebargh/yatto@latest
 ### Homebrew
 
 ```bash
-brew tap handlebargh/yatto
+brew tap handlebargh/yatto https://github.com/handlebargh/yatto
 brew install yatto
 ```
 
