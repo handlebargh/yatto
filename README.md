@@ -41,7 +41,7 @@ task directory as a Git repository for versioning, synchronization and collabora
 go install github.com/handlebargh/yatto@latest
 ```
 
-### Homebrew
+### [Homebrew](https://brew.sh/)
 
 ```bash
 brew tap handlebargh/yatto
