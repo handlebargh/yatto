@@ -20,7 +20,7 @@ fmt:
 .PHONY: update
 update:
 	@echo 'Updating module dependencies...'
-	go get -u
+	go get -u ./...
 	@echo 'Tidying module dependencies...'
 	go mod tidy -v
 
