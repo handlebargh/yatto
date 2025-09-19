@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// package printer provides the logic to print task lists
+// Package printer provides the logic to print task lists
 // in a non-interactive way to stdout.
 package printer
 
@@ -57,7 +57,7 @@ func getProjectTasks(projectsIDs ...string) ([]projectTask, []string) {
 	var result []projectTask
 
 	for _, project := range projects {
-		id := project.Id()
+		id := project.ID()
 		if len(projectsIDs) == 0 || slices.Contains(projectsIDs, id) {
 			foundIDs[id] = true
 			for _, task := range project.ReadTasksFromFS() {
@@ -148,11 +148,11 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 	pt, missing := getProjectTasks(projectsIDs...)
 
 	if len(missing) > 0 {
-		for _, projectId := range missing {
+		for _, projectID := range missing {
 			fmt.Println(
 				lipgloss.NewStyle().
 					Foreground(colors.Red()).
-					Render(fmt.Sprintf("\nerror: project ID %s not found\n", projectId)),
+					Render(fmt.Sprintf("\nerror: project ID %s not found\n", projectID)),
 			)
 		}
 	}
@@ -213,7 +213,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		if dueDate != nil &&
 			items.IsToday(dueDate) &&
 			dueDate.After(now) {
-			right = right + lipgloss.NewStyle().
+			right += lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.VividRed()).
 				Foreground(colors.BadgeText()).
@@ -221,7 +221,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		}
 
 		if dueDate != nil && dueDate.Before(now) {
-			right = right + lipgloss.NewStyle().
+			right += lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.VividRed()).
 				Foreground(colors.BadgeText()).
@@ -229,7 +229,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		}
 
 		if pt.task.InProgress() {
-			right = right + lipgloss.NewStyle().
+			right += lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.Blue()).
 				Foreground(colors.BadgeText()).
@@ -239,11 +239,11 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		if dueDate != nil &&
 			!dueDate.Before(now) &&
 			!items.IsToday(dueDate) {
-			right = right + lipgloss.NewStyle().
+			right += lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.Yellow()).
 				Foreground(colors.BadgeText()).
-				Render("due in "+pt.task.DaysUntilToString()+" day(s)")
+				Render("due in " + pt.task.DaysUntilToString() + " day(s)")
 		}
 
 		row := lipgloss.JoinHorizontal(lipgloss.Top, left, right)

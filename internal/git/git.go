@@ -33,48 +33,50 @@ import (
 	"github.com/spf13/viper"
 )
 
+// ErrorNoInit is returned when a git pull command is executed
+// in a non-initialized storage repository.
 var ErrorNoInit = errors.New(
 	"trying to pull but local repo is not initialized.\nPlease disable git.remote and try again",
 )
 
 type (
-	// GitInitDoneMsg is returned when Git initialization completes successfully.
-	GitInitDoneMsg struct{}
+	// InitDoneMsg is returned when Git initialization completes successfully.
+	InitDoneMsg struct{}
 
-	// GitInitErrorMsg is returned when Git initialization fails.
-	GitInitErrorMsg struct{ Err error }
+	// InitErrorMsg is returned when Git initialization fails.
+	InitErrorMsg struct{ Err error }
 
-	// GitCommitDoneMsg is returned when a Git commit completes successfully.
-	GitCommitDoneMsg struct{}
+	// CommitDoneMsg is returned when a Git commit completes successfully.
+	CommitDoneMsg struct{}
 
-	// GitCommitErrorMsg is returned when a Git commit fails.
-	GitCommitErrorMsg struct{ Err error }
+	// CommitErrorMsg is returned when a Git commit fails.
+	CommitErrorMsg struct{ Err error }
 
-	// GitPullDoneMsg is returned when a Git pull operation completes successfully.
-	GitPullDoneMsg struct{}
+	// PullDoneMsg is returned when a Git pull operation completes successfully.
+	PullDoneMsg struct{}
 
-	// GitPullErrorMsg is returned when a Git pull operation fails.
-	GitPullErrorMsg struct{ Err error }
+	// PullErrorMsg is returned when a Git pull operation fails.
+	PullErrorMsg struct{ Err error }
 
-	// GitPullNoInitMsg is returned when a Git pull operation didn't run
+	// PullNoInitMsg is returned when a Git pull operation didn't run
 	// because the repository's INIT file is missing.
-	GitPullNoInitMsg struct{}
+	PullNoInitMsg struct{}
 
-	// GitPushErrorMsg is returned when a Git push operation fails.
-	GitPushErrorMsg struct{ Err error }
+	// PushErrorMsg is returned when a Git push operation fails.
+	PushErrorMsg struct{ Err error }
 )
 
 // Error implements the error interface for GitInitErrorMsg.
-func (e GitInitErrorMsg) Error() string { return e.Err.Error() }
+func (e InitErrorMsg) Error() string { return e.Err.Error() }
 
 // Error implements the error interface for GitCommitErrorMsg.
-func (e GitCommitErrorMsg) Error() string { return e.Err.Error() }
+func (e CommitErrorMsg) Error() string { return e.Err.Error() }
 
 // Error implements the error interface for GitPullErrorMsg.
-func (e GitPullErrorMsg) Error() string { return e.Err.Error() }
+func (e PullErrorMsg) Error() string { return e.Err.Error() }
 
 // Error implements the error interface for GitPushErrorMsg.
-func (e GitPushErrorMsg) Error() string { return e.Err.Error() }
+func (e PushErrorMsg) Error() string { return e.Err.Error() }
 
 // InitCmd initializes a Git repository in the configured storage path.
 // It creates a Git repo with the default branch and makes an initial commit
@@ -83,28 +85,28 @@ func (e GitPushErrorMsg) Error() string { return e.Err.Error() }
 func InitCmd() tea.Cmd {
 	return func() tea.Msg {
 		if storage.FileExists("INIT") {
-			return GitInitDoneMsg{}
+			return InitDoneMsg{}
 		}
 
 		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-			return GitInitErrorMsg{err}
+			return InitErrorMsg{err}
 		}
 
 		if err := exec.Command("git", "init", "-b",
 			viper.GetString("git.default_branch")).Run(); err != nil {
-			return GitInitErrorMsg{err}
+			return InitErrorMsg{err}
 		}
 
 		if err := os.WriteFile("INIT", nil, 0o600); err != nil {
-			return GitInitErrorMsg{err}
+			return InitErrorMsg{err}
 		}
 
 		err := commit("INIT", "Initial commit")
 		if err != nil {
-			return GitInitErrorMsg{err}
+			return InitErrorMsg{err}
 		}
 
-		return GitInitDoneMsg{}
+		return InitDoneMsg{}
 	}
 }
 
@@ -114,20 +116,20 @@ func InitCmd() tea.Cmd {
 func CommitCmd(file, message string) tea.Cmd {
 	return func() tea.Msg {
 		if err := commit(file, message); err != nil {
-			return GitCommitErrorMsg{err}
+			return CommitErrorMsg{err}
 		}
 
 		if viper.GetBool("git.remote.enable") {
 			if err := pull(); err != nil {
-				return GitPullErrorMsg{err}
+				return PullErrorMsg{err}
 			}
 
 			if err := push(); err != nil {
-				return GitPushErrorMsg{err}
+				return PushErrorMsg{err}
 			}
 		}
 
-		return GitCommitDoneMsg{}
+		return CommitDoneMsg{}
 	}
 }
 
@@ -137,15 +139,15 @@ func PullCmd() tea.Cmd {
 	return func() tea.Msg {
 		// Don't try to pull if repo is not initialized.
 		if !storage.FileExists("INIT") {
-			return GitPullNoInitMsg{}
+			return PullNoInitMsg{}
 		}
 
 		err := pull()
 		if err != nil {
-			return GitPullErrorMsg{err}
+			return PullErrorMsg{err}
 		}
 
-		return GitPullDoneMsg{}
+		return PullDoneMsg{}
 	}
 }
 

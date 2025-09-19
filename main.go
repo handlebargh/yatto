@@ -145,14 +145,14 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
-	case git.GitPullDoneMsg:
+	case git.PullDoneMsg:
 		return m, tea.Quit
 
-	case git.GitPullErrorMsg:
+	case git.PullErrorMsg:
 		m.err = msg.Err
 		return m, nil
 
-	case git.GitPullNoInitMsg:
+	case git.PullNoInitMsg:
 		m.err = git.ErrorNoInit
 		return m, nil
 

@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// package colors defines functions for all color values
+// Package colors defines functions for all color values
 // used by the application.
 package colors
 

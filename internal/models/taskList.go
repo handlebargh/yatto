@@ -188,7 +188,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if dueDate != nil &&
 		items.IsToday(dueDate) &&
 		dueDate.After(now) {
-		right = right + lipgloss.NewStyle().
+		right += lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.VividRed()).
 			Foreground(colors.BadgeText()).
@@ -196,7 +196,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	}
 
 	if dueDate != nil && dueDate.Before(now) {
-		right = right + lipgloss.NewStyle().
+		right += lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.VividRed()).
 			Foreground(colors.BadgeText()).
@@ -204,7 +204,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	}
 
 	if taskItem.InProgress() {
-		right = right + lipgloss.NewStyle().
+		right += lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Blue()).
 			Foreground(colors.BadgeText()).
@@ -214,11 +214,11 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if dueDate != nil &&
 		!dueDate.Before(now) &&
 		!items.IsToday(dueDate) {
-		right = right + lipgloss.NewStyle().
+		right += lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Yellow()).
 			Foreground(colors.BadgeText()).
-			Render("due in "+taskItem.DaysUntilToString()+" day(s)")
+			Render("due in " + taskItem.DaysUntilToString() + " day(s)")
 	}
 
 	if taskItem.Completed() {
@@ -331,7 +331,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Return a timer command to keep displaying 100% progress
 			// for half a second.
-			return m, tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
+			return m, tea.Tick(time.Millisecond*500, func(_ time.Time) tea.Msg {
 				return doneWaitingMsg{}
 			})
 		}
@@ -349,12 +349,12 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reset the progress bar.
 		return m, m.progress.SetPercent(0.0)
 
-	case git.GitCommitDoneMsg:
+	case git.CommitDoneMsg:
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
 		return m, m.progress.SetPercent(1.0)
 
-	case git.GitCommitErrorMsg:
+	case git.CommitErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
@@ -419,7 +419,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						m.list.SelectedItem().(*items.Task).DeleteTaskFromFS(*m.project),
-						git.CommitCmd(filepath.Join(m.project.Id(), m.list.SelectedItem().(*items.Task).Id()+".json"),
+						git.CommitCmd(filepath.Join(m.project.ID(), m.list.SelectedItem().(*items.Task).ID()+".json"),
 							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
 					)
 					m.status = ""
@@ -485,16 +485,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
 					if t.InProgress() {
 						cmds = append(cmds,
-							t.WriteTaskJson(json, *m.project, "start"),
-							git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "starting progress: "+t.Title()),
+							t.WriteTaskJSON(json, *m.project, "start"),
+							git.CommitCmd(filepath.Join(m.project.ID(), t.ID()+".json"), "starting progress: "+t.Title()),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
 					}
 
 					cmds = append(cmds,
-						t.WriteTaskJson(json, *m.project, "stop"),
-						git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "stopping progress: "+t.Title()),
+						t.WriteTaskJSON(json, *m.project, "stop"),
+						git.CommitCmd(filepath.Join(m.project.ID(), t.ID()+".json"), "stopping progress: "+t.Title()),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
@@ -512,16 +512,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
 					if t.Completed() {
 						cmds = append(cmds,
-							t.WriteTaskJson(json, *m.project, "complete"),
-							git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "complete: "+t.Title()),
+							t.WriteTaskJSON(json, *m.project, "complete"),
+							git.CommitCmd(filepath.Join(m.project.ID(), t.ID()+".json"), "complete: "+t.Title()),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
 					}
 
 					cmds = append(cmds,
-						t.WriteTaskJson(json, *m.project, "reopen"),
-						git.CommitCmd(filepath.Join(m.project.Id(), t.Id()+".json"), "reopen: "+t.Title()),
+						t.WriteTaskJSON(json, *m.project, "reopen"),
+						git.CommitCmd(filepath.Join(m.project.ID(), t.ID()+".json"), "reopen: "+t.Title()),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
@@ -545,7 +545,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.addItem):
 				task := &items.Task{
-					TaskId:          uuid.NewString(),
+					TaskID:          uuid.NewString(),
 					TaskTitle:       "",
 					TaskDescription: "",
 				}
@@ -678,7 +678,7 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 	// Reselect the previously selected task
 	if selectedTask, ok := selected.(*items.Task); ok {
 		for i, item := range sortedItems {
-			if task, ok := item.(*items.Task); ok && task.Id() == selectedTask.Id() {
+			if task, ok := item.(*items.Task); ok && task.ID() == selectedTask.ID() {
 				m.Select(i)
 				break
 			}

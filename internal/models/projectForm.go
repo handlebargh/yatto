@@ -138,7 +138,7 @@ func (m projectFormModel) Init() tea.Cmd {
 func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	switch msg := msg.(type) {
+	switch msg := msg.(type) { //nolint:gocritic // idiomatic in Bubble Tea
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		m.width = msg.Width - h
@@ -151,7 +151,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	switch msg := msg.(type) {
+	switch msg := msg.(type) { //nolint:gocritic // idiomatic in Bubble Tea
 	case tea.KeyMsg:
 		if m.cancel {
 			switch msg.String() {
@@ -180,20 +180,20 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			json := m.project.MarshalProject()
 
-			if storage.FileExists(m.project.Id()) {
+			if storage.FileExists(m.project.ID()) {
 				cmds = append(cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
-					m.project.WriteProjectJson(json, "update"),
-					git.CommitCmd(filepath.Join(m.project.Id(), "project.json"), "update: "+m.project.Title()),
+					m.project.WriteProjectJSON(json, "update"),
+					git.CommitCmd(filepath.Join(m.project.ID(), "project.json"), "update: "+m.project.Title()),
 				)
 				m.listModel.status = ""
 			} else {
 				cmds = append(cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
-					m.project.WriteProjectJson(json, "create"),
-					git.CommitCmd(filepath.Join(m.project.Id(), "project.json"), "create: "+m.project.Title()),
+					m.project.WriteProjectJSON(json, "create"),
+					git.CommitCmd(filepath.Join(m.project.ID(), "project.json"), "create: "+m.project.Title()),
 				)
 				m.listModel.status = ""
 			}
@@ -219,9 +219,9 @@ func (m projectFormModel) View() string {
 
 		if m.edit {
 			return centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No")
-		} else {
-			return centeredStyle.Render("Cancel project creation?\n\n[y] Yes   [n] No")
 		}
+
+		return centeredStyle.Render("Cancel project creation?\n\n[y] Yes   [n] No")
 	}
 
 	s := m.styles

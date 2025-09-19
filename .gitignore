@@ -30,5 +30,9 @@ go.work.sum
 # Editor/IDE
 .idea/
 .vscode/
+
 # Added by goreleaser init:
 dist/
+
+# Used by make build
+bin/

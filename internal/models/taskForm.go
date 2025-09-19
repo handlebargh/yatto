@@ -204,7 +204,7 @@ func (m taskFormModel) Init() tea.Cmd {
 func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	switch msg := msg.(type) {
+	switch msg := msg.(type) { //nolint:gocritic // idiomatic in Bubble Tea
 	case tea.KeyMsg:
 		if m.cancel {
 			switch msg.String() {
@@ -278,7 +278,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			json := m.task.MarshalTask()
 
-			taskPath := filepath.Join(m.listModel.project.Id(), m.task.Id()+".json")
+			taskPath := filepath.Join(m.listModel.project.ID(), m.task.ID()+".json")
 
 			action := "create"
 			if storage.FileExists(taskPath) {
@@ -288,7 +288,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds,
 				m.listModel.progress.SetPercent(0.10),
 				tickCmd(),
-				m.task.WriteTaskJson(json, *m.listModel.project, action),
+				m.task.WriteTaskJSON(json, *m.listModel.project, action),
 				git.CommitCmd(
 					taskPath,
 					fmt.Sprintf("%s: %s", action, m.task.Title()),
@@ -316,9 +316,9 @@ func (m taskFormModel) View() string {
 
 		if m.edit {
 			return centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No")
-		} else {
-			return centeredStyle.Render("Cancel task creation?\n\n[y] Yes   [n] No")
 		}
+
+		return centeredStyle.Render("Cancel task creation?\n\n[y] Yes   [n] No")
 	}
 
 	s := m.styles

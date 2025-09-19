@@ -58,17 +58,17 @@ func (e ProjectDeleteErrorMsg) Error() string { return e.Err.Error() }
 // and a display color. Projects are stored as directories on disk containing a JSON file
 // holding the data defined in the Project type.
 type Project struct {
-	ProjectId          string `json:"id"`
+	ProjectID          string `json:"id"`
 	ProjectTitle       string `json:"title"`
 	ProjectDescription string `json:"description,omitempty"`
 	ProjectColor       string `json:"color"`
 }
 
-// Id returns the project's unique identifier.
-func (p Project) Id() string { return p.ProjectId }
+// ID returns the project's unique identifier.
+func (p Project) ID() string { return p.ProjectID }
 
-// SetId sets the project's unique identifier.
-func (p *Project) SetId(id string) { p.ProjectId = id }
+// SetID sets the project's unique identifier.
+func (p *Project) SetID(id string) { p.ProjectID = id }
 
 // Title returns the project's title.
 func (p Project) Title() string { return p.ProjectTitle }
@@ -96,7 +96,7 @@ func (p Project) FilterValue() string { return p.ProjectTitle }
 // or any task file cannot be read or parsed.
 func (p *Project) ReadTasksFromFS() []Task {
 	storageDir := viper.GetString("storage.path")
-	taskFiles, err := os.ReadDir(filepath.Join(storageDir, p.Id()))
+	taskFiles, err := os.ReadDir(filepath.Join(storageDir, p.ID()))
 	if err != nil {
 		panic(fmt.Errorf("fatal error reading storage directory: %w", err))
 	}
@@ -107,7 +107,7 @@ func (p *Project) ReadTasksFromFS() []Task {
 			continue
 		}
 
-		filePath := filepath.Join(storageDir, p.Id(), entry.Name())
+		filePath := filepath.Join(storageDir, p.ID(), entry.Name())
 		fileContent, err := os.ReadFile(filePath)
 		if err != nil {
 			panic(err)
@@ -127,7 +127,7 @@ func (p *Project) ReadTasksFromFS() []Task {
 // from disk. Returns a Tea message indicating success or failure.
 func (p *Project) DeleteProjectFromFS() tea.Cmd {
 	return func() tea.Msg {
-		dir := filepath.Join(viper.GetString("storage.path"), p.Id())
+		dir := filepath.Join(viper.GetString("storage.path"), p.ID())
 
 		err := os.RemoveAll(dir)
 		if err != nil {
@@ -149,20 +149,20 @@ func (p Project) MarshalProject() []byte {
 	return json
 }
 
-// WriteProjectJson writes the given project JSON to disk as project.json
+// WriteProjectJSON writes the given project JSON to disk as project.json
 // inside the project's directory. Ensures the directory exists.
 // Returns a Tea message indicating success or error.
-func (p Project) WriteProjectJson(json []byte, kind string) tea.Cmd {
+func (p Project) WriteProjectJSON(json []byte, kind string) tea.Cmd {
 	return func() tea.Msg {
 		storageDir := viper.GetString("storage.path")
 
 		// ensure project directory
-		dir := filepath.Join(storageDir, p.Id())
+		dir := filepath.Join(storageDir, p.ID())
 		if err := os.MkdirAll(dir, 0o700); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
 
-		file := filepath.Join(storageDir, p.Id(), "project.json")
+		file := filepath.Join(storageDir, p.ID(), "project.json")
 		if err := os.WriteFile(file, json, 0o600); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
@@ -178,7 +178,7 @@ func (p Project) WriteProjectJson(json []byte, kind string) tea.Cmd {
 //
 // Returns an error if the directory cannot be read or if a task cannot be parsed.
 func (p Project) NumOfTasks() (int, int, int, error) {
-	dir := filepath.Join(viper.GetString("storage.path"), p.Id())
+	dir := filepath.Join(viper.GetString("storage.path"), p.ID())
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return 0, 0, 0, err
@@ -208,11 +208,10 @@ func (p Project) NumOfTasks() (int, int, int, error) {
 
 		if t.Completed {
 			completed++
-		} else {
-			if IsToday(t.DueDate) {
-				due++
-			}
+		} else if IsToday(t.DueDate) {
+			due++
 		}
+
 	}
 
 	return total, completed, due, nil

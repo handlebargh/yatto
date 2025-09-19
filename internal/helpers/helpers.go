@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// package helpers defines some functions
+// Package helpers defines some functions
 // used by several other packages.
 package helpers
 
@@ -126,7 +126,7 @@ func AllLabels() map[string]int {
 	return labelCount
 }
 
-// labelsStringToSlice splits a comma-separated labels string into a slice of
+// LabelsStringToSlice splits a comma-separated labels string into a slice of
 // individual labels. Each label in the result is trimmed of leading and trailing
 // whitespace. Empty entries are discarded.
 //

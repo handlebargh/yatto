@@ -186,6 +186,8 @@ type projectListModel struct {
 
 // InitialProjectListModel returns an initialized projectListModel
 // with all necessary state and UI settings.
+//
+//nolint:revive // internal-only usage
 func InitialProjectListModel() projectListModel {
 	listKeys := newProjectListKeyMap()
 
@@ -259,7 +261,7 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Return a timer command to keep displaying 100% progress
 			// for half a second.
-			return m, tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
+			return m, tea.Tick(time.Millisecond*500, func(_ time.Time) tea.Msg {
 				return doneWaitingMsg{}
 			})
 		}
@@ -277,20 +279,20 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reset the progress bar.
 		return m, m.progress.SetPercent(0.0)
 
-	case git.GitInitDoneMsg:
+	case git.InitDoneMsg:
 		return m, nil
 
-	case git.GitInitErrorMsg:
+	case git.InitErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		return m, nil
 
-	case git.GitCommitDoneMsg:
+	case git.CommitDoneMsg:
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
 		return m, m.progress.SetPercent(1.0)
 
-	case git.GitCommitErrorMsg:
+	case git.CommitErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
@@ -341,7 +343,7 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						m.list.SelectedItem().(*items.Project).DeleteProjectFromFS(),
-						git.CommitCmd(m.list.SelectedItem().(*items.Project).Id(),
+						git.CommitCmd(m.list.SelectedItem().(*items.Project).ID(),
 							"delete: "+m.list.SelectedItem().(*items.Project).Title()),
 					)
 					m.status = ""
@@ -400,7 +402,7 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.addProject):
 				project := &items.Project{
-					ProjectId:          uuid.NewString(),
+					ProjectID:          uuid.NewString(),
 					ProjectTitle:       "",
 					ProjectDescription: "",
 				}

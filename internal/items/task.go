@@ -66,7 +66,7 @@ func (e TaskDeleteErrorMsg) Error() string { return e.Err.Error() }
 // Task represents a to-do item with metadata like title, due date, priority,
 // and labels. Tasks are serialized to and from JSON files in storage.
 type Task struct {
-	TaskId          string     `json:"id"`
+	TaskID          string     `json:"id"`
 	TaskTitle       string     `json:"title"`
 	TaskDescription string     `json:"description,omitempty"`
 	TaskPriority    string     `json:"priority"`
@@ -76,11 +76,11 @@ type Task struct {
 	TaskCompleted   bool       `json:"completed"`
 }
 
-// Id returns the task's ID.
-func (t Task) Id() string { return t.TaskId }
+// ID returns the task's ID.
+func (t Task) ID() string { return t.TaskID }
 
-// SetId sets the task's ID.
-func (t *Task) SetId(id string) { t.TaskId = id }
+// SetID sets the task's ID.
+func (t *Task) SetID(id string) { t.TaskID = id }
 
 // Title returns the task's title.
 func (t Task) Title() string { return t.TaskTitle }
@@ -216,11 +216,11 @@ func (t Task) MarshalTask() []byte {
 	return json
 }
 
-// WriteTaskJson writes the given task JSON to disk under the project directory,
+// WriteTaskJSON writes the given task JSON to disk under the project directory,
 // using the task's ID as the filename. Returns a Tea message on success or error.
-func (t Task) WriteTaskJson(json []byte, p Project, kind string) tea.Cmd {
+func (t Task) WriteTaskJSON(json []byte, p Project, kind string) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), p.Id(), t.Id()+".json")
+		file := filepath.Join(viper.GetString("storage.path"), p.ID(), t.ID()+".json")
 
 		if err := os.WriteFile(file, json, 0o600); err != nil {
 			return WriteTaskJSONErrorMsg{err}
@@ -234,7 +234,7 @@ func (t Task) WriteTaskJson(json []byte, p Project, kind string) tea.Cmd {
 // Returns a Tea message on success or failure.
 func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), p.Id(), t.Id()+".json")
+		file := filepath.Join(viper.GetString("storage.path"), p.ID(), t.ID()+".json")
 
 		err := os.Remove(file)
 		if err != nil {
@@ -284,7 +284,7 @@ func (t *Task) TaskToMarkdown() string {
 		labels += "\n\n---\n\n"
 	}
 
-	id := fmt.Sprintf("🆔  **ID**: %s", t.Id())
+	id := fmt.Sprintf("🆔  **ID**: %s", t.ID())
 
 	return title + completed + inProgress + priority + dueDate + description + labels + id
 }

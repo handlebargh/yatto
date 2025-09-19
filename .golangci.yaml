@@ -1,6 +1,29 @@
 ---
 version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
 formatters:
   enable:
     - gofumpt
     - goimports
+    - golines
+  settings:
+    gofumpt:
+      module-path: github.com/handlebargh/yatto
+      extra-rules: true
+    golines:
+      max-len: 120
+      tab-len: 4
+
+linters:
+  default: standard
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - revive
+    - gocritic
