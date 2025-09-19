@@ -1,3 +1,13 @@
+## v0.16.0 (2025-09-19)
+
+### Feat
+
+- add Homebrew formula for yatto (#32)
+
+### Fix
+
+- **deps**: update dependencies
+
 ## v0.15.0 (2025-08-12)
 
 ### Feat
