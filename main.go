@@ -23,6 +23,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -177,7 +178,7 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m spinnerModel) View() string {
 	var content string
 	if m.err != nil {
-		if m.err == git.ErrorNoInit {
+		if errors.Is(m.err, git.ErrorNoInit) {
 			content = lipgloss.NewStyle().Foreground(red).Bold(true).Render("Error ") +
 				m.err.Error()
 		} else {

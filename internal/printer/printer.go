@@ -57,7 +57,7 @@ func getProjectTasks(projectsIDs ...string) ([]projectTask, []string) {
 	var result []projectTask
 
 	for _, project := range projects {
-		id := project.ID()
+		id := project.ID
 		if len(projectsIDs) == 0 || slices.Contains(projectsIDs, id) {
 			foundIDs[id] = true
 			for _, task := range project.ReadTasksFromFS() {
@@ -97,12 +97,12 @@ func sortTasks(tasks []projectTask) {
 			switch key {
 			case "priority":
 				// Higher number = higher priority
-				if cmp := cmp.Compare(y.task.PriorityValue(), x.task.PriorityValue()); cmp != 0 {
-					return cmp
+				if compare := cmp.Compare(y.task.PriorityValue(), x.task.PriorityValue()); compare != 0 {
+					return compare
 				}
 
 			case "dueDate":
-				dx, dy := x.task.DueDate(), y.task.DueDate()
+				dx, dy := x.task.DueDate, y.task.DueDate
 				switch {
 				case dx == nil && dy != nil:
 					return 1
@@ -119,10 +119,10 @@ func sortTasks(tasks []projectTask) {
 
 			case "state":
 				// In-progress before others
-				if x.task.InProgress() && !y.task.InProgress() {
+				if x.task.InProgress && !y.task.InProgress {
 					return -1
 				}
-				if !x.task.InProgress() && y.task.InProgress() {
+				if !x.task.InProgress && y.task.InProgress {
 					return 1
 				}
 			}
@@ -161,7 +161,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 
 	var pendingTasks []projectTask
 	for _, pt := range pt {
-		if !pt.task.Completed() && regex.MatchString(pt.task.LabelsString()) {
+		if !pt.task.Completed && regex.MatchString(pt.task.Labels) {
 			pendingTasks = append(pendingTasks, pt)
 		}
 	}
@@ -171,12 +171,12 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 	for _, pt := range pendingTasks {
 		taskTitle := pt.task.CropTaskTitle(40)
 		projectTitle := lipgloss.NewStyle().
-			Foreground(helpers.GetColorCode(pt.project.Color())).
-			Render(pt.project.Title())
-		taskPriority := pt.task.Priority()
+			Foreground(helpers.GetColorCode(pt.project.Color)).
+			Render(pt.project.Title)
+		taskPriority := pt.task.Priority
 
 		var taskLabels string
-		if len(pt.task.LabelsString()) > 0 {
+		if len(pt.task.Labels) > 0 {
 			taskLabels = lipgloss.NewStyle().
 				Foreground(colors.Blue()).
 				Render("\n  " + pt.task.CropTaskLabels(40))
@@ -194,7 +194,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 			Foreground(colors.BadgeText()).
 			Padding(0, 1)
 
-		switch pt.task.Priority() {
+		switch pt.task.Priority {
 		case "low":
 			priorityValueStyle = priorityValueStyle.Background(colors.Indigo())
 		case "medium":
@@ -208,7 +208,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		)
 
 		now := time.Now()
-		dueDate := pt.task.DueDate()
+		dueDate := pt.task.DueDate
 
 		if dueDate != nil &&
 			items.IsToday(dueDate) &&
@@ -228,7 +228,7 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 				Render("overdue")
 		}
 
-		if pt.task.InProgress() {
+		if pt.task.InProgress {
 			right += lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.Blue()).

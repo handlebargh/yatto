@@ -147,7 +147,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		Foreground(colors.BadgeText()).
 		Padding(0, 1)
 
-	switch taskItem.Priority() {
+	switch taskItem.Priority {
 	case "low":
 		titleStyle = titleStyle.BorderForeground(colors.Indigo())
 		labelsStyle = labelsStyle.BorderForeground(colors.Indigo())
@@ -180,10 +180,10 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	left := titleStyle.Render(taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
 		labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength))
 
-	right := priorityValueStyle.Render(taskItem.Priority())
+	right := priorityValueStyle.Render(taskItem.Priority)
 
 	now := time.Now()
-	dueDate := taskItem.DueDate()
+	dueDate := taskItem.DueDate
 
 	if dueDate != nil &&
 		items.IsToday(dueDate) &&
@@ -203,7 +203,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Render("overdue")
 	}
 
-	if taskItem.InProgress() {
+	if taskItem.InProgress {
 		right += lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Blue()).
@@ -221,7 +221,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Render("due in " + taskItem.DaysUntilToString() + " day(s)")
 	}
 
-	if taskItem.Completed() {
+	if taskItem.Completed {
 		right = lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Green()).
@@ -244,7 +244,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 type taskListModel struct {
 	list             list.Model
 	project          *items.Project
-	projectModel     *projectListModel
+	projectModel     *ProjectListModel
 	keys             *taskListKeyMap
 	mode             mode
 	err              error
@@ -256,17 +256,17 @@ type taskListModel struct {
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
-func newTaskListModel(project *items.Project, projectModel *projectListModel) taskListModel {
+func newTaskListModel(project *items.Project, projectModel *ProjectListModel) taskListModel {
 	listKeys := newTaskListKeyMap()
 
 	tasks := project.ReadTasksFromFS()
-	listItems := []list.Item{}
+	var listItems []list.Item
 
 	for _, task := range tasks {
 		listItems = append(listItems, &task)
 	}
 
-	color := helpers.GetColorCode(project.Color())
+	color := helpers.GetColorCode(project.Color)
 
 	titleStyleTasks := lipgloss.NewStyle().
 		Foreground(colors.BadgeText()).
@@ -283,7 +283,7 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("task", "tasks")
-	itemList.Title = project.Title()
+	itemList.Title = project.Title
 	itemList.Styles.Title = titleStyleTasks
 	// Disable the quit keybindings, so we can implement our own.
 	itemList.DisableQuitKeybindings()
@@ -424,8 +424,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						m.list.SelectedItem().(*items.Task).DeleteTaskFromFS(*m.project),
-						git.CommitCmd(filepath.Join(m.project.ID(), m.list.SelectedItem().(*items.Task).ID()+".json"),
-							"delete: "+m.list.SelectedItem().(*items.Task).Title()),
+						git.CommitCmd(filepath.Join(m.project.ID, m.list.SelectedItem().(*items.Task).ID+".json"),
+							"delete: "+m.list.SelectedItem().(*items.Task).Title),
 					)
 					m.status = ""
 				}
@@ -480,18 +480,18 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.list.SelectedItem() != nil {
 					t := m.list.SelectedItem().(*items.Task)
 
-					if t.Completed() {
+					if t.Completed {
 						return m, m.list.NewStatusMessage(textStyleRed("Cannot set done task in progress"))
 					}
 
-					t.SetInProgress(!t.InProgress())
+					t.InProgress = !t.InProgress
 					json := t.MarshalTask()
 
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
-					if t.InProgress() {
+					if t.InProgress {
 						cmds = append(cmds,
 							t.WriteTaskJSON(json, *m.project, "start"),
-							git.CommitCmd(filepath.Join(m.project.ID(), t.ID()+".json"), "starting progress: "+t.Title()),
+							git.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "starting progress: "+t.Title),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
@@ -499,7 +499,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					cmds = append(cmds,
 						t.WriteTaskJSON(json, *m.project, "stop"),
-						git.CommitCmd(filepath.Join(m.project.ID(), t.ID()+".json"), "stopping progress: "+t.Title()),
+						git.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "stopping progress: "+t.Title),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
@@ -509,16 +509,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.toggleComplete):
 				if m.list.SelectedItem() != nil {
 					t := m.list.SelectedItem().(*items.Task)
-					t.SetInProgress(false)
-					t.SetCompleted(!t.Completed())
+					t.InProgress = false
+					t.Completed = !t.Completed
 
 					json := t.MarshalTask()
 
 					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
-					if t.Completed() {
+					if t.Completed {
 						cmds = append(cmds,
 							t.WriteTaskJSON(json, *m.project, "complete"),
-							git.CommitCmd(filepath.Join(m.project.ID(), t.ID()+".json"), "complete: "+t.Title()),
+							git.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "complete: "+t.Title),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
@@ -526,7 +526,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					cmds = append(cmds,
 						t.WriteTaskJSON(json, *m.project, "reopen"),
-						git.CommitCmd(filepath.Join(m.project.ID(), t.ID()+".json"), "reopen: "+t.Title()),
+						git.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "reopen: "+t.Title),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
@@ -550,13 +550,15 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.addItem):
 				task := &items.Task{
-					TaskID:          uuid.NewString(),
-					TaskTitle:       "",
-					TaskDescription: "",
+					ID:          uuid.NewString(),
+					Title:       "",
+					Description: "",
 				}
 				formModel := newTaskFormModel(task, &m, false)
 				return formModel, tea.WindowSize()
 			}
+		default:
+			panic("unhandled default case in task list")
 		}
 	}
 
@@ -592,7 +594,7 @@ func (m taskListModel) View() string {
 		selected := m.list.SelectedItem().(*items.Task)
 
 		return centeredStyle.Render(
-			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title()) +
+			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title) +
 				textStyleRed("[y] Yes") + "    " + textStyleGreen("[n] No"),
 		)
 	}
@@ -624,23 +626,23 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 	}
 
 	slices.SortStableFunc(tasks, func(x, y *items.Task) int {
-		for _, key := range keys {
-			switch key {
+		for _, k := range keys {
+			switch k {
 			case "priority":
 				// Completed tasks to bottom
-				if x.Completed() && !y.Completed() {
+				if x.Completed && !y.Completed {
 					return 1
 				}
-				if !x.Completed() && y.Completed() {
+				if !x.Completed && y.Completed {
 					return -1
 				}
 				// Higher number = higher priority
-				if cmp := cmp.Compare(y.PriorityValue(), x.PriorityValue()); cmp != 0 {
-					return cmp
+				if compare := cmp.Compare(y.PriorityValue(), x.PriorityValue()); compare != 0 {
+					return compare
 				}
 
 			case "dueDate":
-				dx, dy := x.DueDate(), y.DueDate()
+				dx, dy := x.DueDate, y.DueDate
 				switch {
 				case dx == nil && dy != nil:
 					return 1
@@ -657,17 +659,17 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 
 			case "state":
 				// Completed tasks go to bottom
-				if x.Completed() && !y.Completed() {
+				if x.Completed && !y.Completed {
 					return 1
 				}
-				if !x.Completed() && y.Completed() {
+				if !x.Completed && y.Completed {
 					return -1
 				}
 				// In-progress before others
-				if x.InProgress() && !y.InProgress() {
+				if x.InProgress && !y.InProgress {
 					return -1
 				}
-				if !x.InProgress() && y.InProgress() {
+				if !x.InProgress && y.InProgress {
 					return 1
 				}
 			}
@@ -685,7 +687,7 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 	// Reselect the previously selected task
 	if selectedTask, ok := selected.(*items.Task); ok {
 		for i, item := range sortedItems {
-			if task, ok := item.(*items.Task); ok && task.ID() == selectedTask.ID() {
+			if task, ok := item.(*items.Task); ok && task.ID == selectedTask.ID {
 				m.Select(i)
 				break
 			}

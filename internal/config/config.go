@@ -22,6 +22,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,7 +35,8 @@ import (
 // and writes a new default config file. It panics on any unrecoverable error.
 func CreateConfigFile(home string) {
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		var notFound viper.ConfigFileNotFoundError
+		if errors.As(err, &notFound) {
 			if err := os.MkdirAll(filepath.Join(home, ".config/yatto"), 0o755); err != nil {
 				panic(fmt.Errorf("fatal error creating config directory: %w", err))
 			}

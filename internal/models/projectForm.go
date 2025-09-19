@@ -39,7 +39,7 @@ import (
 type projectFormModel struct {
 	form          *huh.Form
 	project       *items.Project
-	listModel     *projectListModel
+	listModel     *ProjectListModel
 	edit          bool
 	cancel        bool
 	width, height int
@@ -61,14 +61,14 @@ type projectFormVars struct {
 // optionally in edit mode.
 func newProjectFormModel(
 	p *items.Project,
-	listModel *projectListModel,
+	listModel *ProjectListModel,
 	edit bool,
 ) projectFormModel {
 	v := projectFormVars{
 		confirm:            true,
-		projectTitle:       p.Title(),
-		projectDescription: p.Description(),
-		projectColor:       p.Color(),
+		projectTitle:       p.Title,
+		projectDescription: p.Description,
+		projectColor:       p.Color,
 	}
 
 	m := projectFormModel{}
@@ -178,21 +178,21 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.form.State == huh.StateCompleted {
 		// Write task only if form has been confirmed.
 		if m.vars.confirm {
-			m.project.SetTitle(m.vars.projectTitle)
-			m.project.SetDescription(m.vars.projectDescription)
-			m.project.SetColor(m.vars.projectColor)
+			m.project.Title = m.vars.projectTitle
+			m.project.Description = m.vars.projectDescription
+			m.project.Color = m.vars.projectColor
 
 			json := m.project.MarshalProject()
 
-			if storage.FileExists(m.project.ID()) {
+			if storage.FileExists(m.project.ID) {
 				cmds = append(
 					cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
 					m.project.WriteProjectJSON(json, "update"),
 					git.CommitCmd(
-						filepath.Join(m.project.ID(), "project.json"),
-						"update: "+m.project.Title(),
+						filepath.Join(m.project.ID, "project.json"),
+						"update: "+m.project.Title,
 					),
 				)
 				m.listModel.status = ""
@@ -201,7 +201,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
 					m.project.WriteProjectJSON(json, "create"),
-					git.CommitCmd(filepath.Join(m.project.ID(), "project.json"), "create: "+m.project.Title()),
+					git.CommitCmd(filepath.Join(m.project.ID, "project.json"), "create: "+m.project.Title),
 				)
 				m.listModel.status = ""
 			}
@@ -245,14 +245,14 @@ func (m projectFormModel) View() string {
 		header = m.appBoundaryView("Create new project")
 	}
 
-	errors := m.form.Errors()
+	e := m.form.Errors()
 
-	if len(errors) > 0 {
+	if len(e) > 0 {
 		header = m.appErrorBoundaryView(m.errorView())
 	}
 
 	footer := m.appBoundaryView(m.form.Help().ShortHelpView(m.form.KeyBinds()))
-	if len(errors) > 0 {
+	if len(e) > 0 {
 		footer = m.appErrorBoundaryView("")
 	}
 

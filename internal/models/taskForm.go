@@ -92,13 +92,13 @@ type taskFormVars struct {
 func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFormModel {
 	v := taskFormVars{
 		confirm:            true,
-		taskTitle:          t.Title(),
-		taskDescription:    t.Description(),
-		taskPriority:       t.Priority(),
+		taskTitle:          t.Title,
+		taskDescription:    t.Description,
+		taskPriority:       t.Priority,
 		taskDueDate:        t.DueDateToString(),
 		taskLabels:         "", // Clear labels as we have them already selected.
 		taskLabelsSelected: t.LabelsList(),
-		taskCompleted:      t.Completed(),
+		taskCompleted:      t.Completed,
 	}
 
 	m := taskFormModel{}
@@ -256,6 +256,8 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.userScrolled = true
 			}
+		default:
+			panic("unhandled default case in task form")
 		}
 
 		switch msg.String() {
@@ -278,7 +280,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			json := m.task.MarshalTask()
 
-			taskPath := filepath.Join(m.listModel.project.ID(), m.task.ID()+".json")
+			taskPath := filepath.Join(m.listModel.project.ID, m.task.ID+".json")
 
 			action := "create"
 			if storage.FileExists(taskPath) {
@@ -291,7 +293,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.task.WriteTaskJSON(json, *m.listModel.project, action),
 				git.CommitCmd(
 					taskPath,
-					fmt.Sprintf("%s: %s", action, m.task.Title()),
+					fmt.Sprintf("%s: %s", action, m.task.Title),
 				),
 			)
 			m.listModel.status = ""
@@ -364,15 +366,15 @@ func (m taskFormModel) View() string {
 		Width(previewWidth).
 		Render(m.previewViewport.View())
 
-	errors := m.form.Errors()
+	e := m.form.Errors()
 
-	if len(errors) > 0 {
+	if len(e) > 0 {
 		header = m.appErrorBoundaryView(m.errorView())
 	}
 	body := lipgloss.JoinHorizontal(lipgloss.Left, form, status)
 
 	footer := m.appBoundaryView(m.form.Help().ShortHelpView(m.form.KeyBinds()))
-	if len(errors) > 0 {
+	if len(e) > 0 {
 		footer = m.appErrorBoundaryView("")
 	}
 
@@ -456,9 +458,9 @@ func (m taskFormModel) generatePreviewContent() string {
 // Returns an error if the due date string cannot be parsed or the local time zone
 // cannot be loaded.
 func (m taskFormModel) formVarsToTask() error {
-	m.task.SetTitle(m.vars.taskTitle)
-	m.task.SetDescription(m.vars.taskDescription)
-	m.task.SetPriority(m.vars.taskPriority)
+	m.task.Title = m.vars.taskTitle
+	m.task.Description = m.vars.taskDescription
+	m.task.Priority = m.vars.taskPriority
 
 	// Merge labels from MultiSelect (selected) and freeform input (typed)
 	typedLabels := helpers.LabelsStringToSlice(m.vars.taskLabels)
@@ -481,9 +483,9 @@ func (m taskFormModel) formVarsToTask() error {
 	}
 
 	// Save as comma-separated string
-	m.task.SetLabelsString(strings.Join(uniqueLabels, ","))
+	m.task.Labels = strings.Join(uniqueLabels, ",")
 
-	m.task.SetCompleted(m.vars.taskCompleted)
+	m.task.Completed = m.vars.taskCompleted
 
 	if m.vars.taskDueDate != "" {
 		location, err := time.LoadLocation("Local")
@@ -496,9 +498,9 @@ func (m taskFormModel) formVarsToTask() error {
 			return err
 		}
 
-		m.task.SetDueDate(&date)
+		m.task.DueDate = &date
 	} else {
-		m.task.SetDueDate(nil)
+		m.task.DueDate = nil
 	}
 
 	return nil

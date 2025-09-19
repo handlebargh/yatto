@@ -62,7 +62,7 @@ Take a look at the [releases](https://github.com/handlebargh/yatto/releases/late
 
 A configuration file is automatically created at `${HOME}/.config/yatto/config.toml`
 
-By default the following settings are written to the file and may be edited.
+By default, the following settings are written to the file and may be edited.
 
 ```toml
 [colors]
@@ -112,7 +112,7 @@ Any color value supported by [lipgloss](https://github.com/charmbracelet/lipglos
 
 Every color accepts a light and a dark value for either light or dark terminal themes.
 
-If you feel like sharing your theme, just post it in an issue
+If you feel like sharing your theme, just post it in an issue,
 and I'll be happy to add it to the repository.
 
 You can also choose from one of the [predefined form themes](https://github.com/charmbracelet/huh?tab=readme-ov-file#themes). The following config values are supported:
@@ -147,27 +147,24 @@ You can change the task storage directory in the config file.
 
 To set up a remote
 
-1. Create a new repository on the Git host of your choice.
-
-The repository must be empty, meaning that nothing must be committed at creation
-(uncheck README, .gitignore and license files).
+1. Create a new repository on the Git host of your choice. The repository must be empty, meaning that nothing must be committed at creation (uncheck README, .gitignore and license files).
 
 2. Run yatto at least once to create the task storage directory.
 
 3. Add the remote and push the local repository.
 
-```bash
-cd ${HOME}/.yatto
-git remote add origin $GIT_REMOTE_URL
-git push -u origin main
-```
+    ```bash
+    cd ${HOME}/.yatto
+    git remote add origin $GIT_REMOTE_URL
+    git push -u origin main
+    ```
 
 4. Enable `git.remote` in the config.
 
-```toml
-[git.remote]
-enable = true
-```
+    ```toml
+    [git.remote]
+    enable = true
+    ```
 
 ## Non-interactive mode
 

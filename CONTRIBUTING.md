@@ -45,7 +45,7 @@ Closes #73
 - `feat` – New feature
 - `fix` – Bug fix
 - `docs` – Documentation only changes
-- `style` – Formatting, whitespaces, etc; no code changes
+- `style` – Formatting, whitespaces, etc.; no code changes
 - `refactor` – Code change that neither fixes a bug nor adds a feature
 - `perf` – Performance improvements
 - `test` – Adding or correcting tests
@@ -63,20 +63,20 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 
 3. Create a new branch:
 
-```bash
-git checkout -b feat/my-new-feature
-```
+    ```bash
+    git checkout -b feat/my-new-feature
+    ```
 
 4. Make your changes.
 
 5. Lint before committing - all code must pass golangci-lint:
 
-```bash
-golangci-lint run ./...
-```
+    ```bash
+    golangci-lint run ./...
+    ```
 
-If it fails, fix all reported issues before committing.
+    If it fails, fix all reported issues before committing.
 
-7. Commit your changes.
+6. Commit your changes.
 
-8. Push your branch and open a Pull Request.
+7. Push your branch and open a Pull Request.

@@ -108,7 +108,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		return
 	}
 
-	color := helpers.GetColorCode(projectItem.Color())
+	color := helpers.GetColorCode(projectItem.Color)
 
 	// Base styles.
 	listItemStyle := lipgloss.NewStyle().
@@ -128,14 +128,14 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		listItemStyle = listItemStyle.MarginLeft(1)
 	}
 
-	left := listItemStyle.Render(projectItem.Title() + "\n" +
-		projectItem.Description())
+	left := listItemStyle.Render(projectItem.Title + "\n" +
+		projectItem.Description)
 
 	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
 	if err != nil {
 		m.NewStatusMessage(
 			textStyleRed(
-				fmt.Sprintf("Error gathering task info for project %s", projectItem.Title()),
+				fmt.Sprintf("Error gathering task info for project %s", projectItem.Title),
 			),
 		)
 	}
@@ -169,9 +169,9 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	}
 }
 
-// projectListModel defines the TUI model used to
+// ProjectListModel defines the TUI model used to
 // manage and interact with projects.
-type projectListModel struct {
+type ProjectListModel struct {
 	list             list.Model
 	selected         bool
 	keys             *projectListKeyMap
@@ -188,14 +188,12 @@ type projectListModel struct {
 
 // InitialProjectListModel returns an initialized projectListModel
 // with all necessary state and UI settings.
-//
-//nolint:revive // internal-only usage
-func InitialProjectListModel() projectListModel {
+func InitialProjectListModel() ProjectListModel {
 	listKeys := newProjectListKeyMap()
 
 	// Read all projects from FS to populate project list.
 	projects := helpers.ReadProjectsFromFS()
-	listItems := []list.Item{}
+	var listItems []list.Item
 
 	for _, project := range projects {
 		listItems = append(listItems, &project)
@@ -238,7 +236,7 @@ func InitialProjectListModel() projectListModel {
 		panic(err)
 	}
 
-	return projectListModel{
+	return ProjectListModel{
 		list:     itemList,
 		keys:     listKeys,
 		renderer: renderer,
@@ -248,7 +246,7 @@ func InitialProjectListModel() projectListModel {
 
 // Init initializes the Bubble Tea program
 // for the project list model.
-func (m projectListModel) Init() tea.Cmd {
+func (m ProjectListModel) Init() tea.Cmd {
 	return tea.Batch(
 		tickCmd(),
 		git.InitCmd(),
@@ -257,7 +255,7 @@ func (m projectListModel) Init() tea.Cmd {
 
 // Update handles incoming messages and updates
 // the project list model state accordingly.
-func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
@@ -350,8 +348,8 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						m.list.SelectedItem().(*items.Project).DeleteProjectFromFS(),
-						git.CommitCmd(m.list.SelectedItem().(*items.Project).ID(),
-							"delete: "+m.list.SelectedItem().(*items.Project).Title()),
+						git.CommitCmd(m.list.SelectedItem().(*items.Project).ID,
+							"delete: "+m.list.SelectedItem().(*items.Project).Title),
 					)
 					m.status = ""
 				}
@@ -409,13 +407,15 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.addProject):
 				project := &items.Project{
-					ProjectID:          uuid.NewString(),
-					ProjectTitle:       "",
-					ProjectDescription: "",
+					ID:          uuid.NewString(),
+					Title:       "",
+					Description: "",
 				}
 				formModel := newProjectFormModel(project, &m, false)
 				return formModel, tea.WindowSize()
 			}
+		default:
+			panic("unhandled default case in project list")
 		}
 	}
 
@@ -428,7 +428,7 @@ func (m projectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the current UI state of the project list,
 // including list view, progress bar, and any status messages.
-func (m projectListModel) View() string {
+func (m ProjectListModel) View() string {
 	centeredStyle := lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
@@ -452,7 +452,7 @@ func (m projectListModel) View() string {
 		selected := m.list.SelectedItem().(*items.Project)
 
 		return centeredStyle.Render(
-			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title()) +
+			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title) +
 				textStyleRed("[y] Yes") + "    " + textStyleGreen("[n] No"),
 		)
 	}

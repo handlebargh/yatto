@@ -66,57 +66,21 @@ func (e TaskDeleteErrorMsg) Error() string { return e.Err.Error() }
 // Task represents a to-do item with metadata like title, due date, priority,
 // and labels. Tasks are serialized to and from JSON files in storage.
 type Task struct {
-	TaskID          string     `json:"id"`
-	TaskTitle       string     `json:"title"`
-	TaskDescription string     `json:"description,omitempty"`
-	TaskPriority    string     `json:"priority"`
-	TaskDueDate     *time.Time `json:"due_date,omitempty"`
-	TaskLabels      string     `json:"labels,omitempty"`
-	TaskInProgress  bool       `json:"in_progress"`
-	TaskCompleted   bool       `json:"completed"`
+	ID          string     `json:"id"`
+	Title       string     `json:"title"`
+	Description string     `json:"description,omitempty"`
+	Priority    string     `json:"priority"`
+	DueDate     *time.Time `json:"due_date,omitempty"`
+	Labels      string     `json:"labels,omitempty"`
+	InProgress  bool       `json:"in_progress"`
+	Completed   bool       `json:"completed"`
 }
-
-// ID returns the task's ID.
-func (t Task) ID() string { return t.TaskID }
-
-// SetID sets the task's ID.
-func (t *Task) SetID(id string) { t.TaskID = id }
-
-// Title returns the task's title.
-func (t Task) Title() string { return t.TaskTitle }
-
-// SetTitle sets the task's title.
-func (t *Task) SetTitle(title string) { t.TaskTitle = title }
-
-// Description returns the task's description.
-func (t Task) Description() string { return t.TaskDescription }
-
-// SetDescription sets the task's description.
-func (t *Task) SetDescription(description string) { t.TaskDescription = description }
-
-// Priority returns the task's priority.
-func (t Task) Priority() string { return t.TaskPriority }
-
-// SetPriority sets the task's priority.
-func (t *Task) SetPriority(priority string) { t.TaskPriority = priority }
-
-// DueDate returns the task's due date, if any.
-func (t Task) DueDate() *time.Time { return t.TaskDueDate }
-
-// SetDueDate sets the task's due date.
-func (t *Task) SetDueDate(dueDate *time.Time) { t.TaskDueDate = dueDate }
-
-// LabelsString returns the task's label string.
-func (t Task) LabelsString() string { return t.TaskLabels }
-
-// SetLabelsString sets the task's labels string.
-func (t *Task) SetLabelsString(labels string) { t.TaskLabels = labels }
 
 // LabelsList returns the task's labels as slice of string.
 func (t *Task) LabelsList() []string {
 	var result []string
 
-	for _, label := range strings.Split(t.TaskLabels, ",") {
+	for _, label := range strings.Split(t.Labels, ",") {
 		if label != "" {
 			result = append(result, strings.TrimSpace(label))
 		}
@@ -124,48 +88,36 @@ func (t *Task) LabelsList() []string {
 	return result
 }
 
-// InProgress returns true if the task is marked as in progress.
-func (t Task) InProgress() bool { return t.TaskInProgress }
-
-// SetInProgress sets the task's in progress status.
-func (t *Task) SetInProgress(inProgress bool) { t.TaskInProgress = inProgress }
-
-// Completed returns true if the task is marked as done.
-func (t Task) Completed() bool { return t.TaskCompleted }
-
-// SetCompleted sets the task's completion status.
-func (t *Task) SetCompleted(completed bool) { t.TaskCompleted = completed }
-
 // FilterValue returns a string used for filtering/search, combining title and labels.
-func (t Task) FilterValue() string { return fmt.Sprintf("%s %s", t.TaskTitle, t.TaskLabels) }
+func (t *Task) FilterValue() string { return fmt.Sprintf("%s %s", t.Title, t.Labels) }
 
 // CropTaskTitle returns the task's title cropped to fit
 // length with a concatenated ellipses.
-func (t Task) CropTaskTitle(length int) string {
-	if len(t.Title()) > length {
-		return t.TaskTitle[:length-len(ellipses)] + ellipses
+func (t *Task) CropTaskTitle(length int) string {
+	if len(t.Title) > length {
+		return t.Title[:length-len(ellipses)] + ellipses
 	}
 
-	return t.TaskTitle
+	return t.Title
 }
 
 // CropTaskLabels returns the task's labels as string.
 // Labels are separated by comma + whitespace.
 // If the returned string would exceed length
 // it is cropped and an ellipses is appended to fit length.
-func (t Task) CropTaskLabels(length int) string {
-	if len(t.LabelsString()) > length {
-		return strings.ReplaceAll(t.TaskLabels[:length-len(ellipses)]+ellipses, ",", ", ")
+func (t *Task) CropTaskLabels(length int) string {
+	if len(t.Labels) > length {
+		return strings.ReplaceAll(t.Labels[:length-len(ellipses)]+ellipses, ",", ", ")
 	}
 
-	return strings.ReplaceAll(t.TaskLabels, ",", ", ")
+	return strings.ReplaceAll(t.Labels, ",", ", ")
 }
 
 // DueDateToString formats the task's due date as a string using DueDateLayout.
 // Returns an empty string if no due date is set.
-func (t Task) DueDateToString() string {
-	if t.TaskDueDate != nil {
-		return t.DueDate().Format(time.DateTime)
+func (t *Task) DueDateToString() string {
+	if t.DueDate != nil {
+		return t.DueDate.Format(time.DateTime)
 	}
 
 	return ""
@@ -174,10 +126,10 @@ func (t Task) DueDateToString() string {
 // DaysUntilToString returns a string containing the full days from now until the due date.
 // If the date is in the past, it returns a negative value.
 // Returns "no due date" if executed on a task with missing due date.
-func (t Task) DaysUntilToString() string {
-	if t.TaskDueDate != nil {
+func (t *Task) DaysUntilToString() string {
+	if t.DueDate != nil {
 		now := time.Now()
-		dueDate := t.DueDate()
+		dueDate := t.DueDate
 
 		now = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 		target := time.Date(
@@ -201,8 +153,8 @@ func (t Task) DaysUntilToString() string {
 
 // PriorityValue returns a numeric value for the task's priority.
 // Useful for sorting tasks by urgency.
-func (t Task) PriorityValue() int {
-	switch t.Priority() {
+func (t *Task) PriorityValue() int {
+	switch t.Priority {
 	case "high":
 		return 2
 	case "medium":
@@ -216,26 +168,26 @@ func (t Task) PriorityValue() int {
 
 // MarshalTask returns a pretty-printed JSON representation of the task.
 // Panics if serialization fails.
-func (t Task) MarshalTask() []byte {
-	json, err := json.MarshalIndent(t, "", "\t")
+func (t *Task) MarshalTask() []byte {
+	bytes, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
 		panic(err)
 	}
 
-	return json
+	return bytes
 }
 
 // WriteTaskJSON writes the given task JSON to disk under the project directory,
 // using the task's ID as the filename. Returns a Tea message on success or error.
-func (t Task) WriteTaskJSON(json []byte, p Project, kind string) tea.Cmd {
+func (t *Task) WriteTaskJSON(json []byte, p Project, kind string) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), p.ID(), t.ID()+".json")
+		file := filepath.Join(viper.GetString("storage.path"), p.ID, t.ID+".json")
 
 		if err := os.WriteFile(file, json, 0o600); err != nil {
 			return WriteTaskJSONErrorMsg{err}
 		}
 
-		return WriteTaskJSONDoneMsg{Task: t, Kind: kind}
+		return WriteTaskJSONDoneMsg{Task: *t, Kind: kind}
 	}
 }
 
@@ -243,7 +195,7 @@ func (t Task) WriteTaskJSON(json []byte, p Project, kind string) tea.Cmd {
 // Returns a Tea message on success or failure.
 func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), p.ID(), t.ID()+".json")
+		file := filepath.Join(viper.GetString("storage.path"), p.ID, t.ID+".json")
 
 		err := os.Remove(file)
 		if err != nil {
@@ -257,43 +209,43 @@ func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
 // TaskToMarkdown returns a Markdown-formatted string representing the task,
 // including metadata like description, due date, priority, labels, and completion status.
 func (t *Task) TaskToMarkdown() string {
-	title := fmt.Sprintf("# %s\n\n", t.Title())
+	title := fmt.Sprintf("# %s\n\n", t.Title)
 
 	completed := "✅  **Done**: ❌ No\n\n"
-	if t.Completed() {
+	if t.Completed {
 		completed = "✅  **Done**: ✅ Yes\n\n"
 	}
 
 	inProgress := ""
-	if !t.Completed() {
+	if !t.Completed {
 		inProgress = "🚧  **In Progress**: ❌ No\n\n"
-		if t.InProgress() {
+		if t.InProgress {
 			inProgress = "🚧  **In Progress**: ✅ Yes\n\n"
 		}
 	}
 	inProgress += "---\n\n"
 
-	priority := fmt.Sprintf("🎯  **Priority**: %s\n\n", strings.ToUpper(t.Priority()))
+	priority := fmt.Sprintf("🎯  **Priority**: %s\n\n", strings.ToUpper(t.Priority))
 
 	dueDate := ""
-	if t.DueDate() != nil {
-		dueDate = fmt.Sprintf("📅  **Due At**: %s\n\n", t.DueDate().Format(time.RFC1123))
+	if t.DueDate != nil {
+		dueDate = fmt.Sprintf("📅  **Due At**: %s\n\n", t.DueDate.Format(time.RFC1123))
 	}
 	dueDate += "---\n\n"
 
-	description := fmt.Sprintf("📝  **Description**\n\n%s\n\n---\n\n", t.Description())
+	description := fmt.Sprintf("📝  **Description**\n\n%s\n\n---\n\n", t.Description)
 
 	labels := ""
-	if t.LabelsString() != "" {
+	if t.Labels != "" {
 		labels = "🏷️  **Labels**\n\n"
-		labelsSeq := strings.SplitSeq(t.LabelsString(), ",")
+		labelsSeq := strings.SplitSeq(t.Labels, ",")
 		for label := range labelsSeq {
 			labels += "- " + label + "\n\n"
 		}
 		labels += "\n\n---\n\n"
 	}
 
-	id := fmt.Sprintf("🆔  **ID**: %s", t.ID())
+	id := fmt.Sprintf("🆔  **ID**: %s", t.ID)
 
 	return title + completed + inProgress + priority + dueDate + description + labels + id
 }
