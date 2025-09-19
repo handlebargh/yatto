@@ -82,8 +82,10 @@ func versionInfo() string {
 			buildInfo.Main.Version, revision, revisionDate, goVersion)
 	}
 
-	return fmt.Sprintf("Version:\tunknown\nRevision:\tunknown\nRevisionDate:\tunknown\nGoVersion:\t%s\n",
-		goVersion)
+	return fmt.Sprintf(
+		"Version:\tunknown\nRevision:\tunknown\nRevisionDate:\tunknown\nGoVersion:\t%s\n",
+		goVersion,
+	)
 }
 
 // versionHeader returns the stylized application name

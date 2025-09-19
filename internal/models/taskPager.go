@@ -115,7 +115,9 @@ func (m taskPagerModel) View() string {
 
 // footerView returns the string representation of the task detail view's footer.
 func (m taskPagerModel) footerView() string {
-	info := lipgloss.NewStyle().Padding(0, 1).Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	info := lipgloss.NewStyle().
+		Padding(0, 1).
+		Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
 	line := strings.Repeat(" ", max(0, m.viewport.Width-lipgloss.Width(info)))
 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
 }

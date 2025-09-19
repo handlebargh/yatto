@@ -59,7 +59,11 @@ type projectFormVars struct {
 
 // newProjectFormModel initializes and returns a new projectFormModel instance,
 // optionally in edit mode.
-func newProjectFormModel(p *items.Project, listModel *projectListModel, edit bool) projectFormModel {
+func newProjectFormModel(
+	p *items.Project,
+	listModel *projectListModel,
+	edit bool,
+) projectFormModel {
 	v := projectFormVars{
 		confirm:            true,
 		projectTitle:       p.Title(),
@@ -181,11 +185,15 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			json := m.project.MarshalProject()
 
 			if storage.FileExists(m.project.ID()) {
-				cmds = append(cmds,
+				cmds = append(
+					cmds,
 					m.listModel.progress.SetPercent(0.10),
 					tickCmd(),
 					m.project.WriteProjectJSON(json, "update"),
-					git.CommitCmd(filepath.Join(m.project.ID(), "project.json"), "update: "+m.project.Title()),
+					git.CommitCmd(
+						filepath.Join(m.project.ID(), "project.json"),
+						"update: "+m.project.Title(),
+					),
 				)
 				m.listModel.status = ""
 			} else {

@@ -23,7 +23,7 @@ tidy:
 	@echo 'Formatting .go files...'
 	gofumpt -w .
 	goimports -w .
-	#golines -w .
+	golines -w .
 	@echo 'Tidying module dependencies...'
 	go mod tidy
 	@echo 'Verifying module dependencies...'

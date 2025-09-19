@@ -134,7 +134,9 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
 	if err != nil {
 		m.NewStatusMessage(
-			textStyleRed(fmt.Sprintf("Error gathering task info for project %s", projectItem.Title())),
+			textStyleRed(
+				fmt.Sprintf("Error gathering task info for project %s", projectItem.Title()),
+			),
 		)
 	}
 
@@ -199,7 +201,12 @@ func InitialProjectListModel() projectListModel {
 		listItems = append(listItems, &project)
 	}
 
-	itemList := list.New(listItems, customProjectDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
+	itemList := list.New(
+		listItems,
+		customProjectDelegate{DefaultDelegate: list.NewDefaultDelegate()},
+		0,
+		0,
+	)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
@@ -430,12 +437,14 @@ func (m projectListModel) View() string {
 
 	// Display progress bar at 100%
 	if m.progressDone && m.waitingAfterDone {
-		return centeredStyle.Bold(true).Render(textStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
+		return centeredStyle.Bold(true).
+			Render(textStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
 	}
 
 	// Display progress bar if not at 0%
 	if m.progress.Percent() != 0.0 {
-		return centeredStyle.Bold(true).Render(textStyleGreen(m.status) + "\n\n" + m.progress.View())
+		return centeredStyle.Bold(true).
+			Render(textStyleGreen(m.status) + "\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.

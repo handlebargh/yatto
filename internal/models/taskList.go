@@ -273,7 +273,12 @@ func newTaskListModel(project *items.Project, projectModel *projectListModel) ta
 		Background(color).
 		Padding(0, 1)
 
-	itemList := list.New(listItems, customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()}, 0, 0)
+	itemList := list.New(
+		listItems,
+		customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()},
+		0,
+		0,
+	)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
@@ -572,12 +577,14 @@ func (m taskListModel) View() string {
 
 	// Display progress bar at 100%
 	if m.progressDone && m.waitingAfterDone {
-		return centeredStyle.Bold(true).Render(textStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
+		return centeredStyle.Bold(true).
+			Render(textStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
 	}
 
 	// Display progress bar if not at 0%
 	if m.progress.Percent() != 0.0 {
-		return centeredStyle.Bold(true).Render(textStyleGreen(m.status) + "\n\n" + m.progress.View())
+		return centeredStyle.Bold(true).
+			Render(textStyleGreen(m.status) + "\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.

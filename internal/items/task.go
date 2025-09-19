@@ -180,7 +180,16 @@ func (t Task) DaysUntilToString() string {
 		dueDate := t.DueDate()
 
 		now = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-		target := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 0, 0, 0, 0, dueDate.Location())
+		target := time.Date(
+			dueDate.Year(),
+			dueDate.Month(),
+			dueDate.Day(),
+			0,
+			0,
+			0,
+			0,
+			dueDate.Location(),
+		)
 
 		diff := target.Sub(now).Hours() / 24
 
