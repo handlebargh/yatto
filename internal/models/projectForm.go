@@ -22,6 +22,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -142,7 +143,26 @@ func (m projectFormModel) Init() tea.Cmd {
 func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	switch msg := msg.(type) { //nolint:gocritic // idiomatic in Bubble Tea
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if m.cancel {
+			switch msg.String() {
+			case "y", "Y":
+				return m.listModel, nil
+			case "n", "N":
+				m.cancel = false
+				return m, nil
+			}
+		}
+
+		switch msg.String() {
+		case "ctrl+c":
+			return m, tea.Quit
+		case "esc":
+			m.cancel = true
+			return m, nil
+		}
+
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		m.width = msg.Width - h
@@ -155,61 +175,33 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	switch msg := msg.(type) { //nolint:gocritic // idiomatic in Bubble Tea
-	case tea.KeyMsg:
-		if m.cancel {
-			switch msg.String() {
-			case "y", "Y":
-				return m.listModel, nil
-			case "n", "N":
-				m := newProjectFormModel(m.project, m.listModel, m.edit)
-				return m, tea.WindowSize()
-			}
-		}
-
-		switch msg.String() {
-		case "ctrl+c":
-			return m, tea.Quit
-		case "esc":
+	if m.form.State == huh.StateCompleted {
+		if !m.vars.confirm {
 			return m.listModel, nil
 		}
-	}
 
-	if m.form.State == huh.StateCompleted {
-		// Write task only if form has been confirmed.
-		if m.vars.confirm {
-			m.project.Title = m.vars.projectTitle
-			m.project.Description = m.vars.projectDescription
-			m.project.Color = m.vars.projectColor
+		m.project.Title = m.vars.projectTitle
+		m.project.Description = m.vars.projectDescription
+		m.project.Color = m.vars.projectColor
 
-			json := m.project.MarshalProject()
-
-			if storage.FileExists(m.project.ID) {
-				cmds = append(
-					cmds,
-					m.listModel.progress.SetPercent(0.10),
-					tickCmd(),
-					m.project.WriteProjectJSON(json, "update"),
-					git.CommitCmd(
-						filepath.Join(m.project.ID, "project.json"),
-						"update: "+m.project.Title,
-					),
-				)
-				m.listModel.status = ""
-			} else {
-				cmds = append(cmds,
-					m.listModel.progress.SetPercent(0.10),
-					tickCmd(),
-					m.project.WriteProjectJSON(json, "create"),
-					git.CommitCmd(filepath.Join(m.project.ID, "project.json"), "create: "+m.project.Title),
-				)
-				m.listModel.status = ""
-			}
-		} else {
-			m.cancel = true
-			return m, nil
+		json := m.project.MarshalProject()
+		action := "create"
+		if storage.FileExists(m.project.ID) {
+			action = "update"
 		}
 
+		cmds = append(
+			cmds,
+			m.listModel.progress.SetPercent(0.10),
+			tickCmd(),
+			m.project.WriteProjectJSON(json, action),
+			git.CommitCmd(
+				filepath.Join(m.project.ID, "project.json"),
+				fmt.Sprintf("%s: %s", action, m.project.Title),
+			),
+		)
+
+		m.listModel.status = ""
 		return m.listModel, tea.Batch(cmds...)
 	}
 

@@ -204,7 +204,7 @@ func (m taskFormModel) Init() tea.Cmd {
 func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	switch msg := msg.(type) { //nolint:gocritic // idiomatic in Bubble Tea
+	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if m.cancel {
 			switch msg.String() {
@@ -216,6 +216,39 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
+
+		switch msg.String() {
+		case "ctrl+c":
+			return m, tea.Quit
+		case "esc":
+			m.cancel = true
+			return m, nil
+		}
+
+		switch msg.Type {
+		case tea.KeyPgUp:
+			m.previewViewport.ScrollUp(previewLinesToScroll)
+			m.previewViewport.SetContent(m.generatePreviewContent())
+			m.userScrolled = true
+		case tea.KeyPgDown:
+			m.previewViewport.ScrollDown(previewLinesToScroll)
+			m.previewViewport.SetContent(m.generatePreviewContent())
+
+			if m.previewViewport.AtBottom() {
+				m.userScrolled = false // Re-enable auto-scroll
+			} else {
+				m.userScrolled = true
+			}
+		default:
+			break
+		}
+
+	case tea.WindowSizeMsg:
+		h, v := appStyle.GetFrameSize()
+		m.width = msg.Width - h
+		m.height = msg.Height - v
+
+		m.previewViewport = viewport.New(previewWidth, m.height-previewVerticalPadding)
 	}
 
 	form, cmd := m.form.Update(msg)
@@ -232,44 +265,6 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		h, v := appStyle.GetFrameSize()
-		m.width = msg.Width - h
-		m.height = msg.Height - v
-
-		m.previewViewport = viewport.New(previewWidth, m.height-previewVerticalPadding)
-
-	case tea.KeyMsg:
-		// Scroll the preview box
-		switch msg.Type {
-		case tea.KeyPgUp:
-			m.previewViewport.ScrollUp(previewLinesToScroll)
-			m.previewViewport.SetContent(m.generatePreviewContent())
-			m.userScrolled = true
-		case tea.KeyPgDown:
-			m.previewViewport.ScrollDown(previewLinesToScroll)
-			m.previewViewport.SetContent(m.generatePreviewContent())
-
-			if m.previewViewport.AtBottom() {
-				m.userScrolled = false // Re-enable auto-scroll
-			} else {
-				m.userScrolled = true
-			}
-		default:
-			panic("unhandled default case in task form")
-		}
-
-		switch msg.String() {
-		case "ctrl+c":
-			return m, tea.Quit
-		case "esc":
-			m.cancel = true
-
-			return m, nil
-		}
-	}
-
 	if m.form.State == huh.StateCompleted {
 		if m.vars.confirm {
 			err := m.formVarsToTask()
@@ -279,13 +274,13 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			json := m.task.MarshalTask()
-
 			taskPath := filepath.Join(m.listModel.project.ID, m.task.ID+".json")
 
 			action := "create"
 			if storage.FileExists(taskPath) {
 				action = "update"
 			}
+
 			cmds = append(
 				cmds,
 				m.listModel.progress.SetPercent(0.10),
@@ -296,14 +291,11 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					fmt.Sprintf("%s: %s", action, m.task.Title),
 				),
 			)
+
 			m.listModel.status = ""
-		} else {
-			return m.listModel, nil
+			return m.listModel, tea.Batch(cmds...)
 		}
-
-		return m.listModel, tea.Batch(cmds...)
 	}
-
 	return m, tea.Batch(cmds...)
 }
 
