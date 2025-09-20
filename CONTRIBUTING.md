@@ -77,6 +77,16 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 
     If it fails, fix all reported issues before committing.
 
-6. Commit your changes.
+6. Run the test suite before committing:
 
-7. Push your branch and open a Pull Request.
+    ```bash
+    make test
+    ```
+
+    Or run the test command from the Makefile manually,
+    but be sure to include the `YATTO_TEST_MODE=1` env var.
+
+
+7. Commit your changes.
+
+8. Push your branch and open a Pull Request.
