@@ -36,7 +36,7 @@ tidy:
 .PHONY: test
 test:
 	@echo 'Running tests...'
-	go test -race -vet=off ./...
+	YATTO_TEST_MODE=1 go test -v -race -vet=off ./...
 
 ## build: build the application
 .PHONY: build
