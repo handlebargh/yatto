@@ -1,16 +1,18 @@
 ---
-name: test
+name: Test
 
 on:
   push:
     branches:
       - main
   pull_request:
+    branches:
+      - main
 
 jobs:
   test:
     name: test
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -22,13 +24,20 @@ jobs:
         with:
           go-version: stable
 
-      - name: Install dependencies
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
         run: go mod download
 
       - name: Run tests
-        run: go test -v -coverprofile=coverage.txt ./...
+        run: go test -v -race -coverprofile=coverage.txt ./...
 
       - name: Upload results to Codecov
+        if: runner.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
