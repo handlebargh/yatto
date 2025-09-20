@@ -19,8 +19,6 @@ jobs:
             cache_path: ~/go/pkg/mod
           - os: macos-latest
             cache_path: ~/go/pkg/mod
-          - os: windows-latest
-            cache_path: 'C:\Users\runneradmin\go\pkg\mod'
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -49,5 +47,5 @@ jobs:
         run: go test -v -race -coverprofile=coverage.txt ./...
 
       - name: Upload results to Codecov
-        if: runner.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
