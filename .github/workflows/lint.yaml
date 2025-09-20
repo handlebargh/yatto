@@ -15,17 +15,17 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v5
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
           go-version: stable
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: golangci-lint
+      - name: Lint code
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.1
+          version: latest

@@ -1,5 +1,5 @@
 ---
-name: build
+name: test
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   test:
-    name: build
+    name: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,5 +25,10 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Build
-        run: go build -v ./...
+      - name: Run tests
+        run: go test -coverprofile=coverage.txt ./...
+
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
