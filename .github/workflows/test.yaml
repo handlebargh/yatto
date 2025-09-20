@@ -1,0 +1,51 @@
+---
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: test
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cache_path: ~/go/pkg/mod
+          - os: macos-latest
+            cache_path: ~/go/pkg/mod
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.cache_path }}
+          key: ${{ matrix.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ matrix.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.txt ./...
+
+      - name: Upload results to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v5

@@ -1,35 +1,31 @@
 ---
-name: build
+name: Build
 
 on:
   push:
     branches:
       - main
   pull_request:
-
-permissions:
-  contents: read
+    branches:
+      - main
 
 jobs:
   test:
     name: build
     runs-on: ubuntu-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v5
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
           go-version: stable
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download Go modules
+      - name: Install dependencies
         run: go mod download
 
       - name: Build
         run: go build -v ./...
-
-      - name: Test
-        run: go test ./...

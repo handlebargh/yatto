@@ -36,7 +36,7 @@ tidy:
 .PHONY: test
 test:
 	@echo 'Running tests...'
-	go test -race -vet=off ./...
+	go test -v -race ./...
 
 ## build: build the application
 .PHONY: build

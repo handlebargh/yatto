@@ -69,14 +69,21 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 
 4. Make your changes.
 
-5. Lint before committing - all code must pass golangci-lint:
+5. Lint and format before committing - all code must pass golangci-lint:
 
     ```bash
-    golangci-lint run ./...
+    make lint
+    make fmt
     ```
 
     If it fails, fix all reported issues before committing.
 
-6. Commit your changes.
+6. Run the test suite before committing:
 
-7. Push your branch and open a Pull Request.
+    ```bash
+    make test
+    ```
+
+7. Commit your changes.
+
+8. Push your branch and open a Pull Request.
