@@ -1,11 +1,11 @@
-# YATTO
+# yatto
 
-**YATTO** is a terminal-based to-do application built with
+**yatto** is a terminal-based to-do application built with
 [Bubble Tea](https://github.com/charmbracelet/bubbletea). It stores each task as
 a separate JSON file on your filesystem and manages the
 task directory as a Git repository for versioning, synchronization and collaboration.
 
-<img alt="YATTO demo" src="docs/demo.gif" />
+<img alt="yatto demo" src="docs/demo.gif" />
 
 ## Features
 
@@ -17,7 +17,7 @@ task directory as a Git repository for versioning, synchronization and collabora
   - Sync across machines
 - Every change is immediately committed and - if a remote is configured - pushed.
 - Tasks are organized in **projects**
-- **Tasks attributes** include due dates and searchable labels.
+- **Task attributes** include due dates and searchable labels.
 - Tasks can be:
   - written in **markdown**
   - **sorted** by due date or priority

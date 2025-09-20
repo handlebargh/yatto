@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Currently, the latest release of YATTO is supported.
+Currently, the latest release of yatto is supported.
 
 Older versions will not receive updates.
 
