@@ -69,10 +69,11 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 
 4. Make your changes.
 
-5. Lint before committing - all code must pass golangci-lint:
+5. Lint and format before committing - all code must pass golangci-lint:
 
     ```bash
-    golangci-lint run ./...
+    make lint
+    make fmt
     ```
 
     If it fails, fix all reported issues before committing.
