@@ -26,7 +26,6 @@ package git
 import (
 	"errors"
 	"os"
-	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/handlebargh/yatto/internal/storage"
@@ -92,7 +91,7 @@ func InitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		if err := exec.Command("git", "init", "-b",
+		if err := gitCommand("init", "-b",
 			viper.GetString("git.default_branch")).Run(); err != nil {
 			return InitErrorMsg{err}
 		}
@@ -158,7 +157,7 @@ func pull() error {
 		return err
 	}
 
-	if err := exec.Command("git", "pull", "--rebase").Run(); err != nil {
+	if err := gitCommand("pull", "--rebase").Run(); err != nil {
 		return err
 	}
 
@@ -174,17 +173,17 @@ func commit(file, message string) error {
 		return err
 	}
 
-	if err := exec.Command("git", "add", file).Run(); err != nil {
+	if err := gitCommand("add", file).Run(); err != nil {
 		return err
 	}
 
-	cmd := exec.Command("git", "diff", "--cached", "--quiet")
+	cmd := gitCommand("diff", "--cached", "--quiet")
 	if err := cmd.Run(); err == nil {
 		// Exit code 0 = no staged changes
 		return nil // Already committed.
 	}
 
-	if err := exec.Command("git", "commit", "-m", message).Run(); err != nil {
+	if err := gitCommand("commit", "-m", message).Run(); err != nil {
 		return err
 	}
 
@@ -199,7 +198,7 @@ func push() error {
 		return err
 	}
 
-	if err := exec.Command("git", "push", "-u",
+	if err := gitCommand("push", "-u",
 		viper.GetString("git.remote.name"),
 		viper.GetString("git.default_branch")).Run(); err != nil {
 		return err
