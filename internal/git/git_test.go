@@ -108,7 +108,7 @@ func setupGitEnvironment(t *testing.T, tmpDir string) {
 [advice]
 	detachedHead = false
 `
-	require.NoError(t, os.WriteFile(gitConfig, []byte(gitConfigContent), 0644))
+	require.NoError(t, os.WriteFile(gitConfig, []byte(gitConfigContent), 0o644))
 }
 
 // getNullDevice returns the null device path for the current platform.
