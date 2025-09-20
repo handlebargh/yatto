@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -45,6 +46,9 @@ func setupTestRepo(t *testing.T) {
 	originalRemoteEnable := viper.GetBool("git.remote.enable")
 	originalRemoteName := viper.GetString("git.remote.name")
 
+	// Set up isolated Git environment for all platforms
+	setupGitEnvironment(t, tmpDir)
+
 	// Set test config
 	viper.Set("storage.path", tmpDir)
 	viper.Set("git.default_branch", "main")
@@ -58,6 +62,61 @@ func setupTestRepo(t *testing.T) {
 		viper.Set("git.remote.enable", originalRemoteEnable)
 		viper.Set("git.remote.name", originalRemoteName)
 	})
+}
+
+// setupGitEnvironment configures Git environment for testing across platforms.
+func setupGitEnvironment(t *testing.T, tmpDir string) {
+	// Basic Git configuration via environment variables
+	t.Setenv("GIT_AUTHOR_NAME", "Test User")
+	t.Setenv("GIT_AUTHOR_EMAIL", "test@example.com")
+	t.Setenv("GIT_COMMITTER_NAME", "Test User")
+	t.Setenv("GIT_COMMITTER_EMAIL", "test@example.com")
+
+	// Disable system and global config
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	t.Setenv("GIT_CONFIG_GLOBAL", getNullDevice())
+	t.Setenv("GIT_CONFIG_SYSTEM", getNullDevice())
+
+	// Set home directory based on platform
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+		t.Setenv("HOMEDRIVE", "")
+		t.Setenv("HOMEPATH", "")
+	} else {
+		t.Setenv("HOME", tmpDir)
+	}
+
+	// Additional isolation
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+
+	// Disable GPG signing and other interactive features
+	t.Setenv("GIT_CONFIG", filepath.Join(tmpDir, ".gitconfig"))
+
+	// Create a minimal .gitconfig in the test directory
+	gitConfig := filepath.Join(tmpDir, ".gitconfig")
+	gitConfigContent := `[user]
+	name = Test User
+	email = test@example.com
+[commit]
+	gpgsign = false
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[core]
+	autocrlf = false
+[advice]
+	detachedHead = false
+`
+	require.NoError(t, os.WriteFile(gitConfig, []byte(gitConfigContent), 0644))
+}
+
+// getNullDevice returns the null device path for the current platform.
+func getNullDevice() string {
+	if runtime.GOOS == "windows" {
+		return "NUL"
+	}
+	return "/dev/null"
 }
 
 // gitLogOneline returns the oneline git log for testing.
@@ -139,6 +198,8 @@ func TestInitCmd_AlreadyInitialized(t *testing.T) {
 }
 
 func TestInitCmd_GitInitFails(t *testing.T) {
+	setupTestRepo(t)
+
 	// Use a path that doesn't exist and can't be created
 	viper.Set("storage.path", "/nonexistent/path/that/cannot/be/created")
 
@@ -263,6 +324,8 @@ func TestPullCmd_Success(t *testing.T) {
 }
 
 func TestPullCmd_NoInit(t *testing.T) {
+	setupTestRepo(t)
+
 	// Don't initialize repo (no INIT file)
 	// Execute PullCmd
 	pullCmd := PullCmd()
