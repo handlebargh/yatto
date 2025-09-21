@@ -23,6 +23,7 @@ package models
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -32,9 +33,9 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
-	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
+	"github.com/handlebargh/yatto/internal/vcs"
 )
 
 // projectListKeyMap defines the key bindings
@@ -249,7 +250,7 @@ func InitialProjectListModel() ProjectListModel {
 func (m ProjectListModel) Init() tea.Cmd {
 	return tea.Batch(
 		tickCmd(),
-		git.InitCmd(),
+		vcs.InitCmd(),
 	)
 }
 
@@ -284,20 +285,20 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reset the progress bar.
 		return m, m.progress.SetPercent(0.0)
 
-	case git.InitDoneMsg:
+	case vcs.InitDoneMsg:
 		return m, nil
 
-	case git.InitErrorMsg:
+	case vcs.InitErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		return m, nil
 
-	case git.CommitDoneMsg:
+	case vcs.CommitDoneMsg:
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
 		return m, m.progress.SetPercent(1.0)
 
-	case git.CommitErrorMsg:
+	case vcs.CommitErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
@@ -348,7 +349,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						m.list.SelectedItem().(*items.Project).DeleteProjectFromFS(),
-						git.CommitCmd(m.list.SelectedItem().(*items.Project).ID,
+						vcs.CommitCmd(m.list.SelectedItem().(*items.Project).ID,
 							"delete: "+m.list.SelectedItem().(*items.Project).Title),
 					)
 					m.status = ""
@@ -457,13 +458,25 @@ func (m ProjectListModel) View() string {
 		)
 	}
 
-	// Display git error view
-	if m.mode == modeGitError {
-		content := "An error occurred while executing git:\n\n" +
-			m.err.Error() + "\n\n" +
-			"Please commit manually!"
+	// Display VCS error view
+	if m.mode == modeGitError || m.mode == modeJJError {
+		var e strings.Builder
 
-		return centeredStyle.Render(content)
+		switch m.mode {
+		case modeGitError:
+			e.WriteString("An error occurred while executing git:")
+		case modeJJError:
+			e.WriteString("An error occurred while executing jj:")
+		default:
+			e.WriteString("An unknown error occurred:")
+		}
+
+		e.WriteString("\n\n")
+		e.WriteString(m.err.Error())
+		e.WriteString("\n\n")
+		e.WriteString("Please commit manually!")
+
+		return centeredStyle.Render(e.String())
 	}
 
 	// Display list view.

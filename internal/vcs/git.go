@@ -21,7 +21,7 @@
 // Package git provides internal helpers for managing Git operations
 // such as initialization, committing, and pulling in the configured
 // storage directory.
-package git
+package vcs
 
 import (
 	"errors"

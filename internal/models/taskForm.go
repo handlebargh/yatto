@@ -33,10 +33,10 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
-	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
+	"github.com/handlebargh/yatto/internal/vcs"
 	"github.com/muesli/reflow/wordwrap"
 )
 
@@ -286,7 +286,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.listModel.progress.SetPercent(0.10),
 				tickCmd(),
 				m.task.WriteTaskJSON(json, *m.listModel.project, action),
-				git.CommitCmd(
+				vcs.CommitCmd(
 					taskPath,
 					fmt.Sprintf("%s: %s", action, m.task.Title),
 				),

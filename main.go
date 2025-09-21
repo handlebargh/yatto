@@ -36,10 +36,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/config"
-	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/models"
 	"github.com/handlebargh/yatto/internal/printer"
 	"github.com/handlebargh/yatto/internal/storage"
+	"github.com/handlebargh/yatto/internal/vcs"
 	"github.com/spf13/viper"
 )
 
@@ -130,7 +130,7 @@ type spinnerModel struct {
 func (m spinnerModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
-		git.PullCmd(),
+		vcs.PullCmd(),
 	)
 }
 
@@ -148,15 +148,15 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
-	case git.PullDoneMsg:
+	case vcs.PullDoneMsg:
 		return m, tea.Quit
 
-	case git.PullErrorMsg:
+	case vcs.PullErrorMsg:
 		m.err = msg.Err
 		return m, nil
 
-	case git.PullNoInitMsg:
-		m.err = git.ErrorNoInit
+	case vcs.PullNoInitMsg:
+		m.err = vcs.ErrorNoInit
 		return m, nil
 
 	case tea.KeyMsg:
@@ -178,7 +178,7 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m spinnerModel) View() string {
 	var content string
 	if m.err != nil {
-		if errors.Is(m.err, git.ErrorNoInit) {
+		if errors.Is(m.err, vcs.ErrorNoInit) {
 			content = lipgloss.NewStyle().Foreground(red).Bold(true).Render("Error ") +
 				m.err.Error()
 		} else {

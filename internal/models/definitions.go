@@ -50,6 +50,9 @@ const (
 
 	// modeGitError indicates a Git-related error has occurred and should be displayed.
 	modeGitError
+
+	// modeJJError indicates a jj-related error has occurred and should be displayed.
+	modeJJError
 )
 
 var (
@@ -62,12 +65,12 @@ var (
 				Background(colors.Green()).
 				Padding(0, 1)
 
-		// textStyleGreen renders strings using the green foreground color.
+	// textStyleGreen renders strings using the green foreground color.
 	textStyleGreen = lipgloss.NewStyle().
 			Foreground(colors.Green()).
 			Render
 
-		// textStyleRed renders strings using the red foreground color.
+	// textStyleRed renders strings using the red foreground color.
 	textStyleRed = lipgloss.NewStyle().
 			Foreground(colors.Red()).
 			Render
