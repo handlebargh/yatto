@@ -17,8 +17,10 @@ jobs:
         include:
           - os: ubuntu-latest
             cache_path: ~/go/pkg/mod
+            test_command: go test -v -race -coverprofile=coverage.txt ./...
           - os: macos-latest
             cache_path: ~/go/pkg/mod
+            test_command: go test -v -race ./...
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -44,7 +46,7 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.txt ./...
+        run: ${{ matrix.test_command }}
 
       - name: Upload results to Codecov
         if: matrix.os == 'ubuntu-latest'
