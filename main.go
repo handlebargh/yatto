@@ -204,9 +204,18 @@ func (m spinnerModel) View() string {
 func initConfig(home string, configPath *string) {
 	viper.SetDefault("storage.path", filepath.Join(home, ".yatto"))
 
+	// vcs
+	viper.SetDefault("vcs.backend", "git")
+
+	// Git
 	viper.SetDefault("git.default_branch", "main")
 	viper.SetDefault("git.remote.enable", false)
 	viper.SetDefault("git.remote.name", "origin")
+
+	// jj
+	viper.SetDefault("jj.default_branch", "main")
+	viper.SetDefault("jj.remote.enable", false)
+	viper.SetDefault("jj.remote.name", "origin")
 
 	// colors
 	viper.SetDefault("colors.red_light", "#FE5F86")
@@ -263,6 +272,16 @@ func main() {
 	initConfig(home, configPath)
 	config.CreateConfigFile(home)
 
+	// Enforce valid vcs backend
+	switch viper.GetString("vcs.backend") {
+	case "git":
+		break
+	case "jj":
+		break
+	default:
+		panic(fmt.Errorf("unknown vcs backend: %s", viper.GetString("vcs.backend")))
+	}
+
 	storageConfig := storage.Config{
 		Path:   viper.GetString("storage.path"),
 		Stdin:  os.Stdin,
@@ -277,7 +296,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if viper.GetBool("git.remote.enable") {
+	if viper.GetBool("git.remote.enable") || viper.GetBool("jj.remote.enable") {
 		s := spinner.New()
 		s.Spinner = spinner.Dot
 		s.Style = s.Style.

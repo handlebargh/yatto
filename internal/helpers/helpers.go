@@ -49,7 +49,7 @@ func ReadProjectsFromFS() []items.Project {
 
 	var projects []items.Project
 	for _, entry := range entries {
-		if !entry.IsDir() || entry.Name() == ".git" {
+		if !entry.IsDir() || entry.Name() == ".git" || entry.Name() == ".jj" {
 			continue
 		}
 

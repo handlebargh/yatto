@@ -86,12 +86,23 @@ yellow_light = '#CCCC00'
 [colors.form]
 theme = 'Base16'
 
+[vcs]
+# allowed values: "git", "jj"
+backend = "git"
+
 [git]
 default_branch = 'main'
 
 [git.remote]
 enable = false
 name = 'origin'
+
+[jj]
+default_branch = "main"
+
+[jj.remote]
+enable = false
+name = "origin"
 
 [storage]
 # replace with your actual home directory

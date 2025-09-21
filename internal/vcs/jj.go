@@ -29,11 +29,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-// gitInitCmd initializes a Git repository in the configured storage path.
-// It creates a Git repo with the default branch and makes an initial commit
+// jjInitCmd initializes a jj (git compatible) repository in the configured storage path.
+// It creates a jj repo with the default branch and makes an initial commit
 // with a file named "INIT". If "INIT" already exists InitCmd terminates immediately.
 // Returns a InitDoneMsg or InitErrorMsg.
-func gitInitCmd() tea.Cmd {
+func jjInitCmd() tea.Cmd {
 	return func() tea.Msg {
 		if storage.FileExists("INIT") {
 			return InitDoneMsg{}
@@ -43,7 +43,7 @@ func gitInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		if err := exec.Command("git", "init", "-b",
+		if err := exec.Command("jj", "git", "init", "-b",
 			viper.GetString("git.default_branch")).Run(); err != nil {
 			return InitErrorMsg{err}
 		}
@@ -52,7 +52,7 @@ func gitInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		err := gitCommit("INIT", "Initial commit")
+		err := jjCommit("INIT", "Initial commit")
 		if err != nil {
 			return InitErrorMsg{err}
 		}
@@ -61,21 +61,21 @@ func gitInitCmd() tea.Cmd {
 	}
 }
 
-// gitCommitCmd stages and commits the specified file with the given message.
-// If Git remote support is enabled, it pulls from the remote before committing.
+// jjCommitCmd stages and commits the specified file with the given message.
+// If jj remote support is enabled, it fetches from the remote before committing.
 // Returns a CommitDoneMsg or CommitErrorMsg.
-func gitCommitCmd(file, message string) tea.Cmd {
+func jjCommitCmd(file, message string) tea.Cmd {
 	return func() tea.Msg {
-		if err := gitCommit(file, message); err != nil {
+		if err := jjCommit(file, message); err != nil {
 			return CommitErrorMsg{err}
 		}
 
 		if viper.GetBool("git.remote.enable") {
-			if err := gitPull(); err != nil {
+			if err := jjFetch(); err != nil {
 				return PullErrorMsg{err}
 			}
 
-			if err := gitPush(); err != nil {
+			if err := jjPush(); err != nil {
 				return PushErrorMsg{err}
 			}
 		}
@@ -84,17 +84,20 @@ func gitCommitCmd(file, message string) tea.Cmd {
 	}
 }
 
-// gitPullCmd performs a Git pull with rebase in the configured storage path.
+// jjPullCmd performs a jj fetch and rebase in the configured storage path.
 // Returns a PullDoneMsg or PullErrorMsg.
-func gitPullCmd() tea.Cmd {
+func jjPullCmd() tea.Cmd {
 	return func() tea.Msg {
 		// Don't try to pull if repo is not initialized.
 		if !storage.FileExists("INIT") {
 			return PullNoInitMsg{}
 		}
 
-		err := gitPull()
-		if err != nil {
+		if err := jjFetch(); err != nil {
+			return PullErrorMsg{err}
+		}
+
+		if err := jjRebase(); err != nil {
 			return PullErrorMsg{err}
 		}
 
@@ -102,55 +105,70 @@ func gitPullCmd() tea.Cmd {
 	}
 }
 
-// gitPull changes the working directory to the configured storage path
-// and performs a git pull --rebase. Returns an error if any step fails.
-func gitPull() error {
+// jjFetch changes the working directory to the configured storage path
+// and performs a jj git fetch. Returns an error if any step fails.
+func jjFetch() error {
 	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 		return err
 	}
 
-	if err := exec.Command("git", "pull", "--rebase").Run(); err != nil {
+	if err := exec.Command("jj", "git", "fetch").Run(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// gitCommit stages the specified file and commits it with the given message.
-// If there are no changes, it returns nil. If remote is enabled,
-// it pushes the commit to the configured remote and branch.
-// Returns an error if any Git command fails.
-func gitCommit(file, message string) error {
+// jjRebase changes the working directory to the configured storage path
+// and performs a jj rebase. Returns an error if any step fails.
+func jjRebase() error {
 	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 		return err
 	}
 
-	if err := exec.Command("git", "add", file).Run(); err != nil {
+	if err := exec.Command("jj", "rebase").Run(); err != nil {
 		return err
 	}
 
-	if err := exec.Command("git", "diff", "--cached", "--quiet").Run(); err == nil {
+	return nil
+}
+
+// jjCommit stages the specified file and commits it with the given message.
+// If there are no changes, it returns nil. If remote is enabled,
+// it pushes the commit to the configured remote and branch.
+// Returns an error if any Git command fails.
+func jjCommit(file, message string) error {
+	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+		return err
+	}
+
+	if err := exec.Command("jj", "add", file).Run(); err != nil {
+		return err
+	}
+
+	if err := exec.Command("git", "diff", "--quiet", "-r", "@-", "-r", "@").Run(); err == nil {
 		// Exit code 0 = no staged changes
 		return nil // Already committed.
 	}
 
-	if err := exec.Command("git", "commit", "-m", message).Run(); err != nil {
+	if err := exec.Command("jj", "commit", "-m", message).Run(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// gitPush changes the current working directory to the configured storage path
-// and executes a Git push command to the specified remote and branch.
-// It returns an error if changing the directory or running the Git command fails.
-func gitPush() error {
+// jjPush changes the current working directory to the configured storage path
+// and executes a jj git push command to the specified remote and branch.
+// It returns an error if changing the directory or running the jj command fails.
+func jjPush() error {
 	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 		return err
 	}
 
-	if err := exec.Command("git", "push", "-u",
+	if err := exec.Command("jj", "git", "push",
 		viper.GetString("git.remote.name"),
+		"-b",
 		viper.GetString("git.default_branch")).Run(); err != nil {
 		return err
 	}
