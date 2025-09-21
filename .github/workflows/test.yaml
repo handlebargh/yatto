@@ -16,10 +16,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            cache_path: ~/go/pkg/mod
             test_command: go test -v -race -coverprofile=coverage.txt ./...
           - os: macos-latest
-            cache_path: ~/go/pkg/mod
             test_command: go test -v -race ./...
     runs-on: ${{ matrix.os }}
 
@@ -33,14 +31,6 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: stable
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: ${{ matrix.cache_path }}
-          key: ${{ matrix.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ matrix.os }}-go-
 
       - name: Download dependencies
         run: go mod download
