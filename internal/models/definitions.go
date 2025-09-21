@@ -48,11 +48,8 @@ const (
 	// modeConfirmDelete indicates the UI is prompting for delete confirmation.
 	modeConfirmDelete
 
-	// modeGitError indicates a Git-related error has occurred and should be displayed.
-	modeGitError
-
-	// modeJJError indicates a jj-related error has occurred and should be displayed.
-	modeJJError
+	// modeBackendError indicates a backend-related error has occurred and should be displayed.
+	modeBackendError
 )
 
 var (

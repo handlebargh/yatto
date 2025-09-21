@@ -48,7 +48,7 @@ func CommitCmd(file, message string) tea.Cmd {
 	case "git":
 		return gitCommitCmd(file, message)
 	case "jj":
-		return jjCommitCmd(file, message)
+		return jjCommitCmd(message)
 	default:
 		return nil
 	}

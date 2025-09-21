@@ -601,18 +601,10 @@ func (m taskListModel) View() string {
 	}
 
 	// Display VCS error view
-	if m.mode == modeGitError || m.mode == modeJJError {
+	if m.mode == modeBackendError {
 		var e strings.Builder
 
-		switch m.mode {
-		case modeGitError:
-			e.WriteString("An error occurred while executing git:")
-		case modeJJError:
-			e.WriteString("An error occurred while executing jj:")
-		default:
-			e.WriteString("An unknown error occurred:")
-		}
-
+		e.WriteString("An error occurred during a backend operation:")
 		e.WriteString("\n\n")
 		e.WriteString(m.err.Error())
 		e.WriteString("\n\n")

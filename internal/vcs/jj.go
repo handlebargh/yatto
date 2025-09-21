@@ -43,8 +43,7 @@ func jjInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		if err := exec.Command("jj", "git", "init", "-b",
-			viper.GetString("git.default_branch")).Run(); err != nil {
+		if err := exec.Command("jj", "git", "init").Run(); err != nil {
 			return InitErrorMsg{err}
 		}
 
@@ -52,7 +51,7 @@ func jjInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		err := jjCommit("INIT", "Initial commit")
+		err := jjCommit("Initial commit")
 		if err != nil {
 			return InitErrorMsg{err}
 		}
@@ -64,9 +63,9 @@ func jjInitCmd() tea.Cmd {
 // jjCommitCmd stages and commits the specified file with the given message.
 // If jj remote support is enabled, it fetches from the remote before committing.
 // Returns a CommitDoneMsg or CommitErrorMsg.
-func jjCommitCmd(file, message string) tea.Cmd {
+func jjCommitCmd(message string) tea.Cmd {
 	return func() tea.Msg {
-		if err := jjCommit(file, message); err != nil {
+		if err := jjCommit(message); err != nil {
 			return CommitErrorMsg{err}
 		}
 
@@ -133,16 +132,12 @@ func jjRebase() error {
 	return nil
 }
 
-// jjCommit stages the specified file and commits it with the given message.
+// jjCommit commits working copy changes with the given message.
 // If there are no changes, it returns nil. If remote is enabled,
 // it pushes the commit to the configured remote and branch.
 // Returns an error if any Git command fails.
-func jjCommit(file, message string) error {
+func jjCommit(message string) error {
 	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-		return err
-	}
-
-	if err := exec.Command("jj", "add", file).Run(); err != nil {
 		return err
 	}
 
