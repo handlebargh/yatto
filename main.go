@@ -263,7 +263,7 @@ func main() {
 	initConfig(home, configPath)
 	config.CreateConfigFile(home)
 
-	storageConfig := storage.StorageDirConfig{
+	storageConfig := storage.Config{
 		Path:   viper.GetString("storage.path"),
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,

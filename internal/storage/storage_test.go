@@ -77,7 +77,7 @@ func TestCreateStorageDir(t *testing.T) {
 			var out bytes.Buffer
 			exited := false
 
-			cfg := StorageDirConfig{
+			cfg := Config{
 				Path:   storageDir,
 				Stdin:  strings.NewReader(tt.userInput),
 				Stdout: &out,

@@ -32,7 +32,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-type StorageDirConfig struct {
+// Config defines the runtime dependencies and settings used by
+// functions that manage the storage directory.
+//
+// Fields:
+//   - Path:   Filesystem path to the storage directory.
+//   - Stdin:  Input stream used to read user responses (e.g., os.Stdin).
+//   - Stdout: Output stream used to print prompts and messages (e.g., os.Stdout).
+//   - Exit:   Function invoked to terminate the process (e.g., os.Exit).
+type Config struct {
 	Path   string
 	Stdin  io.Reader
 	Stdout io.Writer
@@ -43,18 +51,25 @@ type StorageDirConfig struct {
 // and prompts the user to create it if it does not. If the user confirms,
 // the directory is created with 0700 permissions. Exits the program if the
 // user declines or an error occurs during input.
-func CreateStorageDir(cfg StorageDirConfig) {
+func CreateStorageDir(cfg Config) {
 	storageDir := cfg.Path
 
 	_, err := os.Stat(storageDir)
 	if os.IsNotExist(err) {
 		reader := bufio.NewReader(cfg.Stdin)
 
-		fmt.Fprintf(cfg.Stdout, "Create storage directory at %s? [y|N]: ", storageDir)
+		_, err := fmt.Fprintf(cfg.Stdout, "Create storage directory at %s? [y|N]: ", storageDir)
+		if err != nil {
+			return
+		}
 
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Fprintln(cfg.Stdout, "An error occurred while reading input. Please try again", err)
+			_, err := fmt.Fprintln(cfg.Stdout, "An error occurred while reading input. Please try again", err)
+			if err != nil {
+				return
+			}
+
 			return
 		}
 
