@@ -24,27 +24,101 @@ package config
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/spf13/viper"
 )
 
-// CreateConfigFile reads the Viper config file, and if it is not found,
-// creates the necessary configuration directory under the given home path
-// and writes a new default config file. It panics on any unrecoverable error.
-func CreateConfigFile(home string) {
+// ErrUserAborted is returned when a user cancels config file creation.
+var ErrUserAborted = errors.New("user aborted config creation")
+
+// Settings defines the runtime settings used by CreateConfigFile.
+//
+// Fields:
+//   - Stdin:  Input stream used to read user responses (e.g., os.Stdin).
+//   - Stdout: Output stream used to print prompts and messages (e.g., os.Stdout).
+type Settings struct {
+	ConfigPath string
+	Home       string
+	Stdin      io.Reader
+	Stdout     io.Writer
+	Exit       func(int)
+}
+
+// CreateConfigFile ensures that a configuration file exists for the application.
+// It first attempts to read an existing config using Viper. If no config file
+// is found, the user is prompted to confirm creation of a new one at the default
+// location ($HOME/.config/config.toml) or at set.ConfigPath if specified.
+//
+// The function then asks the user to choose a version control system (VCS),
+// defaulting to "git" if none is provided. The selected VCS backend is stored
+// as a default value in the config.
+//
+// If necessary, the configuration directory ($HOME/.config/yatto) is created
+// with permissions 0755, and Viper writes the config file safely using
+// viper.SafeWriteConfig.
+//
+// Returns ErrUserAborted if the user declines to create a config file, or an
+// error if something goes wrong. A nil error means the config file was created
+// successfully.
+func CreateConfigFile(set Settings) error {
 	if err := viper.ReadInConfig(); err != nil {
 		var notFound viper.ConfigFileNotFoundError
-		if errors.As(err, &notFound) {
-			if err := os.MkdirAll(filepath.Join(home, ".config/yatto"), 0o755); err != nil {
-				panic(fmt.Errorf("fatal error creating config directory: %w", err))
-			}
-			if err := viper.SafeWriteConfig(); err != nil {
-				panic(fmt.Errorf("fatal error writing config file: %w", err))
-			}
-		} else {
-			panic(fmt.Errorf("fatal error config file: %w", err))
+		if !errors.As(err, &notFound) {
+			return fmt.Errorf("fatal error getting config: %w", err)
+		}
+
+		path := filepath.Join(set.Home, ".config", "config.toml")
+		if set.ConfigPath != "" {
+			path = set.ConfigPath
+		}
+
+		// Prompt for config file path
+		_, err := helpers.PromptUser(
+			set.Stdin,
+			set.Stdout,
+			fmt.Sprintf("Create config file as %s? [y|N]: ", path),
+			"yes", "y", "Y",
+		)
+		if errors.Is(err, helpers.ErrUnexpectedInput) {
+			return ErrUserAborted
+		}
+		if err != nil {
+			return fmt.Errorf("error reading input: %w", err)
+		}
+
+		// Prompt for VCS
+		inputVCS, err := helpers.PromptUser(
+			set.Stdin,
+			set.Stdout,
+			"Which version control system would you like to use? [git(default)|jj]: ",
+			"git", "jj", "",
+		)
+		if errors.Is(err, helpers.ErrUnexpectedInput) {
+			return ErrUserAborted
+		}
+		if err != nil {
+			return fmt.Errorf("error reading input: %w", err)
+		}
+
+		if inputVCS == "" {
+			inputVCS = "git"
+		}
+		viper.SetDefault("vcs.backend", inputVCS)
+
+		// Create config dir
+		if err := os.MkdirAll(filepath.Join(set.Home, ".config/yatto"), 0o755); err != nil {
+			return fmt.Errorf("error creating config directory: %w", err)
+		}
+
+		// Write config file
+		if err := viper.SafeWriteConfig(); err != nil {
+			return fmt.Errorf("error writing config file: %w", err)
 		}
 	}
+
+	return nil
 }

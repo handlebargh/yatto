@@ -22,25 +22,27 @@
 package storage
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/spf13/viper"
 )
 
-// Config defines the runtime dependencies and settings used by
-// functions that manage the storage directory.
+// ErrUserAborted is returned when a user cancels storage directory creation.
+var ErrUserAborted = errors.New("user aborted config creation")
+
+// Settings defines settings used by CreateStorageDir.
 //
 // Fields:
 //   - Path:   Filesystem path to the storage directory.
 //   - Stdin:  Input stream used to read user responses (e.g., os.Stdin).
 //   - Stdout: Output stream used to print prompts and messages (e.g., os.Stdout).
 //   - Exit:   Function invoked to terminate the process (e.g., os.Exit).
-type Config struct {
+type Settings struct {
 	Path   string
 	Stdin  io.Reader
 	Stdout io.Writer
@@ -51,38 +53,32 @@ type Config struct {
 // and prompts the user to create it if it does not. If the user confirms,
 // the directory is created with 0700 permissions. Exits the program if the
 // user declines or an error occurs during input.
-func CreateStorageDir(cfg Config) {
-	storageDir := cfg.Path
+func CreateStorageDir(set Settings) error {
+	storageDir := set.Path
 
 	_, err := os.Stat(storageDir)
 	if os.IsNotExist(err) {
-		reader := bufio.NewReader(cfg.Stdin)
 
-		_, err := fmt.Fprintf(cfg.Stdout, "Create storage directory at %s? [y|N]: ", storageDir)
+		// Prompt for storage directory creation
+		_, err := helpers.PromptUser(
+			set.Stdin,
+			set.Stdout,
+			fmt.Sprintf("Create storage directory at %s? [y|N]: ", storageDir),
+			"yes", "y", "Y",
+		)
+		if errors.Is(err, helpers.ErrUnexpectedInput) {
+			return ErrUserAborted
+		}
 		if err != nil {
-			return
+			return fmt.Errorf("error reading input: %w", err)
 		}
 
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			_, err := fmt.Fprintln(cfg.Stdout, "An error occurred while reading input. Please try again", err)
-			if err != nil {
-				return
-			}
-
-			return
-		}
-
-		input = strings.TrimSpace(input)
-
-		if input == "yes" || input == "y" || input == "Y" {
-			if err := os.MkdirAll(storageDir, 0o700); err != nil {
-				panic(fmt.Errorf("fatal error creating storage directory: %w", err))
-			}
-		} else {
-			cfg.Exit(0)
+		if err := os.MkdirAll(storageDir, 0o700); err != nil {
+			return fmt.Errorf("fatal error creating storage directory: %w", err)
 		}
 	}
+
+	return nil
 }
 
 // FileExists returns true if the specified file exists within the configured

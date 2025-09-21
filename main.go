@@ -26,6 +26,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -270,7 +271,20 @@ func main() {
 	}
 
 	initConfig(home, configPath)
-	config.CreateConfigFile(home)
+	setCfg := config.Settings{
+		ConfigPath: *configPath,
+		Home:       home,
+		Stdin:      os.Stdin,
+		Stdout:     os.Stdout,
+		Exit:       os.Exit,
+	}
+
+	if err := config.CreateConfigFile(setCfg); err != nil {
+		if errors.Is(err, config.ErrUserAborted) {
+			os.Exit(0)
+		}
+		log.Fatalf("failed to create config: %v", err)
+	}
 
 	// Enforce valid vcs backend
 	switch viper.GetString("vcs.backend") {
@@ -282,13 +296,19 @@ func main() {
 		panic(fmt.Errorf("unknown vcs backend: %s", viper.GetString("vcs.backend")))
 	}
 
-	storageConfig := storage.Config{
+	setStorage := storage.Settings{
 		Path:   viper.GetString("storage.path"),
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Exit:   os.Exit,
 	}
-	storage.CreateStorageDir(storageConfig)
+
+	if err := storage.CreateStorageDir(setStorage); err != nil {
+		if errors.Is(err, storage.ErrUserAborted) {
+			os.Exit(0)
+		}
+		log.Fatalf("failed to create storage directory: %v", err)
+	}
 
 	// Print task list without pulling first.
 	if *printFlag && !*pullFlag {

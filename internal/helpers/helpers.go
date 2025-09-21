@@ -23,8 +23,11 @@
 package helpers
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -35,6 +38,9 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/spf13/viper"
 )
+
+// ErrUnexpectedInput is returned when a user's input is unexpected.
+var ErrUnexpectedInput = errors.New("unexpected input")
 
 // ReadProjectsFromFS reads all project directories from the configured storage path.
 // It deserializes each project's `project.json` file into an items.Project object.
@@ -165,4 +171,53 @@ func GetColorCode(color string) lipgloss.AdaptiveColor {
 	default:
 		return colors.Blue()
 	}
+}
+
+// PromptUser displays the given message to the user through set.Stdout and
+// reads a single line of input from set.Stdin. If expectedInput values are
+// provided, the function only accepts input that matches one of them.
+//
+// If the input matches an allowed value, it is returned along with a nil error.
+// If no expectedInput values are provided, the raw trimmed input is returned.
+// If the user input cannot be read, the function returns an error. If the input
+// does not match any expected values, ErrInvalidInput is returned.
+//
+// Parameters:
+//   - set: the Settings struct containing the input and output streams.
+//   - message: the prompt message displayed to the user.
+//   - expectedInput: an optional list of allowed input values.
+//
+// Returns the user’s input string and an error, if any occurred.
+func PromptUser(stdin io.Reader, stdout io.Writer, message string, expectedInput ...string) (string, error) {
+	reader := bufio.NewReader(stdin)
+
+	_, err := fmt.Fprint(stdout, message)
+	if err != nil {
+		return "", err
+	}
+
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		_, err := fmt.Fprintln(stdout, "An error occurred while reading input. Please try again", err)
+		if err != nil {
+			return "", err
+		}
+
+		return "", err
+	}
+
+	input = strings.TrimSpace(input)
+
+	if len(expectedInput) == 0 {
+		return input, nil
+	}
+
+	for _, allowed := range expectedInput {
+		input = strings.TrimSpace(input)
+		if input == allowed {
+			return input, nil
+		}
+	}
+
+	return "", ErrUnexpectedInput
 }
