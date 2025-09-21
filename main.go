@@ -262,7 +262,14 @@ func main() {
 
 	initConfig(home, configPath)
 	config.CreateConfigFile(home)
-	storage.CreateStorageDir()
+
+	storageConfig := storage.StorageDirConfig{
+		Path:   viper.GetString("storage.path"),
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Exit:   os.Exit,
+	}
+	storage.CreateStorageDir(storageConfig)
 
 	// Print task list without pulling first.
 	if *printFlag && !*pullFlag {

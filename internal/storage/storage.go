@@ -24,6 +24,7 @@ package storage
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,36 +32,40 @@ import (
 	"github.com/spf13/viper"
 )
 
+type StorageDirConfig struct {
+	Path   string
+	Stdin  io.Reader
+	Stdout io.Writer
+	Exit   func(int)
+}
+
 // CreateStorageDir checks if the configured storage directory exists,
 // and prompts the user to create it if it does not. If the user confirms,
 // the directory is created with 0700 permissions. Exits the program if the
 // user declines or an error occurs during input.
-func CreateStorageDir() {
-	storageDir := viper.GetString("storage.path")
+func CreateStorageDir(cfg StorageDirConfig) {
+	storageDir := cfg.Path
 
-	// Ask if storage directory should be created if it does not exist.
 	_, err := os.Stat(storageDir)
 	if os.IsNotExist(err) {
-		reader := bufio.NewReader(os.Stdin)
+		reader := bufio.NewReader(cfg.Stdin)
 
-		fmt.Printf("Create storage directory at %s? [y|N]: ", storageDir)
+		fmt.Fprintf(cfg.Stdout, "Create storage directory at %s? [y|N]: ", storageDir)
 
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("An error occurred while reading input. Please try again", err)
+			fmt.Fprintln(cfg.Stdout, "An error occurred while reading input. Please try again", err)
 			return
 		}
 
 		input = strings.TrimSpace(input)
 
-		if input == "yes" || input == "y" {
-			// Create storage directory.
-			err := os.MkdirAll(storageDir, 0o700)
-			if err != nil {
+		if input == "yes" || input == "y" || input == "Y" {
+			if err := os.MkdirAll(storageDir, 0o700); err != nil {
 				panic(fmt.Errorf("fatal error creating storage directory: %w", err))
 			}
 		} else {
-			os.Exit(0)
+			cfg.Exit(0)
 		}
 	}
 }
