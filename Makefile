@@ -38,6 +38,21 @@ test:
 	@echo 'Running tests...'
 	go test -v -race ./...
 
+## test-cover: generate test coverage report as HTML
+.PHONY: test-cover
+test-cover:
+	@echo 'Generating coverage report...'
+	go test -covermode=count -coverprofile coverage.out ./...
+	go tool cover -html coverage.out -o coverage.html
+	@if command -v open >/dev/null 2>&1; then \
+		open coverage.html; \
+	elif command -v xdg-open >/dev/null 2>&1; then \
+		xdg-open coverage.html; \
+	else \
+		echo "No opener found; please open manually."; \
+	fi
+	@echo "Coverage report available at file://$(shell pwd)/coverage.html"
+
 ## build: build the application
 .PHONY: build
 build:
