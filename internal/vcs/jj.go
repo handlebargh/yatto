@@ -69,7 +69,7 @@ func jjCommitCmd(message string) tea.Cmd {
 			return CommitErrorMsg{err}
 		}
 
-		if viper.GetBool("git.remote.enable") {
+		if viper.GetBool("jj.remote.enable") {
 			if err := jjFetch(); err != nil {
 				return PullErrorMsg{err}
 			}
@@ -141,7 +141,7 @@ func jjCommit(message string) error {
 		return err
 	}
 
-	if err := exec.Command("git", "diff", "--quiet", "-r", "@-", "-r", "@").Run(); err == nil {
+	if err := exec.Command("jj","diff", "--quiet", "-r", "@-", "-r", "@").Run(); err == nil {
 		// Exit code 0 = no staged changes
 		return nil // Already committed.
 	}
@@ -162,9 +162,9 @@ func jjPush() error {
 	}
 
 	if err := exec.Command("jj", "git", "push",
-		viper.GetString("git.remote.name"),
+		viper.GetString("jj.remote.name"),
 		"-b",
-		viper.GetString("git.default_branch")).Run(); err != nil {
+		viper.GetString("jj.default_branch")).Run(); err != nil {
 		return err
 	}
 
