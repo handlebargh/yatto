@@ -125,7 +125,7 @@ func jjRebase() error {
 		return err
 	}
 
-	if err := exec.Command("jj", "rebase").Run(); err != nil {
+	if err := exec.Command("jj", "rebase", "-s", "@", "-d", "trunk()").Run(); err != nil {
 		return err
 	}
 
@@ -133,17 +133,11 @@ func jjRebase() error {
 }
 
 // jjCommit commits working copy changes with the given message.
-// If there are no changes, it returns nil. If remote is enabled,
-// it pushes the commit to the configured remote and branch.
+// If remote is enabled, it pushes the commit to the configured remote and branch.
 // Returns an error if any Git command fails.
 func jjCommit(message string) error {
 	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
 		return err
-	}
-
-	if err := exec.Command("jj", "diff", "--quiet", "-r", "@-", "-r", "@").Run(); err == nil {
-		// Exit code 0 = no staged changes
-		return nil // Already committed.
 	}
 
 	if err := exec.Command("jj", "commit", "-m", message).Run(); err != nil {
@@ -168,13 +162,15 @@ func jjPush() error {
 	}
 
 	if err := exec.Command("jj", "bookmark", "set",
-		viper.GetString("jj.default_branch"), "@-").Run(); err != nil {
+		viper.GetString("jj.default_branch"), "--revision=@-", "main").Run(); err != nil {
 		return err
 	}
 
 	if err := exec.Command("jj", "git", "push",
+		"--allow-new",
+		"--remote",
 		viper.GetString("jj.remote.name"),
-		"-b",
+		"--bookmark",
 		viper.GetString("jj.default_branch")).Run(); err != nil {
 		return err
 	}
