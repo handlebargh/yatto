@@ -141,7 +141,7 @@ func jjCommit(message string) error {
 		return err
 	}
 
-	if err := exec.Command("jj","diff", "--quiet", "-r", "@-", "-r", "@").Run(); err == nil {
+	if err := exec.Command("jj", "diff", "--quiet", "-r", "@-", "-r", "@").Run(); err == nil {
 		// Exit code 0 = no staged changes
 		return nil // Already committed.
 	}
@@ -153,11 +153,22 @@ func jjCommit(message string) error {
 	return nil
 }
 
-// jjPush changes the current working directory to the configured storage path
-// and executes a jj git push command to the specified remote and branch.
-// It returns an error if changing the directory or running the jj command fails.
+// jjPush updates the default branch bookmark in the local Jujutsu repository
+// and pushes it to the configured remote.
+//
+// The function performs the following steps:
+//  1. Changes the working directory to the configured storage path.
+//  2. Moves the default branch bookmark (from config key "jj.default_branch")
+//     to point to @-, i.e. the parent of the working copy commit.
+//  3. Pushes that bookmark to the Git remote specified in
+//     "jj.remote.name".
 func jjPush() error {
 	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+		return err
+	}
+
+	if err := exec.Command("jj", "bookmark", "set",
+		viper.GetString("jj.default_branch"), "@-").Run(); err != nil {
 		return err
 	}
 
