@@ -140,6 +140,15 @@ func jjCommit(message string) error {
 		return err
 	}
 
+	cmd := exec.Command("jj", "diff", "--stat", "-r", "@-", "-r", "@")
+	out, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	if len(out) == 0 {
+		return nil // no changes
+	}
+
 	if err := exec.Command("jj", "commit", "-m", message).Run(); err != nil {
 		return err
 	}
