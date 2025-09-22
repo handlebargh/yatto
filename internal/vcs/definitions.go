@@ -24,9 +24,8 @@ import "errors"
 
 // ErrorNoInit is returned when a (jj) git pull command is executed
 // in a non-initialized storage repository.
-// TODO: account for jj
 var ErrorNoInit = errors.New(
-	"trying to pull but local repo is not initialized.\nPlease disable git.remote and try again",
+	"trying to pull but local repo is not initialized.\nPlease disable remote and try again",
 )
 
 type (
