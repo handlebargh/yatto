@@ -188,17 +188,17 @@ func GetColorCode(color string) lipgloss.AdaptiveColor {
 //   - expectedInput: an optional list of allowed input values.
 //
 // Returns the user’s input string and an error, if any occurred.
-func PromptUser(stdin io.Reader, stdout io.Writer, message string, expectedInput ...string) (string, error) {
-	reader := bufio.NewReader(stdin)
+func PromptUser(input io.Reader, output io.Writer, message string, expectedInput ...string) (string, error) {
+	reader := bufio.NewReader(input)
 
-	_, err := fmt.Fprint(stdout, message)
+	_, err := fmt.Fprint(output, message)
 	if err != nil {
 		return "", err
 	}
 
-	input, err := reader.ReadString('\n')
+	userInput, err := reader.ReadString('\n')
 	if err != nil {
-		_, err := fmt.Fprintln(stdout, "An error occurred while reading input. Please try again", err)
+		_, err := fmt.Fprintln(output, "An error occurred while reading input. Please try again", err)
 		if err != nil {
 			return "", err
 		}
@@ -206,16 +206,16 @@ func PromptUser(stdin io.Reader, stdout io.Writer, message string, expectedInput
 		return "", err
 	}
 
-	input = strings.TrimSpace(input)
+	userInput = strings.TrimSpace(userInput)
 
 	if len(expectedInput) == 0 {
-		return input, nil
+		return userInput, nil
 	}
 
 	for _, allowed := range expectedInput {
-		input = strings.TrimSpace(input)
-		if input == allowed {
-			return input, nil
+		userInput = strings.TrimSpace(userInput)
+		if userInput == allowed {
+			return userInput, nil
 		}
 	}
 

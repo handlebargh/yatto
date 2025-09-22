@@ -43,8 +43,8 @@ var ErrUserAborted = errors.New("user aborted config creation")
 type Settings struct {
 	ConfigPath string
 	Home       string
-	Stdin      io.Reader
-	Stdout     io.Writer
+	Input      io.Reader
+	Output     io.Writer
 	Exit       func(int)
 }
 
@@ -78,8 +78,8 @@ func CreateConfigFile(set Settings) error {
 
 		// Prompt for config file path
 		_, err := helpers.PromptUser(
-			set.Stdin,
-			set.Stdout,
+			set.Input,
+			set.Output,
 			fmt.Sprintf("Create config file as %s? [y|N]: ", path),
 			"yes", "y", "Y",
 		)
@@ -92,8 +92,8 @@ func CreateConfigFile(set Settings) error {
 
 		// Prompt for VCS
 		inputVCS, err := helpers.PromptUser(
-			set.Stdin,
-			set.Stdout,
+			set.Input,
+			set.Output,
 			"Which version control system would you like to use? [git(default)|jj]: ",
 			"git", "jj", "",
 		)

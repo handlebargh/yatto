@@ -44,8 +44,8 @@ var ErrUserAborted = errors.New("user aborted config creation")
 //   - Exit:   Function invoked to terminate the process (e.g., os.Exit).
 type Settings struct {
 	Path   string
-	Stdin  io.Reader
-	Stdout io.Writer
+	Input  io.Reader
+	Output io.Writer
 	Exit   func(int)
 }
 
@@ -61,8 +61,8 @@ func CreateStorageDir(set Settings) error {
 
 		// Prompt for storage directory creation
 		_, err := helpers.PromptUser(
-			set.Stdin,
-			set.Stdout,
+			set.Input,
+			set.Output,
 			fmt.Sprintf("Create storage directory at %s? [y|N]: ", storageDir),
 			"yes", "y", "Y",
 		)

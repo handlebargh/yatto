@@ -274,8 +274,8 @@ func main() {
 	setCfg := config.Settings{
 		ConfigPath: *configPath,
 		Home:       home,
-		Stdin:      os.Stdin,
-		Stdout:     os.Stdout,
+		Input:      os.Stdin,
+		Output:     os.Stdout,
 		Exit:       os.Exit,
 	}
 
@@ -298,8 +298,8 @@ func main() {
 
 	setStorage := storage.Settings{
 		Path:   viper.GetString("storage.path"),
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
+		Input:  os.Stdin,
+		Output: os.Stdout,
 		Exit:   os.Exit,
 	}
 
