@@ -173,21 +173,25 @@ func GetColorCode(color string) lipgloss.AdaptiveColor {
 	}
 }
 
-// PromptUser displays the given message to the user through set.Stdout and
-// reads a single line of input from set.Stdin. If expectedInput values are
-// provided, the function only accepts input that matches one of them.
+// PromptUser writes the given message to the provided output stream and reads a
+// single line of input from the provided input stream. The input is trimmed of
+// surrounding whitespace before being validated.
 //
-// If the input matches an allowed value, it is returned along with a nil error.
-// If no expectedInput values are provided, the raw trimmed input is returned.
-// If the user input cannot be read, the function returns an error. If the input
-// does not match any expected values, ErrInvalidInput is returned.
+// If no expectedInput values are provided, the trimmed input is returned as-is.
+// If one or more expectedInput values are provided, the function only accepts
+// input that matches one of them. If the input does not match any allowed
+// value, ErrUnexpectedInput is returned.
+//
+// If writing to the output stream or reading from the input stream fails, an
+// error is returned.
 //
 // Parameters:
-//   - set: the Settings struct containing the input and output streams.
+//   - input: the reader from which user input is read.
+//   - output: the writer to which the prompt message and error messages are written.
 //   - message: the prompt message displayed to the user.
 //   - expectedInput: an optional list of allowed input values.
 //
-// Returns the user’s input string and an error, if any occurred.
+// Returns the user’s validated input string and an error, if any occurred.
 func PromptUser(input io.Reader, output io.Writer, message string, expectedInput ...string) (string, error) {
 	reader := bufio.NewReader(input)
 

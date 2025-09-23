@@ -39,8 +39,8 @@ var ErrUserAborted = errors.New("user aborted config creation")
 //
 // Fields:
 //   - Path:   Filesystem path to the storage directory.
-//   - Stdin:  Input stream used to read user responses (e.g., os.Stdin).
-//   - Stdout: Output stream used to print prompts and messages (e.g., os.Stdout).
+//   - Input:  Input stream used to read user responses (e.g., os.Stdin).
+//   - Output: Output stream used to print prompts and messages (e.g., os.Stdout).
 //   - Exit:   Function invoked to terminate the process (e.g., os.Exit).
 type Settings struct {
 	Path   string
