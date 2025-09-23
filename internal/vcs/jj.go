@@ -170,8 +170,9 @@ func jjPush() error {
 		return err
 	}
 
+	defaultBranch := viper.GetString("jj.default_branch")
 	if err := exec.Command("jj", "bookmark", "set",
-		viper.GetString("jj.default_branch"), "--revision=@-", "main").Run(); err != nil {
+		defaultBranch, "--revision=@-", defaultBranch).Run(); err != nil {
 		return err
 	}
 
