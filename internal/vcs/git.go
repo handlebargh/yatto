@@ -43,8 +43,11 @@ func gitInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		if err := exec.Command("git", "init", "-b",
-			viper.GetString("git.default_branch")).Run(); err != nil {
+		if err := exec.Command("git",
+			"init",
+			"--initial-branch",
+			viper.GetString("git.default_branch"),
+		).Run(); err != nil {
 			return InitErrorMsg{err}
 		}
 
@@ -125,16 +128,27 @@ func gitCommit(file, message string) error {
 		return err
 	}
 
-	if err := exec.Command("git", "add", file).Run(); err != nil {
+	if err := exec.Command("git",
+		"add",
+		file,
+	).Run(); err != nil {
 		return err
 	}
 
-	if err := exec.Command("git", "diff", "--cached", "--quiet").Run(); err == nil {
+	if err := exec.Command("git",
+		"diff",
+		"--cached",
+		"--quiet",
+	).Run(); err == nil {
 		// Exit code 0 = no staged changes
 		return nil // Already committed.
 	}
 
-	if err := exec.Command("git", "commit", "-m", message).Run(); err != nil {
+	if err := exec.Command("git",
+		"commit",
+		"--message",
+		message,
+	).Run(); err != nil {
 		return err
 	}
 
@@ -149,9 +163,12 @@ func gitPush() error {
 		return err
 	}
 
-	if err := exec.Command("git", "push", "-u",
+	if err := exec.Command("git",
+		"push",
+		"--set-upstream",
 		viper.GetString("git.remote.name"),
-		viper.GetString("git.default_branch")).Run(); err != nil {
+		viper.GetString("git.default_branch"),
+	).Run(); err != nil {
 		return err
 	}
 

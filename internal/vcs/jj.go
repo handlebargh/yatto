@@ -132,7 +132,13 @@ func jjRebase() error {
 		return err
 	}
 
-	if err := exec.Command("jj", "rebase", "-s", "@", "-d", "trunk()").Run(); err != nil {
+	if err := exec.Command("jj",
+		"rebase",
+		"--source",
+		"@",
+		"--destination",
+		"trunk()",
+	).Run(); err != nil {
 		return err
 	}
 
@@ -147,7 +153,14 @@ func jjCommit(message string) error {
 		return err
 	}
 
-	cmd := exec.Command("jj", "diff", "--stat", "-r", "@-", "-r", "@")
+	cmd := exec.Command("jj",
+		"diff",
+		"--stat",
+		"--revisions",
+		"@-",
+		"--revisions",
+		"@",
+	)
 	out, err := cmd.Output()
 	if err != nil {
 		return err
@@ -156,7 +169,11 @@ func jjCommit(message string) error {
 		return nil // no changes
 	}
 
-	if err := exec.Command("jj", "commit", "-m", message).Run(); err != nil {
+	if err := exec.Command("jj",
+		"commit",
+		"--message",
+		message,
+	).Run(); err != nil {
 		return err
 	}
 
@@ -178,8 +195,13 @@ func jjPush() error {
 	}
 
 	defaultBranch := viper.GetString("jj.default_branch")
-	if err := exec.Command("jj", "bookmark", "set",
-		defaultBranch, "--revision=@-", defaultBranch).Run(); err != nil {
+	if err := exec.Command("jj",
+		"bookmark",
+		"set",
+		defaultBranch,
+		"--revision=@-",
+		defaultBranch,
+	).Run(); err != nil {
 		return err
 	}
 
