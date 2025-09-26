@@ -116,14 +116,13 @@ func CreateConfigFile(set Settings) error {
 				"Do you want to colocate the jj repository? [y|N]: ",
 				"yes", "y", "Y",
 			)
-			if errors.Is(err, helpers.ErrUnexpectedInput) {
-				return ErrUserAborted
-			}
-			if err != nil {
+			if err == nil {
+				viper.Set("jj.colocate", true)
+			} else if errors.Is(err, helpers.ErrUnexpectedInput) {
+				// ignore, continue
+			} else {
 				return fmt.Errorf("error reading input: %w", err)
 			}
-
-			viper.SetDefault("jj.colocate", true)
 		}
 
 		viper.SetDefault("vcs.backend", inputVCS)
