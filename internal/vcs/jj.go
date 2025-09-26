@@ -43,7 +43,14 @@ func jjInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		if err := exec.Command("jj", "git", "init").Run(); err != nil {
+		var cmd *exec.Cmd
+		if viper.GetBool("jj.colocate") {
+			cmd = exec.Command("jj", "git", "init", "--colocate")
+		} else {
+			cmd = exec.Command("jj", "git", "init")
+		}
+
+		if err := cmd.Run(); err != nil {
 			return InitErrorMsg{err}
 		}
 

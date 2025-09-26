@@ -217,6 +217,7 @@ func initConfig(home string, configPath *string) {
 	viper.SetDefault("jj.default_branch", "main")
 	viper.SetDefault("jj.remote.enable", false)
 	viper.SetDefault("jj.remote.name", "origin")
+	viper.SetDefault("jj.remote.colocate", false)
 
 	// colors
 	viper.SetDefault("colors.red_light", "#FE5F86")

@@ -107,6 +107,25 @@ func CreateConfigFile(set Settings) error {
 		if inputVCS == "" {
 			inputVCS = "git"
 		}
+
+		if inputVCS == "jj" {
+			// Prompt for colocation
+			_, err := helpers.PromptUser(
+				set.Input,
+				set.Output,
+				"Do you want to colocate the jj repository? [y|N]: ",
+				"yes", "y", "Y",
+			)
+			if errors.Is(err, helpers.ErrUnexpectedInput) {
+				return ErrUserAborted
+			}
+			if err != nil {
+				return fmt.Errorf("error reading input: %w", err)
+			}
+
+			viper.SetDefault("jj.colocate", true)
+		}
+
 		viper.SetDefault("vcs.backend", inputVCS)
 
 		// Create config dir
