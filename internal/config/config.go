@@ -118,14 +118,12 @@ func CreateConfigFile(set Settings) error {
 			)
 			if err == nil {
 				viper.Set("jj.colocate", true)
-			} else if errors.Is(err, helpers.ErrUnexpectedInput) {
-				// ignore, continue
-			} else {
+			} else if err != nil && !errors.Is(err, helpers.ErrUnexpectedInput) {
 				return fmt.Errorf("error reading input: %w", err)
 			}
 		}
 
-		viper.SetDefault("vcs.backend", inputVCS)
+		viper.Set("vcs.backend", inputVCS)
 
 		// Create config dir
 		if err := os.MkdirAll(filepath.Join(set.Home, ".config/yatto"), 0o755); err != nil {
