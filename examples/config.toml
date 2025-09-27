@@ -32,10 +32,10 @@ name = "origin"
 
 [jj]
 default_branch = "main"
-colocate = false
 
 [jj.remote]
 enable = false
+colocate = false
 name = "origin"
 
 [storage]
