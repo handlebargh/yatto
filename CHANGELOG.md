@@ -1,3 +1,9 @@
+## v0.18.0 (2025-09-27)
+
+### Feat
+
+- handle remotes automatically at initialization (#39)
+
 ## v0.17.0 (2025-09-27)
 
 ### Feat
