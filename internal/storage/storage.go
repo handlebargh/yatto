@@ -66,17 +66,23 @@ func CreateStorageDir(set Settings) error {
 		backend := viper.GetString("vcs.backend")
 		if viper.GetBool(backend + ".remote.enable") {
 
+			jjCmd := []string{
+				"jj",
+				"git",
+				"clone",
+				"--remote",
+				viper.GetString("jj.remote.name"),
+				viper.GetString("jj.remote.url"),
+				storageDir,
+			}
+
+			if viper.GetBool("jj.remote.colocate") {
+				jjCmd = append(jjCmd, "--colocate")
+			}
+
 			cmds := map[string][]string{
 				"git": {"git", "clone", viper.GetString("git.remote.url"), storageDir},
-				"jj": {
-					"jj",
-					"git",
-					"clone",
-					"--remote",
-					viper.GetString("jj.remote.name"),
-					viper.GetString("jj.remote.url"),
-					storageDir,
-				},
+				"jj":  jjCmd,
 			}
 
 			args, ok := cmds[backend]
