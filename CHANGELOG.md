@@ -1,3 +1,9 @@
+## v0.18.1 (2025-09-27)
+
+### Fix
+
+- **deps**: update dependencies
+
 ## v0.18.0 (2025-09-27)
 
 ### Feat
