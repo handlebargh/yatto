@@ -47,10 +47,10 @@ signs:
   - cmd: cosign
     signature: "${artifact}.sig"
     args:
-      - "sign-blob"
-      - "--oidc-issuer=https://token.actions.githubusercontent.com"
-      - "--output-signature=${signature}"
-      - "--yes"
+      - sign-blob
+      - --oidc-issuer=https://token.actions.githubusercontent.com
+      - --bundle=${signature}.bundle
+      - --yes
       - "${artifact}"
     artifacts: checksum
 
