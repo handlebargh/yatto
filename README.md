@@ -63,22 +63,25 @@ Take a look at the [releases](https://github.com/handlebargh/yatto/releases/late
 
 ### Verifying Release Binaries
 
-All release binaries are published with a [SLSA provenance attestation](https://slsa.dev/) (*.intoto.jsonl files).
-This allows you to cryptographically verify that the binaries were built from this source code,
-using GitHub Actions, and not tampered with.
+All release binaries are accompanied by a SHA256 checksum file, which is signed with Cosign.
+This allows you to verify the integrity and authenticity of the binaries.
 
 #### How to verify
 
-1. Install the [verifier](https://github.com/slsa-framework/slsa-verifier).
-2. Download the yatto binary and provenance file.
-3. Verify the binary, e.g.
+1. Install [cosign](https://github.com/sigstore/cosign)
+2. Verify the signed checksum file
 
     ```shell
-    slsa-verifier verify-artifact \
-      --provenance-path ./yatto-linux-amd64.intoto.jsonl \
-      --source-uri github.com/handlebargh/yatto \
-      --source-versioned-tag v0.17.0 \
-      yatto-linux-amd64
+    cosign verify-blob \
+      --oidc-issuer https://token.actions.githubusercontent.com \
+      --signature path/to/checksums.txt.sig \
+      path/to/checksums.txt
+    ```
+
+3. Check that the binaries match the signed checksums
+
+    ```shell
+    sha256sum -c path/to/checksums.txt
     ```
 
 ## Configuration
