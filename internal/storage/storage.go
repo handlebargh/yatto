@@ -68,7 +68,15 @@ func CreateStorageDir(set Settings) error {
 
 			cmds := map[string][]string{
 				"git": {"git", "clone", viper.GetString("git.remote.url"), storageDir},
-				"jj":  {"jj", "clone", viper.GetString("jj.remote.url"), storageDir},
+				"jj": {
+					"jj",
+					"git",
+					"clone",
+					"--remote",
+					viper.GetString("jj.remote.name"),
+					viper.GetString("jj.remote.url"),
+					storageDir,
+				},
 			}
 
 			args, ok := cmds[backend]
