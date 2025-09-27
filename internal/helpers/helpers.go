@@ -175,7 +175,7 @@ func GetColorCode(color string) lipgloss.AdaptiveColor {
 
 // PromptUser writes the given message to the provided output stream and reads a
 // single line of input from the provided input stream. The input is trimmed of
-// surrounding whitespace before being validated.
+// surrounding whitespace and transformed to lower case before being validated.
 //
 // If no expectedInput values are provided, the trimmed input is returned as-is.
 // If one or more expectedInput values are provided, the function only accepts
@@ -210,7 +210,7 @@ func PromptUser(input io.Reader, output io.Writer, message string, expectedInput
 		return "", err
 	}
 
-	userInput = strings.TrimSpace(userInput)
+	userInput = strings.ToLower(strings.TrimSpace(userInput))
 
 	if len(expectedInput) == 0 {
 		return userInput, nil

@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/handlebargh/yatto/internal/helpers"
@@ -57,24 +58,62 @@ func CreateStorageDir(set Settings) error {
 	storageDir := set.Path
 
 	_, err := os.Stat(storageDir)
-	if os.IsNotExist(err) {
-
-		// Prompt for storage directory creation
-		_, err := helpers.PromptUser(
-			set.Input,
-			set.Output,
-			fmt.Sprintf("Create storage directory at %s? [y|N]: ", storageDir),
-			"yes", "y", "Y",
-		)
-		if errors.Is(err, helpers.ErrUnexpectedInput) {
-			return ErrUserAborted
-		}
-		if err != nil {
-			return fmt.Errorf("error reading input: %w", err)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
 		}
 
-		if err := os.MkdirAll(storageDir, 0o700); err != nil {
-			return fmt.Errorf("fatal error creating storage directory: %w", err)
+		backend := viper.GetString("vcs.backend")
+		if viper.GetBool(backend + ".remote.enable") {
+
+			jjCmd := []string{
+				"jj",
+				"git",
+				"clone",
+				"--remote",
+				viper.GetString("jj.remote.name"),
+				viper.GetString("jj.remote.url"),
+				storageDir,
+			}
+
+			if viper.GetBool("jj.remote.colocate") {
+				jjCmd = append(jjCmd, "--colocate")
+			}
+
+			cmds := map[string][]string{
+				"git": {"git", "clone", viper.GetString("git.remote.url"), storageDir},
+				"jj":  jjCmd,
+			}
+
+			args, ok := cmds[backend]
+			if ok {
+				cmd := exec.Command(args[0], args[1:]...)
+
+				cmd.Stdout = set.Output
+				cmd.Stderr = set.Output
+
+				if err := cmd.Run(); err != nil {
+					return err
+				}
+			}
+		} else {
+			// Prompt for storage directory creation
+			_, err := helpers.PromptUser(
+				set.Input,
+				set.Output,
+				fmt.Sprintf("Create storage directory at %s? [y|N]: ", storageDir),
+				"yes", "y",
+			)
+			if errors.Is(err, helpers.ErrUnexpectedInput) {
+				return ErrUserAborted
+			}
+			if err != nil {
+				return fmt.Errorf("error reading input: %w", err)
+			}
+
+			if err := os.MkdirAll(storageDir, 0o700); err != nil {
+				return fmt.Errorf("fatal error creating storage directory: %w", err)
+			}
 		}
 	}
 

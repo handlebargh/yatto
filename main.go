@@ -127,11 +127,11 @@ type spinnerModel struct {
 	height  int
 }
 
-// Init initializes the spinner model and starts the Git pull command.
+// Init initializes the spinner model and starts the init command.
 func (m spinnerModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
-		vcs.PullCmd(),
+		vcs.InitCmd(),
 	)
 }
 
@@ -148,6 +148,9 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+
+	case vcs.InitDoneMsg:
+		return m, vcs.PullCmd()
 
 	case vcs.PullDoneMsg:
 		return m, tea.Quit

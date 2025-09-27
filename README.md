@@ -143,37 +143,20 @@ To set up a remote
    The repository must be empty, meaning that nothing must be committed at creation
    (uncheck README, .gitignore and license files).
 
-2. Run yatto at least once to create the task storage directory.
+2. Enable remote in the config.
 
-3. Add the remote and push the local repository.
-
-    #### Git
-    ```shell
-    cd ${HOME}/.yatto
-    git remote add origin <GIT_REMOTE_URL>
-    git push -u origin main
-    ```
-
-    #### Jujutsu
-    ```shell
-    cd ${HOME}/.yatto
-    jj git remote add origin <GIT_REMOTE_URL>
-    jj bookmark create -r @- main
-    jj git push --allow-new
-    ```
-
-4. Enable remote in the config.
-
-    #### Git
+   #### Git
     ```toml
     [git.remote]
     enable = true
+    url = <GIT_REMOTE_URL>
     ```
 
-    #### Jujutsu
+   #### Jujutsu
      ```toml
     [jj.remote]
     enable = true
+    url = <GIT_REMOTE_URL>
     ```
 
 ## Non-interactive mode

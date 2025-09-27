@@ -43,24 +43,31 @@ func jjInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		var cmd *exec.Cmd
-		if viper.GetBool("jj.colocate") {
-			cmd = exec.Command("jj", "git", "init", "--colocate")
-		} else {
-			cmd = exec.Command("jj", "git", "init")
-		}
+		if !viper.GetBool("jj.remote.enable") {
+			var cmd *exec.Cmd
+			if viper.GetBool("jj.colocate") {
+				cmd = exec.Command("jj", "git", "init", "--colocate")
+			} else {
+				cmd = exec.Command("jj", "git", "init")
+			}
 
-		if err := cmd.Run(); err != nil {
-			return InitErrorMsg{err}
+			if err := cmd.Run(); err != nil {
+				return InitErrorMsg{err}
+			}
 		}
 
 		if err := os.WriteFile("INIT", nil, 0o600); err != nil {
 			return InitErrorMsg{err}
 		}
 
-		err := jjCommit("Initial commit")
-		if err != nil {
+		if err := jjCommit("Initial commit"); err != nil {
 			return InitErrorMsg{err}
+		}
+
+		if viper.GetBool("jj.remote.enable") {
+			if err := jjPush(); err != nil {
+				return InitErrorMsg{err}
+			}
 		}
 
 		return InitDoneMsg{}
