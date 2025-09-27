@@ -18,7 +18,6 @@ jobs:
 
   # Trusted builder.
   build:
-    runs-on: ubuntu-latest
     permissions:
       id-token: write # To sign the provenance.
       contents: write # To upload assets to release.
@@ -32,9 +31,7 @@ jobs:
         arch:
           - amd64
           - arm64
-    steps:
-      - name: Build with SLSA go releaser
-        uses: slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@v2.1.0
-        with:
-          go-version: stable
-          config-file: .slsa-goreleaser/${{matrix.os}}-${{matrix.arch}}.yaml
+    uses: slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@v2.1.0
+    with:
+      go-version: stable
+      config-file: .slsa-goreleaser/${{matrix.os}}-${{matrix.arch}}.yaml
