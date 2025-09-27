@@ -18,6 +18,7 @@ jobs:
 
   # Trusted builder.
   build:
+    environment: release
     permissions:
       id-token: write # To sign the provenance.
       contents: write # To upload assets to release.
