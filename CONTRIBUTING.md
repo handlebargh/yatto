@@ -63,7 +63,7 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 
 3. Create a new branch:
 
-    ```bash
+    ```shell
     git checkout -b feat/my-new-feature
     ```
 
@@ -71,7 +71,7 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 
 5. Lint and format before committing - all code must pass golangci-lint:
 
-    ```bash
+    ```shell
     make lint
     make fmt
     ```
@@ -80,7 +80,7 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 
 6. Run the test suite before committing:
 
-    ```bash
+    ```shell
     make test
     ```
 
