@@ -6,3 +6,5 @@ env:
 goos: darwin
 goarch: amd64
 binary: yatto-{{ .Os }}-{{ .Arch }}
+ldflags:
+  - "-s -w"
