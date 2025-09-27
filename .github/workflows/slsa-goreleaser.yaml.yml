@@ -1,0 +1,39 @@
+name: SLSA go releaser
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "*"
+
+permissions: read-all
+
+jobs:
+  args:
+    runs-on: ubuntu-latest
+    steps:
+      - id: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+  # Trusted builder.
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # To sign the provenance.
+      contents: write # To upload assets to release.
+      actions: read # To read the workflow path.
+    strategy:
+      matrix:
+        os:
+          - linux
+          - windows
+          - darwin
+        arch:
+          - amd64
+          - arm64
+      uses: slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@v2.1.0
+      with:
+        go-version: stable
+        config-file: .slsa-goreleaser/${{matrix.os}}-${{matrix.arch}}.yaml
+

@@ -1,0 +1,8 @@
+version: 1
+
+env:
+  - CGO_ENABLED=0
+
+goos: darwin
+goarch: arm64
+binary: yatto-{{ .Os }}-{{ .Arch }}
