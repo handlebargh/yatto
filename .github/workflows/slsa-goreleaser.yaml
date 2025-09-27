@@ -2,6 +2,7 @@
 name: SLSA go releaser
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "*"
@@ -9,15 +10,6 @@ on:
 permissions: read-all
 
 jobs:
-  args:
-    runs-on: ubuntu-latest
-    steps:
-      - id: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-  # Trusted builder.
   build:
     environment: release
     permissions:
