@@ -61,6 +61,26 @@ eget handlebargh/yatto
 
 Take a look at the [releases](https://github.com/handlebargh/yatto/releases/latest).
 
+### Verifying Release Binaries
+
+All release binaries are published with a [SLSA provenance attestation](https://slsa.dev/) (*.intoto.jsonl files).
+This allows you to cryptographically verify that the binaries were built from this source code,
+using GitHub Actions, and not tampered with.
+
+#### How to verify
+
+1. Install the [verifier](https://github.com/slsa-framework/slsa-verifier).
+2. Download the yatto binary and provenance file.
+3. Verify the binary, e.g.
+
+    ```shell
+    slsa-verifier verify-artifact \
+      --provenance-path ./yatto-linux-amd64.intoto.jsonl \
+      --source-uri github.com/handlebargh/yatto \
+      --source-versioned-tag v0.17.0 \
+      yatto-linux-amd64
+    ```
+
 ## Configuration
 
 When you start the application for the first time,
