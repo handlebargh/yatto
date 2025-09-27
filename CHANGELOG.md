@@ -1,3 +1,19 @@
+## v0.17.0 (2025-09-27)
+
+### Feat
+
+- add jj backend support (#37)
+
+### Fix
+
+- **deps**: update dependencies
+
+### Refactor
+
+- rename storage config struct and fix other linting errors
+- pass a config struct to CreateStorageDir function
+- align form update methods
+
 ## v0.16.0 (2025-09-19)
 
 ### Feat
