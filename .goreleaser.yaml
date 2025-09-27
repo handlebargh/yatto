@@ -46,7 +46,12 @@ changelog:
 signs:
   - cmd: cosign
     signature: "${artifact}.sig"
-    args: ["sign-blob", "--oidc-issuer=https://token.actions.githubusercontent.com", "--output-signature=${signature}", "${artifact}"]
+    args:
+      - "sign-blob"
+      - "--oidc-issuer=https://token.actions.githubusercontent.com"
+      - "--output-signature=${signature}"
+      - "--yes"
+      - "${artifact}"
     artifacts: checksum
 
 release:
