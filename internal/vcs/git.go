@@ -55,9 +55,14 @@ func gitInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		err := gitCommit("INIT", "Initial commit")
-		if err != nil {
+		if err := gitCommit("INIT", "Initial commit"); err != nil {
 			return InitErrorMsg{err}
+		}
+
+		if viper.GetBool("git.remote.enable") {
+			if err := gitPush(); err != nil {
+				return InitErrorMsg{err}
+			}
 		}
 
 		return InitDoneMsg{}

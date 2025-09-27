@@ -81,7 +81,7 @@ func CreateConfigFile(set Settings) error {
 			set.Input,
 			set.Output,
 			fmt.Sprintf("Create config file as %s? [y|N]: ", path),
-			"yes", "y", "Y",
+			"yes", "y",
 		)
 		if errors.Is(err, helpers.ErrUnexpectedInput) {
 			return ErrUserAborted
@@ -114,7 +114,7 @@ func CreateConfigFile(set Settings) error {
 				set.Input,
 				set.Output,
 				"Do you want to colocate the jj repository? [y|N]: ",
-				"yes", "y", "Y",
+				"yes", "y",
 			)
 			if err == nil {
 				viper.Set("jj.colocate", true)

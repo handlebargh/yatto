@@ -131,6 +131,7 @@ type spinnerModel struct {
 func (m spinnerModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
+		vcs.InitCmd(),
 		vcs.PullCmd(),
 	)
 }

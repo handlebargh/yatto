@@ -58,9 +58,14 @@ func jjInitCmd() tea.Cmd {
 			return InitErrorMsg{err}
 		}
 
-		err := jjCommit("Initial commit")
-		if err != nil {
+		if err := jjCommit("Initial commit"); err != nil {
 			return InitErrorMsg{err}
+		}
+
+		if viper.GetBool("jj.remote.enable") {
+			if err := jjPush(); err != nil {
+				return InitErrorMsg{err}
+			}
 		}
 
 		return InitDoneMsg{}
