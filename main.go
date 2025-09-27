@@ -26,6 +26,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -36,10 +37,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/config"
-	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/models"
 	"github.com/handlebargh/yatto/internal/printer"
 	"github.com/handlebargh/yatto/internal/storage"
+	"github.com/handlebargh/yatto/internal/vcs"
 	"github.com/spf13/viper"
 )
 
@@ -130,7 +131,7 @@ type spinnerModel struct {
 func (m spinnerModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
-		git.PullCmd(),
+		vcs.PullCmd(),
 	)
 }
 
@@ -148,15 +149,15 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
-	case git.PullDoneMsg:
+	case vcs.PullDoneMsg:
 		return m, tea.Quit
 
-	case git.PullErrorMsg:
+	case vcs.PullErrorMsg:
 		m.err = msg.Err
 		return m, nil
 
-	case git.PullNoInitMsg:
-		m.err = git.ErrorNoInit
+	case vcs.PullNoInitMsg:
+		m.err = vcs.ErrorNoInit
 		return m, nil
 
 	case tea.KeyMsg:
@@ -178,7 +179,7 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m spinnerModel) View() string {
 	var content string
 	if m.err != nil {
-		if errors.Is(m.err, git.ErrorNoInit) {
+		if errors.Is(m.err, vcs.ErrorNoInit) {
 			content = lipgloss.NewStyle().Foreground(red).Bold(true).Render("Error ") +
 				m.err.Error()
 		} else {
@@ -204,9 +205,19 @@ func (m spinnerModel) View() string {
 func initConfig(home string, configPath *string) {
 	viper.SetDefault("storage.path", filepath.Join(home, ".yatto"))
 
+	// vcs
+	viper.SetDefault("vcs.backend", "git")
+
+	// Git
 	viper.SetDefault("git.default_branch", "main")
 	viper.SetDefault("git.remote.enable", false)
 	viper.SetDefault("git.remote.name", "origin")
+
+	// jj
+	viper.SetDefault("jj.default_branch", "main")
+	viper.SetDefault("jj.remote.enable", false)
+	viper.SetDefault("jj.remote.name", "origin")
+	viper.SetDefault("jj.remote.colocate", false)
 
 	// colors
 	viper.SetDefault("colors.red_light", "#FE5F86")
@@ -261,15 +272,44 @@ func main() {
 	}
 
 	initConfig(home, configPath)
-	config.CreateConfigFile(home)
+	setCfg := config.Settings{
+		ConfigPath: *configPath,
+		Home:       home,
+		Input:      os.Stdin,
+		Output:     os.Stdout,
+		Exit:       os.Exit,
+	}
 
-	storageConfig := storage.Config{
+	if err := config.CreateConfigFile(setCfg); err != nil {
+		if errors.Is(err, config.ErrUserAborted) {
+			os.Exit(0)
+		}
+		log.Fatalf("failed to create config: %v", err)
+	}
+
+	// Enforce valid vcs backend
+	switch viper.GetString("vcs.backend") {
+	case "git":
+		break
+	case "jj":
+		break
+	default:
+		panic(fmt.Errorf("unknown vcs backend: %s", viper.GetString("vcs.backend")))
+	}
+
+	setStorage := storage.Settings{
 		Path:   viper.GetString("storage.path"),
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
+		Input:  os.Stdin,
+		Output: os.Stdout,
 		Exit:   os.Exit,
 	}
-	storage.CreateStorageDir(storageConfig)
+
+	if err := storage.CreateStorageDir(setStorage); err != nil {
+		if errors.Is(err, storage.ErrUserAborted) {
+			os.Exit(0)
+		}
+		log.Fatalf("failed to create storage directory: %v", err)
+	}
 
 	// Print task list without pulling first.
 	if *printFlag && !*pullFlag {
@@ -277,7 +317,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if viper.GetBool("git.remote.enable") {
+	if viper.GetBool("git.remote.enable") || viper.GetBool("jj.remote.enable") {
 		s := spinner.New()
 		s.Spinner = spinner.Dot
 		s.Style = s.Style.

@@ -3,7 +3,7 @@
 **yatto** is a terminal-based to-do application built with
 [Bubble Tea](https://github.com/charmbracelet/bubbletea). It stores each task as
 a separate JSON file on your filesystem and manages the
-task directory as a Git repository for versioning, synchronization and collaboration.
+task directory as a Git or Jujutsu repository for versioning, synchronization and collaboration.
 
 <img alt="yatto demo" src="docs/demo.gif" />
 
@@ -11,7 +11,7 @@ task directory as a Git repository for versioning, synchronization and collabora
 
 - **TUI-based** interface powered by the Bubble Tea framework
 - **Local file storage**: Each task is stored as an individual JSON file for easy inspection and portability
-- **Git integration**: Initializes a Git repository in your task directory for:
+- **VCS integration**: Initializes a Git or Jujutsu repository in your task directory for:
   - Full version history of all tasks
   - Safe collaboration and backup
   - Sync across machines
@@ -31,26 +31,29 @@ task directory as a Git repository for versioning, synchronization and collabora
 
 ## Requirements
 
+You need to have at least one of the supported version control systems installed:
+
 - Git
+- Jujutsu (jj)
 
 ## Installation
 
 ### Go
 
-```bash
+```shell
 go install github.com/handlebargh/yatto@latest
 ```
 
 ### [Homebrew](https://brew.sh/)
 
-```bash
+```shell
 brew tap handlebargh/yatto
 brew install yatto
 ```
 
 ### [Eget](https://github.com/zyedidia/eget)
 
-```bash
+```shell
 eget handlebargh/yatto
 ```
 
@@ -60,54 +63,21 @@ Take a look at the [releases](https://github.com/handlebargh/yatto/releases/late
 
 ## Configuration
 
-A configuration file is automatically created at `${HOME}/.config/yatto/config.toml`
+When you start the application for the first time,
+it will ask you to set up a configuration file located at: `${HOME}/.config/yatto/config.toml`
 
-By default, the following settings are written to the file and may be edited.
+See [examples/config.toml](examples/config.toml) as a reference with all available configuration values.
 
-```toml
-[colors]
-badge_text_dark = '#000000'
-badge_text_light = '#000000'
-blue_dark = '#1e90ff'
-blue_light = '#1e90ff'
-green_dark = '#02BF87'
-green_light = '#02BA84'
-indigo_dark = '#7571F9'
-indigo_light = '#5A56E0'
-orange_dark = '#FFA336'
-orange_light = '#FFB733'
-red_dark = '#FE5F86'
-red_light = '#FE5F86'
-vividred_dark = '#FE134D'
-vividred_light = '#FE134D'
-yellow_dark = '#CCCC00'
-yellow_light = '#CCCC00'
-
-[colors.form]
-theme = 'Base16'
-
-[git]
-default_branch = 'main'
-
-[git.remote]
-enable = false
-name = 'origin'
-
-[storage]
-# replace with your actual home directory
-# or any other path you'd like to use
-path = '/home/foo/.yatto'
-```
-
-A config file may also be supplied by adding the `-config` flag:
-
-```bash
-yatto -config $PATH_TO_CONFIG_FILE
-```
+> [!TIP]
+> Alternatively, a config file may also be supplied by adding the `-config` flag:
+>
+> ```bash
+> yatto -config $PATH_TO_CONFIG_FILE
+> ```
 
 ### Colors and themes
 
-Don't like the default colors? Just change them.
+User interface colors are customizable.
 Any color value supported by [lipgloss](https://github.com/charmbracelet/lipgloss?tab=readme-ov-file#colors) will be accepted.
 
 Every color accepts a light and a dark value for either light or dark terminal themes.
@@ -133,36 +103,56 @@ theme = 'Catppuccin'
 
 ## Task Storage
 
-Tasks are saved in a directory like:
+At first startup, the application will also ask whether to create a task storage directory.
+By default, tasks are stored in:
 
 ```bash
 ${HOME}/.yatto
 ```
 
-Each task is a simple JSON file, while projects are directories holding their associated tasks.
+Each task is represented as a simple JSON file, and projects are stored as directories
+containing their related tasks.
 
-You can change the task storage directory in the config file.
+The task storage location can be customized in the config file.
 
-### Git remotes
+### VCS remotes
 
 To set up a remote
 
-1. Create a new repository on the Git host of your choice. The repository must be empty, meaning that nothing must be committed at creation (uncheck README, .gitignore and license files).
+1. Create a new repository on the Git host of your choice.
+   The repository must be empty, meaning that nothing must be committed at creation
+   (uncheck README, .gitignore and license files).
 
 2. Run yatto at least once to create the task storage directory.
 
 3. Add the remote and push the local repository.
 
-    ```bash
+    #### Git
+    ```shell
     cd ${HOME}/.yatto
-    git remote add origin $GIT_REMOTE_URL
+    git remote add origin <GIT_REMOTE_URL>
     git push -u origin main
     ```
 
-4. Enable `git.remote` in the config.
+    #### Jujutsu
+    ```shell
+    cd ${HOME}/.yatto
+    jj git remote add origin <GIT_REMOTE_URL>
+    jj bookmark create -r @- main
+    jj git push --allow-new
+    ```
 
+4. Enable remote in the config.
+
+    #### Git
     ```toml
     [git.remote]
+    enable = true
+    ```
+
+    #### Jujutsu
+     ```toml
+    [jj.remote]
     enable = true
     ```
 
@@ -170,7 +160,7 @@ To set up a remote
 
 You can print a static list of your tasks to standard output:
 
-```bash
+```shell
 yatto -print
 
 # Limit to any project you want
@@ -187,7 +177,7 @@ yatto -print -regex frontend
 If you want to print this list whenever you run an interactive shell,
 open your `~/.bashrc` (or `~/.zshrc`) and add the following snippet:
 
-```bash
+```shell
 # Print yatto task list only in interactive shells
 case $- in
     *i*)
@@ -211,5 +201,5 @@ Contributions, feedback, and ideas are welcome! See [how to contribute](CONTRIBU
 
 ## Acknowledgements
 
-Huge thanks to the [Charm](https://charm.land/) team for their incredible open-source libraries,
-which power much of this project.
+Huge thanks to the [Charm](https://github.com/charmbracelet) team and their contributors
+for their incredible open-source libraries, which power much of this project.

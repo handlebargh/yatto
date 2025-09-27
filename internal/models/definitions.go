@@ -48,8 +48,8 @@ const (
 	// modeConfirmDelete indicates the UI is prompting for delete confirmation.
 	modeConfirmDelete
 
-	// modeGitError indicates a Git-related error has occurred and should be displayed.
-	modeGitError
+	// modeBackendError indicates a backend-related error has occurred and should be displayed.
+	modeBackendError
 )
 
 var (
@@ -62,12 +62,12 @@ var (
 				Background(colors.Green()).
 				Padding(0, 1)
 
-		// textStyleGreen renders strings using the green foreground color.
+	// textStyleGreen renders strings using the green foreground color.
 	textStyleGreen = lipgloss.NewStyle().
 			Foreground(colors.Green()).
 			Render
 
-		// textStyleRed renders strings using the red foreground color.
+	// textStyleRed renders strings using the red foreground color.
 	textStyleRed = lipgloss.NewStyle().
 			Foreground(colors.Red()).
 			Render

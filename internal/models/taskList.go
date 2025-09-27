@@ -26,6 +26,7 @@ import (
 	"io"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -35,9 +36,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/colors"
-	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
+	"github.com/handlebargh/yatto/internal/vcs"
 )
 
 const taskEntryLength = 53
@@ -354,12 +355,12 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reset the progress bar.
 		return m, m.progress.SetPercent(0.0)
 
-	case git.CommitDoneMsg:
+	case vcs.CommitDoneMsg:
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
 		return m, m.progress.SetPercent(1.0)
 
-	case git.CommitErrorMsg:
+	case vcs.CommitErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
@@ -424,7 +425,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						m.list.SelectedItem().(*items.Task).DeleteTaskFromFS(*m.project),
-						git.CommitCmd(filepath.Join(m.project.ID, m.list.SelectedItem().(*items.Task).ID+".json"),
+						vcs.CommitCmd(filepath.Join(m.project.ID, m.list.SelectedItem().(*items.Task).ID+".json"),
 							"delete: "+m.list.SelectedItem().(*items.Task).Title),
 					)
 					m.status = ""
@@ -491,7 +492,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if t.InProgress {
 						cmds = append(cmds,
 							t.WriteTaskJSON(json, *m.project, "start"),
-							git.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "starting progress: "+t.Title),
+							vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "starting progress: "+t.Title),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
@@ -499,7 +500,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					cmds = append(cmds,
 						t.WriteTaskJSON(json, *m.project, "stop"),
-						git.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "stopping progress: "+t.Title),
+						vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "stopping progress: "+t.Title),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
@@ -518,7 +519,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if t.Completed {
 						cmds = append(cmds,
 							t.WriteTaskJSON(json, *m.project, "complete"),
-							git.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "complete: "+t.Title),
+							vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "complete: "+t.Title),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
@@ -526,7 +527,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					cmds = append(cmds,
 						t.WriteTaskJSON(json, *m.project, "reopen"),
-						git.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "reopen: "+t.Title),
+						vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "reopen: "+t.Title),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
@@ -599,13 +600,17 @@ func (m taskListModel) View() string {
 		)
 	}
 
-	// Display git error view
-	if m.mode == modeGitError {
-		content := "An error occurred while executing git:\n\n" +
-			m.err.Error() + "\n\n" +
-			"Please commit manually!"
+	// Display VCS error view
+	if m.mode == modeBackendError {
+		var e strings.Builder
 
-		return centeredStyle.Render(content)
+		e.WriteString("An error occurred during a backend operation:")
+		e.WriteString("\n\n")
+		e.WriteString(m.err.Error())
+		e.WriteString("\n\n")
+		e.WriteString("Please commit manually!")
+
+		return centeredStyle.Render(e.String())
 	}
 
 	// Display list view.

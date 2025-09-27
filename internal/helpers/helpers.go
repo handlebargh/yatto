@@ -23,8 +23,11 @@
 package helpers
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -35,6 +38,9 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/spf13/viper"
 )
+
+// ErrUnexpectedInput is returned when a user's input is unexpected.
+var ErrUnexpectedInput = errors.New("unexpected input")
 
 // ReadProjectsFromFS reads all project directories from the configured storage path.
 // It deserializes each project's `project.json` file into an items.Project object.
@@ -49,7 +55,7 @@ func ReadProjectsFromFS() []items.Project {
 
 	var projects []items.Project
 	for _, entry := range entries {
-		if !entry.IsDir() || entry.Name() == ".git" {
+		if !entry.IsDir() || entry.Name() == ".git" || entry.Name() == ".jj" {
 			continue
 		}
 
@@ -165,4 +171,57 @@ func GetColorCode(color string) lipgloss.AdaptiveColor {
 	default:
 		return colors.Blue()
 	}
+}
+
+// PromptUser writes the given message to the provided output stream and reads a
+// single line of input from the provided input stream. The input is trimmed of
+// surrounding whitespace before being validated.
+//
+// If no expectedInput values are provided, the trimmed input is returned as-is.
+// If one or more expectedInput values are provided, the function only accepts
+// input that matches one of them. If the input does not match any allowed
+// value, ErrUnexpectedInput is returned.
+//
+// If writing to the output stream or reading from the input stream fails, an
+// error is returned.
+//
+// Parameters:
+//   - input: the reader from which user input is read.
+//   - output: the writer to which the prompt message and error messages are written.
+//   - message: the prompt message displayed to the user.
+//   - expectedInput: an optional list of allowed input values.
+//
+// Returns the user’s validated input string and an error, if any occurred.
+func PromptUser(input io.Reader, output io.Writer, message string, expectedInput ...string) (string, error) {
+	reader := bufio.NewReader(input)
+
+	_, err := fmt.Fprint(output, message)
+	if err != nil {
+		return "", err
+	}
+
+	userInput, err := reader.ReadString('\n')
+	if err != nil {
+		_, err := fmt.Fprintln(output, "An error occurred while reading input. Please try again", err)
+		if err != nil {
+			return "", err
+		}
+
+		return "", err
+	}
+
+	userInput = strings.TrimSpace(userInput)
+
+	if len(expectedInput) == 0 {
+		return userInput, nil
+	}
+
+	for _, allowed := range expectedInput {
+		userInput = strings.TrimSpace(userInput)
+		if userInput == allowed {
+			return userInput, nil
+		}
+	}
+
+	return "", ErrUnexpectedInput
 }

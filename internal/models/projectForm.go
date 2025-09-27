@@ -30,9 +30,9 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
-	"github.com/handlebargh/yatto/internal/git"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
+	"github.com/handlebargh/yatto/internal/vcs"
 )
 
 // projectFormModel defines the Bubble Tea model for a form-based interface
@@ -195,7 +195,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.listModel.progress.SetPercent(0.10),
 			tickCmd(),
 			m.project.WriteProjectJSON(json, action),
-			git.CommitCmd(
+			vcs.CommitCmd(
 				filepath.Join(m.project.ID, "project.json"),
 				fmt.Sprintf("%s: %s", action, m.project.Title),
 			),
@@ -248,7 +248,15 @@ func (m projectFormModel) View() string {
 		footer = m.appErrorBoundaryView("")
 	}
 
-	return s.Base.Render(header + "\n" + form + "\n\n" + footer)
+	var b strings.Builder
+
+	b.WriteString(header)
+	b.WriteString("\n")
+	b.WriteString(form)
+	b.WriteString("\n\n")
+	b.WriteString(footer)
+
+	return s.Base.Render(b.String())
 }
 
 // errorView returns a string representation of validation error messages.

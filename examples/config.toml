@@ -19,10 +19,22 @@ yellow_light = "#CCCC00"
 [colors.form]
 theme = "Base16"
 
+[vcs]
+# allowed values: "git", "jj"
+backend = "git"
+
 [git]
 default_branch = "main"
 
 [git.remote]
+enable = false
+name = "origin"
+
+[jj]
+default_branch = "main"
+colocate = false
+
+[jj.remote]
 enable = false
 name = "origin"
 
