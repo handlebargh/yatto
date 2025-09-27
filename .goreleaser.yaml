@@ -49,6 +49,7 @@ signs:
     args:
       - sign-blob
       - --oidc-issuer=https://token.actions.githubusercontent.com
+      - --output-signature=${signature}
       - --bundle=${signature}.bundle
       - --yes
       - "${artifact}"
