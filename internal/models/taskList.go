@@ -58,6 +58,7 @@ type taskListKeyMap struct {
 	goBackVim        key.Binding
 	prevPage         key.Binding
 	nextPage         key.Binding
+	toggleSelect     key.Binding
 }
 
 // newTaskListKeyMap initializes and returns a new key map for task list actions.
@@ -115,12 +116,17 @@ func newTaskListKeyMap() *taskListKeyMap {
 			key.WithKeys("right", "pgdown", "f", "d"),
 			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
+		toggleSelect: key.NewBinding(
+			key.WithKeys(" "),
+			key.WithHelp("space", "toggle select"),
+		),
 	}
 }
 
 // customTaskDelegate is a custom list delegate for rendering task items.
 type customTaskDelegate struct {
 	list.DefaultDelegate
+	parent *taskListModel
 }
 
 // Render draws a single task item within the task list.
@@ -178,7 +184,17 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		labelsStyle = labelsStyle.MarginLeft(1)
 	}
 
-	left := titleStyle.Render(taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
+	// Check if item is selected
+	_, selected := d.parent.selected[index]
+
+	marker := ""
+	if selected {
+		marker = lipgloss.NewStyle().
+			Foreground(colors.Red()).
+			Render("➜ ")
+	}
+
+	left := titleStyle.Render(marker+taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
 		labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength))
 
 	right := priorityValueStyle.Render(taskItem.Priority)
@@ -255,6 +271,7 @@ type taskListModel struct {
 	waitingAfterDone bool
 	status           string
 	width, height    int
+	selected         map[int]struct{}
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
@@ -275,9 +292,17 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 		Background(color).
 		Padding(0, 1)
 
+	m := taskListModel{
+		project:      project,
+		projectModel: projectModel,
+		keys:         listKeys,
+		selected:     make(map[int]struct{}),
+		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
+	}
+
 	itemList := list.New(
 		listItems,
-		customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()},
+		customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate(), parent: &m},
 		0,
 		0,
 	)
@@ -309,16 +334,13 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 			listKeys.sortByDueDate,
 			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
+			listKeys.toggleSelect,
 		}
 	}
 
-	return taskListModel{
-		list:         itemList,
-		project:      project,
-		projectModel: projectModel,
-		keys:         listKeys,
-		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
-	}
+	m.list = itemList
+
+	return m
 }
 
 // Init initializes the taskListModel and returns an initial command.
@@ -571,6 +593,18 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				formModel := newTaskFormModel(task, &m, false)
 				return formModel, tea.WindowSize()
+
+			case key.Matches(msg, m.keys.toggleSelect):
+				if m.list.SelectedItem() != nil {
+					i := m.list.GlobalIndex()
+
+					if _, ok := m.selected[i]; ok {
+						delete(m.selected, i)
+					} else {
+						m.selected[i] = struct{}{}
+					}
+					return m, nil
+				}
 			}
 		default:
 			panic("unhandled default case in task list")
