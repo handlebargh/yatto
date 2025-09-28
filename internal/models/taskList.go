@@ -433,10 +433,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(0.0)
 
 	case items.TaskDeleteDoneMsg:
-		for key, task := range m.selected {
-			if index := task.FindListIndexByID(m.list.Items()); index >= 0 {
-				m.list.RemoveItem(index)
-				delete(m.selected, key)
+		for i, task := range m.selected {
+			if idx := task.FindListIndexByID(m.list.Items()); idx >= 0 {
+				m.list.RemoveItem(idx)
+				delete(m.selected, i)
 				m.status = "🗑  Task deleted"
 
 				return m, m.progress.SetPercent(0.5)
