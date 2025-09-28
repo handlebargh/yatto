@@ -73,9 +73,10 @@ This allows you to verify the integrity and authenticity of the binaries.
 
     ```shell
     cosign verify-blob \
-      --oidc-issuer https://token.actions.githubusercontent.com \
-      --signature path/to/checksums.txt.sig \
-      path/to/checksums.txt
+      --bundle /path/to/checksums.txt.sig.bundle \
+      --certificate-identity-regexp "https://github.com/handlebargh/yatto/.*" \
+      --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+      /path/to/checksums.txt
     ```
 
 3. Check that the binaries match the signed checksums
