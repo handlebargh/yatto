@@ -62,4 +62,4 @@ release:
   prerelease: auto
   make_latest: true
   extra_files:
-    - dist/*.bundle
+    - glob: dist/*.bundle
