@@ -191,7 +191,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if selected {
 		marker = lipgloss.NewStyle().
 			Foreground(colors.Red()).
-			Render("➜ ")
+			Render("⏺ ")
 	}
 
 	left := titleStyle.Render(marker+taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
@@ -271,7 +271,7 @@ type taskListModel struct {
 	waitingAfterDone bool
 	status           string
 	width, height    int
-	selected         map[int]struct{}
+	selected         map[int]*items.Task
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
@@ -296,7 +296,7 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 		project:      project,
 		projectModel: projectModel,
 		keys:         listKeys,
-		selected:     make(map[int]struct{}),
+		selected:     make(map[int]*items.Task),
 		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
 	}
 
@@ -433,6 +433,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(0.0)
 
 	case items.TaskDeleteDoneMsg:
+		for key, task := range m.selected {
+			if index := task.FindListIndexByID(m.list.Items()); index >= 0 {
+				m.list.RemoveItem(index)
+				delete(m.selected, key)
+				m.status = "🗑  Task deleted"
+
+				return m, m.progress.SetPercent(0.5)
+			}
+		}
+
 		selected := m.list.SelectedItem()
 		if selected != nil {
 			m.list.RemoveItem(m.list.Index())
@@ -456,13 +466,33 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
+				if len(m.selected) > 0 {
+					var taskNames, taskPaths []string
+					var deleteCmds []tea.Cmd
+					for _, item := range m.selected {
+						taskNames = append(taskNames, item.Title)
+						taskPaths = append(taskPaths, filepath.Join(m.project.ID, item.ID+".json"))
+						deleteCmds = append(deleteCmds, item.DeleteTaskFromFS(*m.project))
+					}
+
+					message := fmt.Sprintf("delete: %d task(s)\n\n- %s", len(taskNames), strings.Join(taskNames, "\n- "))
+					cmds = append(cmds, m.progress.SetPercent(0.10), tickCmd())
+					cmds = append(cmds, deleteCmds...)
+					cmds = append(cmds, vcs.CommitCmd(message, taskPaths...))
+
+					m.status = ""
+					m.mode = modeNormal
+					return m, tea.Batch(cmds...)
+				}
+
 				if m.list.SelectedItem() != nil {
 					cmds = append(cmds,
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						m.list.SelectedItem().(*items.Task).DeleteTaskFromFS(*m.project),
-						vcs.CommitCmd(filepath.Join(m.project.ID, m.list.SelectedItem().(*items.Task).ID+".json"),
-							"delete: "+m.list.SelectedItem().(*items.Task).Title),
+						vcs.CommitCmd("delete: "+m.list.SelectedItem().(*items.Task).Title,
+							filepath.Join(m.project.ID, m.list.SelectedItem().(*items.Task).ID+".json"),
+						),
 					)
 					m.status = ""
 				}
@@ -528,7 +558,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if t.InProgress {
 						cmds = append(cmds,
 							t.WriteTaskJSON(json, *m.project, "start"),
-							vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "starting progress: "+t.Title),
+							vcs.CommitCmd("starting progress: "+t.Title,
+								filepath.Join(m.project.ID, t.ID+".json")),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
@@ -536,7 +567,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					cmds = append(cmds,
 						t.WriteTaskJSON(json, *m.project, "stop"),
-						vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "stopping progress: "+t.Title),
+						vcs.CommitCmd("stopping progress: "+t.Title,
+							filepath.Join(m.project.ID, t.ID+".json")),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
@@ -555,7 +587,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if t.Completed {
 						cmds = append(cmds,
 							t.WriteTaskJSON(json, *m.project, "complete"),
-							vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "complete: "+t.Title),
+							vcs.CommitCmd("complete: "+t.Title,
+								filepath.Join(m.project.ID, t.ID+".json")),
 						)
 						m.status = ""
 						return m, tea.Batch(cmds...)
@@ -563,7 +596,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					cmds = append(cmds,
 						t.WriteTaskJSON(json, *m.project, "reopen"),
-						vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "reopen: "+t.Title),
+						vcs.CommitCmd("reopen: "+t.Title,
+							filepath.Join(m.project.ID, t.ID+".json")),
 					)
 					m.status = ""
 					return m, tea.Batch(cmds...)
@@ -596,12 +630,13 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.toggleSelect):
 				if m.list.SelectedItem() != nil {
+					t := m.list.SelectedItem().(*items.Task)
 					i := m.list.GlobalIndex()
 
 					if _, ok := m.selected[i]; ok {
 						delete(m.selected, i)
 					} else {
-						m.selected[i] = struct{}{}
+						m.selected[i] = t
 					}
 					return m, nil
 				}
@@ -640,6 +675,14 @@ func (m taskListModel) View() string {
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
+		// Check bulk selection
+		if len(m.selected) > 0 {
+			return centeredStyle.Render(
+				fmt.Sprintf("Delete %d task(s)?\n\n", len(m.selected)) +
+					textStyleRed("[y] Yes") + "    " + textStyleGreen("[n] No"),
+			)
+		}
+
 		selected := m.list.SelectedItem().(*items.Task)
 
 		return centeredStyle.Render(

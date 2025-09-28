@@ -196,8 +196,8 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			tickCmd(),
 			m.project.WriteProjectJSON(json, action),
 			vcs.CommitCmd(
-				filepath.Join(m.project.ID, "project.json"),
 				fmt.Sprintf("%s: %s", action, m.project.Title),
+				filepath.Join(m.project.ID, "project.json"),
 			),
 		)
 

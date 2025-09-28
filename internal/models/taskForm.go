@@ -287,8 +287,8 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				tickCmd(),
 				m.task.WriteTaskJSON(json, *m.listModel.project, action),
 				vcs.CommitCmd(
-					taskPath,
 					fmt.Sprintf("%s: %s", action, m.task.Title),
+					taskPath,
 				),
 			)
 

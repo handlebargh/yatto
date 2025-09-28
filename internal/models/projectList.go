@@ -363,8 +363,8 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.progress.SetPercent(0.10),
 						tickCmd(),
 						m.list.SelectedItem().(*items.Project).DeleteProjectFromFS(),
-						vcs.CommitCmd(m.list.SelectedItem().(*items.Project).ID,
-							"delete: "+m.list.SelectedItem().(*items.Project).Title),
+						vcs.CommitCmd("delete: "+m.list.SelectedItem().(*items.Project).Title,
+							m.list.SelectedItem().(*items.Project).ID),
 					)
 					m.status = ""
 				}

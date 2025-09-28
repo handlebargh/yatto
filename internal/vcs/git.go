@@ -74,9 +74,9 @@ func gitInitCmd() tea.Cmd {
 // gitCommitCmd stages and commits the specified file with the given message.
 // If Git remote support is enabled, it pulls from the remote before committing.
 // Returns a CommitDoneMsg or CommitErrorMsg.
-func gitCommitCmd(file, message string) tea.Cmd {
+func gitCommitCmd(message string, files ...string) tea.Cmd {
 	return func() tea.Msg {
-		if output, err := gitCommit(file, message); err != nil {
+		if output, err := gitCommit(message, files...); err != nil {
 			return CommitErrorMsg{string(output), err}
 		}
 
@@ -130,11 +130,10 @@ func gitPull() ([]byte, error) {
 // If there are no changes, it returns nil. If remote is enabled,
 // it pushes the commit to the configured remote and branch.
 // Returns an error if any Git command fails.
-func gitCommit(file, message string) ([]byte, error) {
-	addCmd := exec.Command("git",
-		"add",
-		file,
-	)
+func gitCommit(message string, files ...string) ([]byte, error) {
+	args := append([]string{"add"}, files...)
+
+	addCmd := exec.Command("git", args...)
 	addCmd.Dir = viper.GetString("storage.path")
 	output, err := addCmd.CombinedOutput()
 	if err != nil {
