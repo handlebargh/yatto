@@ -129,7 +129,12 @@ func jjFetch() error {
 		return err
 	}
 
-	if err := exec.Command("jj", "git", "fetch").Run(); err != nil {
+	if err := exec.Command("jj",
+		"git",
+		"fetch",
+		viper.GetString("jj.remote.name"),
+		viper.GetString("jj.default_branch"),
+	).Run(); err != nil {
 		return err
 	}
 
@@ -145,6 +150,8 @@ func jjRebase() error {
 
 	if err := exec.Command("jj",
 		"rebase",
+		"--branch",
+		viper.GetString("jj.default_branch")+"@"+viper.GetString("jj.remote.name"),
 		"--source",
 		"@",
 		"--destination",
@@ -221,7 +228,8 @@ func jjPush() error {
 		"--remote",
 		viper.GetString("jj.remote.name"),
 		"--bookmark",
-		viper.GetString("jj.default_branch")).Run(); err != nil {
+		viper.GetString("jj.default_branch"),
+	).Run(); err != nil {
 		return err
 	}
 
