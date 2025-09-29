@@ -88,6 +88,10 @@ func jjCommitCmd(message string) tea.Cmd {
 				return PullErrorMsg{err}
 			}
 
+			if err := jjRebase(); err != nil {
+				return PullErrorMsg{err}
+			}
+
 			if err := jjPush(); err != nil {
 				return PushErrorMsg{err}
 			}
