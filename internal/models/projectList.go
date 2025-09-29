@@ -143,7 +143,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	if selected {
 		marker = lipgloss.NewStyle().
 			Foreground(colors.Red()).
-			Render("⏺ ")
+			Render("⟹  ")
 	}
 
 	left := listItemStyle.Render(marker + projectItem.Title + "\n" +

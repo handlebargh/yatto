@@ -191,7 +191,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if selected {
 		marker = lipgloss.NewStyle().
 			Foreground(colors.Red()).
-			Render("⏺ ")
+			Render("⟹  ")
 	}
 
 	left := titleStyle.Render(marker+taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
