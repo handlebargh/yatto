@@ -63,7 +63,7 @@ func newProjectListKeyMap() *projectListKeyMap {
 		),
 		deleteProject: key.NewBinding(
 			key.WithKeys("D"),
-			key.WithHelp("D", "delete project"),
+			key.WithHelp("D", "delete selected projects"),
 		),
 		chooseProject: key.NewBinding(
 			key.WithKeys("enter", "l"),
@@ -91,7 +91,7 @@ func newProjectListKeyMap() *projectListKeyMap {
 		),
 		toggleSelect: key.NewBinding(
 			key.WithKeys(" "),
-			key.WithHelp("space", "toggle select"),
+			key.WithHelp("space", "select/deselect"),
 		),
 	}
 }
@@ -540,11 +540,11 @@ func (m ProjectListModel) View() string {
 	if m.mode == modeConfirmDelete {
 		if len(m.selectedItems) > 0 {
 			return centeredStyle.Render(
-				fmt.Sprintf("Delete %d project(s)?\n\n", len(m.selectedItems)) +
-					lipgloss.NewStyle().Foreground(colors.Red()).Render("[y] Yes") +
-					"    " +
-					lipgloss.NewStyle().Foreground(colors.Green()).Render("[n] No"),
-			)
+				fmt.Sprintf("Delete %d project(s)?\n\n%s%s%s", len(m.selectedItems),
+					"[y] Yes",
+					"    ",
+					"[n] No",
+				))
 		}
 	}
 
