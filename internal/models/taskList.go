@@ -185,7 +185,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	}
 
 	// Check if item is selected
-	_, selected := d.parent.selected[index]
+	_, selected := d.parent.selectedItems[index]
 
 	marker := ""
 	if selected {
@@ -271,7 +271,7 @@ type taskListModel struct {
 	waitingAfterDone bool
 	status           string
 	width, height    int
-	selected         map[int]*items.Task
+	selectedItems    map[int]*items.Task
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
@@ -293,11 +293,11 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 		Padding(0, 1)
 
 	m := taskListModel{
-		project:      project,
-		projectModel: projectModel,
-		keys:         listKeys,
-		selected:     make(map[int]*items.Task),
-		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
+		project:       project,
+		projectModel:  projectModel,
+		keys:          listKeys,
+		selectedItems: make(map[int]*items.Task),
+		progress:      progress.New(progress.WithGradient("#FFA336", "#02BF87")),
 	}
 
 	itemList := list.New(
@@ -381,8 +381,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case vcs.CommitDoneMsg:
 		// Remove all map entries after successful commit.
-		for k := range m.selected {
-			delete(m.selected, k)
+		for k := range m.selectedItems {
+			delete(m.selectedItems, k)
 		}
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
@@ -438,10 +438,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(0.0)
 
 	case items.TaskDeleteDoneMsg:
-		for i, task := range m.selected {
+		for i, task := range m.selectedItems {
 			if idx := task.FindListIndexByID(m.list.Items()); idx >= 0 {
 				m.list.RemoveItem(idx)
-				delete(m.selected, i)
+				delete(m.selectedItems, i)
 				m.status = "🗑  Task deleted"
 
 				return m, m.progress.SetPercent(0.5)
@@ -464,7 +464,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
-				if len(m.selected) == 0 {
+				if len(m.selectedItems) == 0 {
 
 					m.mode = modeNormal
 					return m, nil
@@ -472,7 +472,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				var taskNames, taskPaths []string
 				var deleteCmds []tea.Cmd
-				for _, item := range m.selected {
+				for _, item := range m.selectedItems {
 					taskNames = append(taskNames, item.Title)
 					taskPaths = append(taskPaths, filepath.Join(m.project.ID, item.ID+".json"))
 					deleteCmds = append(deleteCmds, item.DeleteTaskFromFS(*m.project))
@@ -566,7 +566,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 
 			case key.Matches(msg, m.keys.deleteItem):
-				if len(m.selected) > 0 {
+				if len(m.selectedItems) > 0 {
 					m.mode = modeConfirmDelete
 				} else {
 					cmds = append(cmds, m.list.NewStatusMessage(lipgloss.NewStyle().
@@ -599,10 +599,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					t := m.list.SelectedItem().(*items.Task)
 					i := m.list.GlobalIndex()
 
-					if _, ok := m.selected[i]; ok {
-						delete(m.selected, i)
+					if _, ok := m.selectedItems[i]; ok {
+						delete(m.selectedItems, i)
 					} else {
-						m.selected[i] = t
+						m.selectedItems[i] = t
 					}
 					return m, nil
 				}
@@ -644,23 +644,14 @@ func (m taskListModel) View() string {
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
 		// Check bulk selection
-		if len(m.selected) > 0 {
+		if len(m.selectedItems) > 0 {
 			return centeredStyle.Render(
-				fmt.Sprintf("Delete %d task(s)?\n\n", len(m.selected)) +
+				fmt.Sprintf("Delete %d task(s)?\n\n", len(m.selectedItems)) +
 					lipgloss.NewStyle().Foreground(colors.Red()).Render("[y] Yes") +
 					"    " +
 					lipgloss.NewStyle().Foreground(colors.Green()).Render("[n] No"),
 			)
 		}
-
-		selected := m.list.SelectedItem().(*items.Task)
-
-		return centeredStyle.Render(
-			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title) +
-				lipgloss.NewStyle().Foreground(colors.Red()).Render("[y] Yes") +
-				"    " +
-				lipgloss.NewStyle().Foreground(colors.Green()).Render("[n] No"),
-		)
 	}
 
 	// Display VCS error view
@@ -784,7 +775,7 @@ func (m taskListModel) toggleTasks(
 	commitKind func(*items.Task) string,
 	actionName string,
 ) (taskListModel, []tea.Cmd) {
-	if len(m.selected) == 0 {
+	if len(m.selectedItems) == 0 {
 		return m, []tea.Cmd{
 			m.list.NewStatusMessage(lipgloss.NewStyle().
 				Foreground(colors.Red()).
@@ -795,7 +786,7 @@ func (m taskListModel) toggleTasks(
 	var cmds, writeCmds []tea.Cmd
 	var taskPaths, taskNames []string
 
-	for _, t := range m.selected {
+	for _, t := range m.selectedItems {
 		ok, msg := precondition(t)
 		if !ok {
 			cmds = append(cmds, m.list.NewStatusMessage(lipgloss.NewStyle().
