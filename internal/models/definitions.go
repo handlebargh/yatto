@@ -52,26 +52,8 @@ const (
 	modeBackendError
 )
 
-var (
-	// appStyle defines the base padding for the entire application.
-	appStyle = lipgloss.NewStyle().Padding(1, 2)
-
-	// titleStyleProjects styles the title header for the project list.
-	titleStyleProjects = lipgloss.NewStyle().
-				Foreground(colors.BadgeText()).
-				Background(colors.Green()).
-				Padding(0, 1)
-
-	// textStyleGreen renders strings using the green foreground color.
-	textStyleGreen = lipgloss.NewStyle().
-			Foreground(colors.Green()).
-			Render
-
-	// textStyleRed renders strings using the red foreground color.
-	textStyleRed = lipgloss.NewStyle().
-			Foreground(colors.Red()).
-			Render
-)
+// appStyle defines the base padding for the entire application.
+var appStyle = lipgloss.NewStyle().Padding(1, 2)
 
 // Styles defines a reusable collection of lipgloss styles used in task and project forms.
 type Styles struct {

@@ -33,6 +33,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
+	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/vcs"
@@ -135,7 +136,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
 	if err != nil {
 		m.NewStatusMessage(
-			textStyleRed(
+			lipgloss.NewStyle().Foreground(colors.Red()).Render(
 				fmt.Sprintf("Error gathering task info for project %s", projectItem.Title),
 			),
 		)
@@ -144,15 +145,19 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	var taskDueMessage string
 	if numDueTasks > 0 {
 		if numDueTasks == 1 {
-			taskDueMessage = textStyleRed("1 task due today")
+			taskDueMessage = lipgloss.NewStyle().
+				Foreground(colors.Red()).
+				Render("1 task due today")
 		} else {
-			taskDueMessage = textStyleRed(fmt.Sprintf("%d tasks due today", numDueTasks))
+			taskDueMessage = lipgloss.NewStyle().
+				Foreground(colors.Red()).
+				Render(fmt.Sprintf("%d tasks due today", numDueTasks))
 		}
 	}
 
 	taskTotalCompleteMessage := fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
 	if numCompletedTasks == numTasks {
-		taskTotalCompleteMessage = textStyleGreen(taskTotalCompleteMessage)
+		taskTotalCompleteMessage = lipgloss.NewStyle().Foreground(colors.Green()).Render(taskTotalCompleteMessage)
 	}
 
 	right := listItemInfoStyle.Render(
@@ -212,7 +217,10 @@ func InitialProjectListModel() ProjectListModel {
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("project", "projects")
 	itemList.Title = "Projects"
-	itemList.Styles.Title = titleStyleProjects
+	itemList.Styles.Title = lipgloss.NewStyle().
+		Foreground(colors.BadgeText()).
+		Background(colors.Green()).
+		Padding(0, 1)
 	// Disable the quit keybindings, so we can implement our own.
 	itemList.DisableQuitKeybindings()
 	// Set our own prev/next page keys.
@@ -453,13 +461,15 @@ func (m ProjectListModel) View() string {
 	// Display progress bar at 100%
 	if m.progressDone && m.waitingAfterDone {
 		return centeredStyle.Bold(true).
-			Render(textStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
+			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
+				"\n\n" + m.progress.ViewAs(1.0))
 	}
 
 	// Display progress bar if not at 0%
 	if m.progress.Percent() != 0.0 {
 		return centeredStyle.Bold(true).
-			Render(textStyleGreen(m.status) + "\n\n" + m.progress.View())
+			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
+				"\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.
@@ -468,7 +478,9 @@ func (m ProjectListModel) View() string {
 
 		return centeredStyle.Render(
 			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title) +
-				textStyleRed("[y] Yes") + "    " + textStyleGreen("[n] No"),
+				lipgloss.NewStyle().Foreground(colors.Red()).Render("[y] Yes") +
+				"    " +
+				lipgloss.NewStyle().Foreground(colors.Green()).Render("[n] No"),
 		)
 	}
 
