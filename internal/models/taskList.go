@@ -531,7 +531,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.toggleInProgress):
-				m, cmds := m.toggleTasks(
+				m, cmds = m.toggleTasks(
 					func(t *items.Task) { t.InProgress = !t.InProgress },
 					func(t *items.Task) (bool, string) {
 						if t.Completed {
@@ -551,7 +551,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 
 			case key.Matches(msg, m.keys.toggleComplete):
-				m, cmds := m.toggleTasks(
+				m, cmds = m.toggleTasks(
 					func(t *items.Task) { t.Completed = !t.Completed; t.InProgress = false },
 					func(_ *items.Task) (bool, string) { return true, "" },
 					func(t *items.Task) string {
