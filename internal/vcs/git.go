@@ -71,8 +71,8 @@ func gitInitCmd() tea.Cmd {
 	}
 }
 
-// gitCommitCmd stages and commits the specified file with the given message.
-// If Git remote support is enabled, it pulls from the remote before committing.
+// gitCommitCmd stages and commits the specified files with the given message.
+// If Git remote support is enabled, it pulls from the remote and rebases before pushing.
 // Returns a CommitDoneMsg or CommitErrorMsg.
 func gitCommitCmd(message string, files ...string) tea.Cmd {
 	return func() tea.Msg {
@@ -126,7 +126,7 @@ func gitPull() ([]byte, error) {
 	return output, nil
 }
 
-// gitCommit stages the specified file and commits it with the given message.
+// gitCommit stages the specified files and commits them with the given message.
 // If there are no changes, it returns nil. If remote is enabled,
 // it pushes the commit to the configured remote and branch.
 // Returns an error if any Git command fails.
