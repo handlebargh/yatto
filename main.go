@@ -45,9 +45,6 @@ import (
 )
 
 var (
-	// red is an adaptive color used to indicate errors in the UI.
-	red = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
-
 	// revision saves the git commit the application is built from.
 	revision = "unknown"
 
@@ -121,10 +118,11 @@ func printTaskList(printProjects, printRegex string) {
 
 // spinnerModel defines the model used for displaying a spinner while syncing with a remote Git repository.
 type spinnerModel struct {
-	spinner spinner.Model
-	err     error
-	width   int
-	height  int
+	spinner   spinner.Model
+	cmdOutput string
+	err       error
+	width     int
+	height    int
 }
 
 // Init initializes the spinner model and starts the init command.
@@ -151,6 +149,11 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case vcs.InitDoneMsg:
 		return m, vcs.PullCmd()
+
+	case vcs.InitErrorMsg:
+		m.cmdOutput = msg.CmdOutput
+		m.err = msg.Err
+		return m, nil
 
 	case vcs.PullDoneMsg:
 		return m, tea.Quit
@@ -182,13 +185,7 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m spinnerModel) View() string {
 	var content string
 	if m.err != nil {
-		if errors.Is(m.err, vcs.ErrorNoInit) {
-			content = lipgloss.NewStyle().Foreground(red).Bold(true).Render("Error ") +
-				m.err.Error()
-		} else {
-			content = lipgloss.NewStyle().Foreground(red).Bold(true).Render("Error") +
-				" fetching data from remote"
-		}
+		content = m.cmdOutput
 	} else {
 		content = fmt.Sprintf("%s Fetching data from remote…", m.spinner.View())
 	}

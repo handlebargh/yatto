@@ -40,28 +40,30 @@ func gitInitCmd() tea.Cmd {
 		}
 
 		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-			return InitErrorMsg{err}
+			return InitErrorMsg{"cannot change dir to configured storage path", err}
 		}
 
-		if err := exec.Command("git",
+		initCmd := exec.Command("git",
 			"init",
 			"--initial-branch",
 			viper.GetString("git.default_branch"),
-		).Run(); err != nil {
-			return InitErrorMsg{err}
+		)
+		output, err := initCmd.CombinedOutput()
+		if err != nil {
+			return InitErrorMsg{string(output), err}
 		}
 
 		if err := os.WriteFile("INIT", nil, 0o600); err != nil {
-			return InitErrorMsg{err}
+			return InitErrorMsg{"cannot write INIT file", err}
 		}
 
-		if err := gitCommit("INIT", "Initial commit"); err != nil {
-			return InitErrorMsg{err}
+		if output, err := gitCommit("INIT", "Initial commit"); err != nil {
+			return InitErrorMsg{string(output), err}
 		}
 
 		if viper.GetBool("git.remote.enable") {
-			if err := gitPush(); err != nil {
-				return InitErrorMsg{err}
+			if output, err := gitPush(); err != nil {
+				return InitErrorMsg{string(output), err}
 			}
 		}
 
@@ -74,17 +76,17 @@ func gitInitCmd() tea.Cmd {
 // Returns a CommitDoneMsg or CommitErrorMsg.
 func gitCommitCmd(file, message string) tea.Cmd {
 	return func() tea.Msg {
-		if err := gitCommit(file, message); err != nil {
-			return CommitErrorMsg{err}
+		if output, err := gitCommit(file, message); err != nil {
+			return CommitErrorMsg{string(output), err}
 		}
 
 		if viper.GetBool("git.remote.enable") {
-			if err := gitPull(); err != nil {
-				return PullErrorMsg{err}
+			if output, err := gitPull(); err != nil {
+				return PullErrorMsg{string(output), err}
 			}
 
-			if err := gitPush(); err != nil {
-				return PushErrorMsg{err}
+			if output, err := gitPush(); err != nil {
+				return PushErrorMsg{string(output), err}
 			}
 		}
 
@@ -101,9 +103,9 @@ func gitPullCmd() tea.Cmd {
 			return PullNoInitMsg{}
 		}
 
-		err := gitPull()
+		output, err := gitPull()
 		if err != nil {
-			return PullErrorMsg{err}
+			return PullErrorMsg{string(output), err}
 		}
 
 		return PullDoneMsg{}
@@ -112,32 +114,31 @@ func gitPullCmd() tea.Cmd {
 
 // gitPull changes the working directory to the configured storage path
 // and performs a git pull --rebase. Returns an error if any step fails.
-func gitPull() error {
-	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-		return err
+func gitPull() ([]byte, error) {
+	pullCmd := exec.Command("git", "pull", "--rebase")
+	pullCmd.Dir = viper.GetString("storage.path")
+
+	output, err := pullCmd.CombinedOutput()
+	if err != nil {
+		return output, err
 	}
 
-	if err := exec.Command("git", "pull", "--rebase").Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return output, nil
 }
 
 // gitCommit stages the specified file and commits it with the given message.
 // If there are no changes, it returns nil. If remote is enabled,
 // it pushes the commit to the configured remote and branch.
 // Returns an error if any Git command fails.
-func gitCommit(file, message string) error {
-	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-		return err
-	}
-
-	if err := exec.Command("git",
+func gitCommit(file, message string) ([]byte, error) {
+	addCmd := exec.Command("git",
 		"add",
 		file,
-	).Run(); err != nil {
-		return err
+	)
+	addCmd.Dir = viper.GetString("storage.path")
+	output, err := addCmd.CombinedOutput()
+	if err != nil {
+		return output, err
 	}
 
 	if err := exec.Command("git",
@@ -146,36 +147,39 @@ func gitCommit(file, message string) error {
 		"--quiet",
 	).Run(); err == nil {
 		// Exit code 0 = no staged changes
-		return nil // Already committed.
+		return []byte{}, nil // Already committed.
 	}
 
-	if err := exec.Command("git",
+	commitCmd := exec.Command("git",
 		"commit",
 		"--message",
 		message,
-	).Run(); err != nil {
-		return err
+	)
+	addCmd.Dir = viper.GetString("storage.path")
+	output, err = commitCmd.CombinedOutput()
+	if err != nil {
+		return output, err
 	}
 
-	return nil
+	return output, nil
 }
 
 // gitPush changes the current working directory to the configured storage path
 // and executes a Git push command to the specified remote and branch.
 // It returns an error if changing the directory or running the Git command fails.
-func gitPush() error {
-	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-		return err
-	}
-
-	if err := exec.Command("git",
+func gitPush() ([]byte, error) {
+	pushCmd := exec.Command("git",
 		"push",
 		"--set-upstream",
 		viper.GetString("git.remote.name"),
 		viper.GetString("git.default_branch"),
-	).Run(); err != nil {
-		return err
+	)
+	pushCmd.Dir = viper.GetString("storage.path")
+
+	output, err := pushCmd.CombinedOutput()
+	if err != nil {
+		return output, err
 	}
 
-	return nil
+	return output, nil
 }

@@ -41,7 +41,7 @@ func jjInitCmd() tea.Cmd {
 		}
 
 		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-			return InitErrorMsg{err}
+			return InitErrorMsg{"cannot change dir to configured storage path", err}
 		}
 
 		if !viper.GetBool("jj.remote.enable") {
@@ -52,22 +52,23 @@ func jjInitCmd() tea.Cmd {
 				cmd = exec.Command("jj", "git", "init")
 			}
 
-			if err := cmd.Run(); err != nil {
-				return InitErrorMsg{err}
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				return InitErrorMsg{string(output), err}
 			}
 		}
 
 		if err := os.WriteFile("INIT", nil, 0o600); err != nil {
-			return InitErrorMsg{err}
+			return InitErrorMsg{"cannot write INIT file", err}
 		}
 
-		if err := jjCommit("Initial commit"); err != nil {
-			return InitErrorMsg{err}
+		if output, err := jjCommit("Initial commit"); err != nil {
+			return InitErrorMsg{string(output), err}
 		}
 
 		if viper.GetBool("jj.remote.enable") {
-			if err := jjPush(); err != nil {
-				return InitErrorMsg{err}
+			if output, err := jjPush(); err != nil {
+				return InitErrorMsg{string(output), err}
 			}
 		}
 
@@ -81,22 +82,22 @@ func jjInitCmd() tea.Cmd {
 func jjCommitCmd(message string) tea.Cmd {
 	return func() tea.Msg {
 		if viper.GetBool("jj.remote.enable") {
-			if err := jjFetch(); err != nil {
-				return PullErrorMsg{err}
+			if output, err := jjFetch(); err != nil {
+				return PullErrorMsg{string(output), err}
 			}
 
-			if err := jjRebase(); err != nil {
-				return PullErrorMsg{err}
+			if output, err := jjRebase(); err != nil {
+				return PullErrorMsg{string(output), err}
 			}
 		}
 
-		if err := jjCommit(message); err != nil {
-			return CommitErrorMsg{err}
+		if output, err := jjCommit(message); err != nil {
+			return CommitErrorMsg{string(output), err}
 		}
 
 		if viper.GetBool("jj.remote.enable") {
-			if err := jjPush(); err != nil {
-				return PushErrorMsg{err}
+			if output, err := jjPush(); err != nil {
+				return PushErrorMsg{string(output), err}
 			}
 		}
 
@@ -113,12 +114,12 @@ func jjPullCmd() tea.Cmd {
 			return PullNoInitMsg{}
 		}
 
-		if err := jjFetch(); err != nil {
-			return PullErrorMsg{err}
+		if output, err := jjFetch(); err != nil {
+			return PullErrorMsg{string(output), err}
 		}
 
-		if err := jjRebase(); err != nil {
-			return PullErrorMsg{err}
+		if output, err := jjRebase(); err != nil {
+			return PullErrorMsg{string(output), err}
 		}
 
 		return PullDoneMsg{}
@@ -127,33 +128,44 @@ func jjPullCmd() tea.Cmd {
 
 // jjFetch changes the working directory to the configured storage path
 // and performs a jj git fetch. Returns an error if any step fails.
-func jjFetch() error {
-	cmd := exec.Command("jj", "git", "fetch")
-	cmd.Dir = viper.GetString("storage.path")
-	return cmd.Run()
+func jjFetch() ([]byte, error) {
+	fetchCmd := exec.Command("jj", "git", "fetch")
+	fetchCmd.Dir = viper.GetString("storage.path")
+
+	output, err := fetchCmd.CombinedOutput()
+	if err != nil {
+		return output, err
+	}
+
+	return output, nil
 }
 
 // jjRebase changes the working directory to the configured storage path
 // and performs a jj rebase. Returns an error if any step fails.
-func jjRebase() error {
+func jjRebase() ([]byte, error) {
 	branch := viper.GetString("jj.default_branch")
 	remote := viper.GetString("jj.remote.name")
 
-	cmd := exec.Command("jj",
+	rebaseCmd := exec.Command("jj",
 		"rebase",
 		"--source",
 		"@",
 		"--destination", fmt.Sprintf("%s@%s", branch, remote),
 	)
 
-	cmd.Dir = viper.GetString("storage.path")
-	return cmd.Run()
+	rebaseCmd.Dir = viper.GetString("storage.path")
+	output, err := rebaseCmd.CombinedOutput()
+	if err != nil {
+		return output, err
+	}
+
+	return output, nil
 }
 
 // jjCommit commits working copy changes with the given message.
 // If remote is enabled, it pushes the commit to the configured remote and branch.
-// Returns an error if any Git command fails.
-func jjCommit(message string) error {
+// Returns an error if any command fails.
+func jjCommit(message string) ([]byte, error) {
 	cmd := exec.Command("jj",
 		"diff",
 		"--stat",
@@ -162,20 +174,28 @@ func jjCommit(message string) error {
 		"--revisions",
 		"@",
 	)
+
 	cmd.Dir = viper.GetString("storage.path")
-	out, err := cmd.Output()
+	output, err := cmd.Output()
 	if err != nil {
-		return err
+		return output, err
 	}
-	if len(out) == 0 {
-		return nil // no changes
+	if len(output) == 0 {
+		return output, nil // no changes
 	}
 
 	commitCmd := exec.Command("jj",
 		"commit",
-		"--message", message)
+		"--message", message,
+	)
+
 	commitCmd.Dir = viper.GetString("storage.path")
-	return commitCmd.Run()
+	output, err = commitCmd.CombinedOutput()
+	if err != nil {
+		return output, err
+	}
+
+	return output, nil
 }
 
 // jjPush updates the default branch bookmark in the local Jujutsu repository
@@ -187,14 +207,19 @@ func jjCommit(message string) error {
 //     to point to @-, i.e. the parent of the working copy commit.
 //  3. Pushes that bookmark to the Git remote specified in
 //     "jj.remote.name".
-func jjPush() error {
+func jjPush() ([]byte, error) {
 	branch := viper.GetString("jj.default_branch")
 	remote := viper.GetString("jj.remote.name")
 
-	bookmarkCmd := exec.Command("jj", "bookmark", "set", branch, "--revision", "@-")
+	bookmarkCmd := exec.Command("jj",
+		"bookmark", "set", branch,
+		"--revision", "@-",
+	)
+
 	bookmarkCmd.Dir = viper.GetString("storage.path")
-	if err := bookmarkCmd.Run(); err != nil {
-		return err
+	output, err := bookmarkCmd.CombinedOutput()
+	if err != nil {
+		return output, err
 	}
 
 	pushCmd := exec.Command("jj", "git", "push",
@@ -202,6 +227,12 @@ func jjPush() error {
 		"--remote", remote,
 		"--bookmark", branch,
 	)
+
 	pushCmd.Dir = viper.GetString("storage.path")
-	return pushCmd.Run()
+	output, err = pushCmd.CombinedOutput()
+	if err != nil {
+		return output, err
+	}
+
+	return output, nil
 }

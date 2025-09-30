@@ -33,26 +33,38 @@ type (
 	InitDoneMsg struct{}
 
 	// InitErrorMsg is returned when repo initialization fails.
-	InitErrorMsg struct{ Err error }
+	InitErrorMsg struct {
+		CmdOutput string
+		Err       error
+	}
 
 	// CommitDoneMsg is returned when a commit completes successfully.
 	CommitDoneMsg struct{}
 
 	// CommitErrorMsg is returned when a commit fails.
-	CommitErrorMsg struct{ Err error }
+	CommitErrorMsg struct {
+		CmdOutput string
+		Err       error
+	}
 
 	// PullDoneMsg is returned when a pull/fetch operation completes successfully.
 	PullDoneMsg struct{}
 
 	// PullErrorMsg is returned when a pull/fetch operation fails.
-	PullErrorMsg struct{ Err error }
+	PullErrorMsg struct {
+		CmdOutput string
+		Err       error
+	}
 
 	// PullNoInitMsg is returned when a pull/fetch operation didn't run
 	// because the repository's INIT file is missing.
 	PullNoInitMsg struct{}
 
 	// PushErrorMsg is returned when a push operation fails.
-	PushErrorMsg struct{ Err error }
+	PushErrorMsg struct {
+		CmdOutput string
+		Err       error
+	}
 )
 
 // Error implements the error interface for InitErrorMsg.
