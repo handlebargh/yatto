@@ -380,7 +380,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if idx := project.FindListIndexByID(m.list.Items()); idx >= 0 {
 				m.list.RemoveItem(idx)
 				delete(m.selectedItems, i)
-				m.status = "🗑  Project deleted"
+				m.status = "🗑  Project(s) deleted"
 
 				return m, m.progress.SetPercent(0.5)
 			}

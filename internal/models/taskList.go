@@ -416,16 +416,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = "🗸  Task updated"
 
 		case "start":
-			m.status = "🗸  Task started"
+			m.status = "🗸  Task(s) started"
 
 		case "stop":
-			m.status = "🗸  Task stopped"
+			m.status = "🗸  Task(s) stopped"
 
 		case "complete":
-			m.status = "🗸  Task completed"
+			m.status = "🗸  Task(s) completed"
 
 		case "reopen":
-			m.status = "🗸  Task reopened"
+			m.status = "🗸  Task(s) reopened"
 
 		default:
 			return m, nil
@@ -442,7 +442,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if idx := task.FindListIndexByID(m.list.Items()); idx >= 0 {
 				m.list.RemoveItem(idx)
 				delete(m.selectedItems, i)
-				m.status = "🗑  Task deleted"
+				m.status = "🗑  Task(s) deleted"
 
 				return m, m.progress.SetPercent(0.5)
 			}
@@ -541,9 +541,9 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					},
 					func(t *items.Task) string {
 						if t.InProgress {
-							return "stop"
+							return "start"
 						}
-						return "start"
+						return "stop"
 					},
 					"progress",
 				)
