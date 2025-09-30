@@ -34,6 +34,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/viper"
 )
@@ -51,7 +52,7 @@ type (
 	WriteTaskJSONErrorMsg struct{ Err error }
 
 	// TaskDeleteDoneMsg indicates successful deletion of a Task from disk.
-	TaskDeleteDoneMsg struct{}
+	TaskDeleteDoneMsg struct{ Task Task }
 
 	// TaskDeleteErrorMsg is returned when a Task fails to delete from disk.
 	TaskDeleteErrorMsg struct{ Err error }
@@ -202,8 +203,21 @@ func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
 			return TaskDeleteErrorMsg{err}
 		}
 
-		return TaskDeleteDoneMsg{}
+		return TaskDeleteDoneMsg{*t}
 	}
+}
+
+// FindListIndexByID returns the index of the task in the given slice of list.Item,
+// or -1 if not found.
+func (t *Task) FindListIndexByID(items []list.Item) int {
+	for i, item := range items {
+		task, ok := item.(*Task)
+		if ok && task.ID == t.ID {
+			return i
+		}
+	}
+
+	return -1 // not found
 }
 
 // TaskToMarkdown returns a Markdown-formatted string representing the task,

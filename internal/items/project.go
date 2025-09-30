@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/viper"
 )
@@ -191,4 +192,17 @@ func (p *Project) NumOfTasks() (int, int, int, error) {
 	}
 
 	return total, completed, due, nil
+}
+
+// FindListIndexByID returns the index of the project in the given slice of list.Item,
+// or -1 if not found.
+func (p *Project) FindListIndexByID(items []list.Item) int {
+	for i, item := range items {
+		task, ok := item.(*Project)
+		if ok && task.ID == p.ID {
+			return i
+		}
+	}
+
+	return -1 // not found
 }

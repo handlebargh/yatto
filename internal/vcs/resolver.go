@@ -43,10 +43,10 @@ func InitCmd() tea.Cmd {
 
 // CommitCmd returns the backend specific commit command according
 // to configuration.
-func CommitCmd(file, message string) tea.Cmd {
+func CommitCmd(message string, files ...string) tea.Cmd {
 	switch viper.GetString("vcs.backend") {
 	case "git":
-		return gitCommitCmd(file, message)
+		return gitCommitCmd(message, files...)
 	case "jj":
 		return jjCommitCmd(message)
 	default:

@@ -71,12 +71,12 @@ func gitInitCmd() tea.Cmd {
 	}
 }
 
-// gitCommitCmd stages and commits the specified file with the given message.
-// If Git remote support is enabled, it pulls from the remote before committing.
+// gitCommitCmd stages and commits the specified files with the given message.
+// If Git remote support is enabled, it pulls from the remote and rebases before pushing.
 // Returns a CommitDoneMsg or CommitErrorMsg.
-func gitCommitCmd(file, message string) tea.Cmd {
+func gitCommitCmd(message string, files ...string) tea.Cmd {
 	return func() tea.Msg {
-		if output, err := gitCommit(file, message); err != nil {
+		if output, err := gitCommit(message, files...); err != nil {
 			return CommitErrorMsg{string(output), err}
 		}
 
@@ -126,28 +126,28 @@ func gitPull() ([]byte, error) {
 	return output, nil
 }
 
-// gitCommit stages the specified file and commits it with the given message.
+// gitCommit stages the specified files and commits them with the given message.
 // If there are no changes, it returns nil. If remote is enabled,
 // it pushes the commit to the configured remote and branch.
 // Returns an error if any Git command fails.
-func gitCommit(file, message string) ([]byte, error) {
-	addCmd := exec.Command("git",
-		"add",
-		file,
-	)
+func gitCommit(message string, files ...string) ([]byte, error) {
+	args := append([]string{"add"}, files...)
+
+	addCmd := exec.Command("git", args...)
 	addCmd.Dir = viper.GetString("storage.path")
 	output, err := addCmd.CombinedOutput()
 	if err != nil {
 		return output, err
 	}
 
-	if err := exec.Command("git",
+	diffCmd := exec.Command("git",
 		"diff",
 		"--cached",
-		"--quiet",
-	).Run(); err == nil {
-		// Exit code 0 = no staged changes
-		return []byte{}, nil // Already committed.
+	)
+	diffCmd.Dir = viper.GetString("storage.path")
+	output, _ = diffCmd.CombinedOutput()
+	if len(output) == 0 {
+		return output, nil
 	}
 
 	commitCmd := exec.Command("git",
@@ -155,7 +155,7 @@ func gitCommit(file, message string) ([]byte, error) {
 		"--message",
 		message,
 	)
-	addCmd.Dir = viper.GetString("storage.path")
+	commitCmd.Dir = viper.GetString("storage.path")
 	output, err = commitCmd.CombinedOutput()
 	if err != nil {
 		return output, err

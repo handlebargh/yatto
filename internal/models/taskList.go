@@ -58,6 +58,7 @@ type taskListKeyMap struct {
 	goBackVim        key.Binding
 	prevPage         key.Binding
 	nextPage         key.Binding
+	toggleSelect     key.Binding
 }
 
 // newTaskListKeyMap initializes and returns a new key map for task list actions.
@@ -69,11 +70,11 @@ func newTaskListKeyMap() *taskListKeyMap {
 		),
 		toggleComplete: key.NewBinding(
 			key.WithKeys("C"),
-			key.WithHelp("C", "toggle complete"),
+			key.WithHelp("C", "toggle complete on selection"),
 		),
 		toggleInProgress: key.NewBinding(
 			key.WithKeys("P"),
-			key.WithHelp("P", "toggle in progress"),
+			key.WithHelp("P", "toggle in progress on selection"),
 		),
 		sortByPriority: key.NewBinding(
 			key.WithKeys("alt+p"),
@@ -85,19 +86,19 @@ func newTaskListKeyMap() *taskListKeyMap {
 		),
 		deleteItem: key.NewBinding(
 			key.WithKeys("D"),
-			key.WithHelp("D", "delete"),
+			key.WithHelp("D", "delete selected tasks"),
 		),
 		editItem: key.NewBinding(
 			key.WithKeys("e"),
-			key.WithHelp("e", "edit"),
+			key.WithHelp("e", "edit task"),
 		),
 		chooseItem: key.NewBinding(
 			key.WithKeys("enter", "l"),
-			key.WithHelp("enter/l", "show"),
+			key.WithHelp("enter/l", "show task"),
 		),
 		addItem: key.NewBinding(
 			key.WithKeys("a"),
-			key.WithHelp("a", "add item"),
+			key.WithHelp("a", "add task"),
 		),
 		toggleHelpMenu: key.NewBinding(
 			key.WithKeys("H"),
@@ -115,12 +116,17 @@ func newTaskListKeyMap() *taskListKeyMap {
 			key.WithKeys("right", "pgdown", "f", "d"),
 			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
+		toggleSelect: key.NewBinding(
+			key.WithKeys(" "),
+			key.WithHelp("space", "select/deselect"),
+		),
 	}
 }
 
 // customTaskDelegate is a custom list delegate for rendering task items.
 type customTaskDelegate struct {
 	list.DefaultDelegate
+	parent *taskListModel
 }
 
 // Render draws a single task item within the task list.
@@ -178,7 +184,17 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		labelsStyle = labelsStyle.MarginLeft(1)
 	}
 
-	left := titleStyle.Render(taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
+	// Check if item is selected
+	_, selected := d.parent.selectedItems[index]
+
+	marker := ""
+	if selected {
+		marker = lipgloss.NewStyle().
+			Foreground(colors.Red()).
+			Render("⟹  ")
+	}
+
+	left := titleStyle.Render(marker+taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
 		labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength))
 
 	right := priorityValueStyle.Render(taskItem.Priority)
@@ -255,6 +271,7 @@ type taskListModel struct {
 	waitingAfterDone bool
 	status           string
 	width, height    int
+	selectedItems    map[int]*items.Task
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
@@ -275,9 +292,17 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 		Background(color).
 		Padding(0, 1)
 
+	m := taskListModel{
+		project:       project,
+		projectModel:  projectModel,
+		keys:          listKeys,
+		selectedItems: make(map[int]*items.Task),
+		progress:      progress.New(progress.WithGradient("#FFA336", "#02BF87")),
+	}
+
 	itemList := list.New(
 		listItems,
-		customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate()},
+		customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate(), parent: &m},
 		0,
 		0,
 	)
@@ -285,6 +310,7 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("task", "tasks")
+	itemList.StatusMessageLifetime = 3 * time.Second
 	itemList.Title = project.Title
 	itemList.Styles.Title = titleStyleTasks
 	// Disable the quit keybindings, so we can implement our own.
@@ -309,16 +335,13 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 			listKeys.sortByDueDate,
 			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
+			listKeys.toggleSelect,
 		}
 	}
 
-	return taskListModel{
-		list:         itemList,
-		project:      project,
-		projectModel: projectModel,
-		keys:         listKeys,
-		progress:     progress.New(progress.WithGradient("#FFA336", "#02BF87")),
-	}
+	m.list = itemList
+
+	return m
 }
 
 // Init initializes the taskListModel and returns an initial command.
@@ -357,6 +380,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(0.0)
 
 	case vcs.CommitDoneMsg:
+		// Remove all map entries after successful commit.
+		for k := range m.selectedItems {
+			delete(m.selectedItems, k)
+		}
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
 		return m, m.progress.SetPercent(1.0)
@@ -389,16 +416,16 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = "🗸  Task updated"
 
 		case "start":
-			m.status = "🗸  Task started"
+			m.status = "🗸  Task(s) started"
 
 		case "stop":
-			m.status = "🗸  Task stopped"
+			m.status = "🗸  Task(s) stopped"
 
 		case "complete":
-			m.status = "🗸  Task completed"
+			m.status = "🗸  Task(s) completed"
 
 		case "reopen":
-			m.status = "🗸  Task reopened"
+			m.status = "🗸  Task(s) reopened"
 
 		default:
 			return m, nil
@@ -411,12 +438,15 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(0.0)
 
 	case items.TaskDeleteDoneMsg:
-		selected := m.list.SelectedItem()
-		if selected != nil {
-			m.list.RemoveItem(m.list.Index())
+		for i, task := range m.selectedItems {
+			if idx := task.FindListIndexByID(m.list.Items()); idx >= 0 {
+				m.list.RemoveItem(idx)
+				delete(m.selectedItems, i)
+				m.status = "🗑  Task(s) deleted"
+
+				return m, m.progress.SetPercent(0.5)
+			}
 		}
-		m.status = "🗑  Task deleted"
-		return m, m.progress.SetPercent(0.5)
 
 	case items.TaskDeleteErrorMsg:
 		m.mode = 2
@@ -434,17 +464,26 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
-				if m.list.SelectedItem() != nil {
-					cmds = append(cmds,
-						m.progress.SetPercent(0.10),
-						tickCmd(),
-						m.list.SelectedItem().(*items.Task).DeleteTaskFromFS(*m.project),
-						vcs.CommitCmd(filepath.Join(m.project.ID, m.list.SelectedItem().(*items.Task).ID+".json"),
-							"delete: "+m.list.SelectedItem().(*items.Task).Title),
-					)
-					m.status = ""
+				if len(m.selectedItems) == 0 {
+
+					m.mode = modeNormal
+					return m, nil
 				}
 
+				var taskNames, taskPaths []string
+				var deleteCmds []tea.Cmd
+				for _, item := range m.selectedItems {
+					taskNames = append(taskNames, item.Title)
+					taskPaths = append(taskPaths, filepath.Join(m.project.ID, item.ID+".json"))
+					deleteCmds = append(deleteCmds, item.DeleteTaskFromFS(*m.project))
+				}
+
+				message := fmt.Sprintf("delete: %d task(s)\n\n- %s", len(taskNames), strings.Join(taskNames, "\n- "))
+				cmds = append(cmds, m.progress.SetPercent(0.10), tickCmd())
+				cmds = append(cmds, deleteCmds...)
+				cmds = append(cmds, vcs.CommitCmd(message, taskPaths...))
+
+				m.status = ""
 				m.mode = modeNormal
 				return m, tea.Batch(cmds...)
 
@@ -492,67 +531,50 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.toggleInProgress):
-				if m.list.SelectedItem() != nil {
-					t := m.list.SelectedItem().(*items.Task)
+				m, cmds = m.toggleTasks(
+					func(t *items.Task) { t.InProgress = !t.InProgress },
+					func(t *items.Task) (bool, string) {
+						if t.Completed {
+							return false, "Cannot set done task as in progress"
+						}
+						return true, ""
+					},
+					func(t *items.Task) string {
+						if t.InProgress {
+							return "start"
+						}
+						return "stop"
+					},
+					"progress",
+				)
 
-					if t.Completed {
-						return m, m.list.NewStatusMessage(textStyleRed("Cannot set done task in progress"))
-					}
-
-					t.InProgress = !t.InProgress
-					json := t.MarshalTask()
-
-					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
-					if t.InProgress {
-						cmds = append(cmds,
-							t.WriteTaskJSON(json, *m.project, "start"),
-							vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "starting progress: "+t.Title),
-						)
-						m.status = ""
-						return m, tea.Batch(cmds...)
-					}
-
-					cmds = append(cmds,
-						t.WriteTaskJSON(json, *m.project, "stop"),
-						vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "stopping progress: "+t.Title),
-					)
-					m.status = ""
-					return m, tea.Batch(cmds...)
-				}
-				return m, nil
+				return m, tea.Batch(cmds...)
 
 			case key.Matches(msg, m.keys.toggleComplete):
-				if m.list.SelectedItem() != nil {
-					t := m.list.SelectedItem().(*items.Task)
-					t.InProgress = false
-					t.Completed = !t.Completed
+				m, cmds = m.toggleTasks(
+					func(t *items.Task) { t.Completed = !t.Completed; t.InProgress = false },
+					func(_ *items.Task) (bool, string) { return true, "" },
+					func(t *items.Task) string {
+						if t.Completed {
+							return "complete"
+						}
+						return "reopen"
+					},
+					"completion",
+				)
 
-					json := t.MarshalTask()
-
-					cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
-					if t.Completed {
-						cmds = append(cmds,
-							t.WriteTaskJSON(json, *m.project, "complete"),
-							vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "complete: "+t.Title),
-						)
-						m.status = ""
-						return m, tea.Batch(cmds...)
-					}
-
-					cmds = append(cmds,
-						t.WriteTaskJSON(json, *m.project, "reopen"),
-						vcs.CommitCmd(filepath.Join(m.project.ID, t.ID+".json"), "reopen: "+t.Title),
-					)
-					m.status = ""
-					return m, tea.Batch(cmds...)
-				}
-				return m, nil
+				return m, tea.Batch(cmds...)
 
 			case key.Matches(msg, m.keys.deleteItem):
-				if m.list.SelectedItem() != nil {
+				if len(m.selectedItems) > 0 {
 					m.mode = modeConfirmDelete
+				} else {
+					cmds = append(cmds, m.list.NewStatusMessage(lipgloss.NewStyle().
+						Foreground(colors.Red()).
+						Render("No task selected")))
 				}
-				return m, nil
+
+				return m, tea.Batch(cmds...)
 
 			case key.Matches(msg, m.keys.editItem):
 				if m.list.SelectedItem() != nil {
@@ -571,6 +593,19 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				formModel := newTaskFormModel(task, &m, false)
 				return formModel, tea.WindowSize()
+
+			case key.Matches(msg, m.keys.toggleSelect):
+				if m.list.SelectedItem() != nil {
+					t := m.list.SelectedItem().(*items.Task)
+					i := m.list.GlobalIndex()
+
+					if _, ok := m.selectedItems[i]; ok {
+						delete(m.selectedItems, i)
+					} else {
+						m.selectedItems[i] = t
+					}
+					return m, nil
+				}
 			}
 		default:
 			panic("unhandled default case in task list")
@@ -595,23 +630,28 @@ func (m taskListModel) View() string {
 	// Display progress bar at 100%
 	if m.progressDone && m.waitingAfterDone {
 		return centeredStyle.Bold(true).
-			Render(textStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
+			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
+				"\n\n" + m.progress.ViewAs(1.0))
 	}
 
 	// Display progress bar if not at 0%
 	if m.progress.Percent() != 0.0 {
 		return centeredStyle.Bold(true).
-			Render(textStyleGreen(m.status) + "\n\n" + m.progress.View())
+			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
+				"\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
-		selected := m.list.SelectedItem().(*items.Task)
-
-		return centeredStyle.Render(
-			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title) +
-				textStyleRed("[y] Yes") + "    " + textStyleGreen("[n] No"),
-		)
+		// Check bulk selection
+		if len(m.selectedItems) > 0 {
+			return centeredStyle.Render(
+				fmt.Sprintf("Delete %d task(s)?\n\n%s%s%s", len(m.selectedItems),
+					"[y] Yes",
+					"    ",
+					"[n] No",
+				))
+		}
 	}
 
 	// Display VCS error view
@@ -712,4 +752,63 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 			}
 		}
 	}
+}
+
+// toggleTasks applies a toggle operation to all selected tasks in the task list.
+//
+// Parameters:
+//   - toggleFunc: a function that modifies a task (e.g., toggling InProgress or Completed).
+//   - precondition: a function that checks whether the task can be toggled; returns
+//     a bool indicating if the task passes the check, and a string message if not.
+//   - commitKind: a function that determines the kind of action for the task (used
+//     in writing JSON and commit messages).
+//   - actionName: a string describing the type of action (e.g., "progress" or "completion")
+//     used in the commit message.
+//
+// The function returns an updated taskListModel and a slice of tea.Cmds that perform
+// the necessary operations, including writing JSON, updating progress, and creating
+// a VCS commit. If no tasks are selected, it returns a status message and no other
+// operations.
+func (m taskListModel) toggleTasks(
+	toggleFunc func(*items.Task),
+	precondition func(*items.Task) (bool, string),
+	commitKind func(*items.Task) string,
+	actionName string,
+) (taskListModel, []tea.Cmd) {
+	if len(m.selectedItems) == 0 {
+		return m, []tea.Cmd{
+			m.list.NewStatusMessage(lipgloss.NewStyle().
+				Foreground(colors.Red()).
+				Render("No task selected")),
+		}
+	}
+
+	var cmds, writeCmds []tea.Cmd
+	var taskPaths, taskNames []string
+
+	for _, t := range m.selectedItems {
+		ok, msg := precondition(t)
+		if !ok {
+			cmds = append(cmds, m.list.NewStatusMessage(lipgloss.NewStyle().
+				Foreground(colors.Red()).
+				Render(msg)))
+
+			return m, cmds
+		}
+
+		toggleFunc(t)
+		json := t.MarshalTask()
+		writeCmds = append(writeCmds, t.WriteTaskJSON(json, *m.project, commitKind(t)))
+		taskPaths = append(taskPaths, filepath.Join(m.project.ID, t.ID+".json"))
+		taskNames = append(taskNames, t.Title)
+	}
+
+	commitMsg := fmt.Sprintf("Change %s state of %d task(s)\n\n- %s",
+		actionName, len(taskNames), strings.Join(taskNames, "\n- "))
+
+	cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
+	cmds = append(cmds, writeCmds...)
+	cmds = append(cmds, vcs.CommitCmd(commitMsg, taskPaths...))
+
+	return m, cmds
 }

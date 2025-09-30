@@ -33,6 +33,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
+	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/vcs"
@@ -49,6 +50,7 @@ type projectListKeyMap struct {
 	deleteProject  key.Binding
 	prevPage       key.Binding
 	nextPage       key.Binding
+	toggleSelect   key.Binding
 }
 
 // newProjectListKeyMap returns a new set of key
@@ -61,7 +63,7 @@ func newProjectListKeyMap() *projectListKeyMap {
 		),
 		deleteProject: key.NewBinding(
 			key.WithKeys("D"),
-			key.WithHelp("D", "delete project"),
+			key.WithHelp("D", "delete selected projects"),
 		),
 		chooseProject: key.NewBinding(
 			key.WithKeys("enter", "l"),
@@ -87,6 +89,10 @@ func newProjectListKeyMap() *projectListKeyMap {
 			key.WithKeys("right", "pgdown", "f", "d"),
 			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
+		toggleSelect: key.NewBinding(
+			key.WithKeys(" "),
+			key.WithHelp("space", "select/deselect"),
+		),
 	}
 }
 
@@ -94,6 +100,7 @@ func newProjectListKeyMap() *projectListKeyMap {
 // renderer for items in the project list.
 type customProjectDelegate struct {
 	list.DefaultDelegate
+	parent *ProjectListModel
 }
 
 // Render renders a custom project item in the list,
@@ -129,13 +136,23 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		listItemStyle = listItemStyle.MarginLeft(1)
 	}
 
-	left := listItemStyle.Render(projectItem.Title + "\n" +
+	// Check if item is selected
+	_, selected := d.parent.selectedItems[index]
+
+	marker := ""
+	if selected {
+		marker = lipgloss.NewStyle().
+			Foreground(colors.Red()).
+			Render("⟹  ")
+	}
+
+	left := listItemStyle.Render(marker + projectItem.Title + "\n" +
 		projectItem.Description)
 
 	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
 	if err != nil {
 		m.NewStatusMessage(
-			textStyleRed(
+			lipgloss.NewStyle().Foreground(colors.Red()).Render(
 				fmt.Sprintf("Error gathering task info for project %s", projectItem.Title),
 			),
 		)
@@ -144,15 +161,19 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	var taskDueMessage string
 	if numDueTasks > 0 {
 		if numDueTasks == 1 {
-			taskDueMessage = textStyleRed("1 task due today")
+			taskDueMessage = lipgloss.NewStyle().
+				Foreground(colors.Red()).
+				Render("1 task due today")
 		} else {
-			taskDueMessage = textStyleRed(fmt.Sprintf("%d tasks due today", numDueTasks))
+			taskDueMessage = lipgloss.NewStyle().
+				Foreground(colors.Red()).
+				Render(fmt.Sprintf("%d tasks due today", numDueTasks))
 		}
 	}
 
 	taskTotalCompleteMessage := fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
 	if numCompletedTasks == numTasks {
-		taskTotalCompleteMessage = textStyleGreen(taskTotalCompleteMessage)
+		taskTotalCompleteMessage = lipgloss.NewStyle().Foreground(colors.Green()).Render(taskTotalCompleteMessage)
 	}
 
 	right := listItemInfoStyle.Render(
@@ -184,6 +205,7 @@ type ProjectListModel struct {
 	waitingAfterDone bool
 	status           string
 	width, height    int
+	selectedItems    map[int]*items.Project
 
 	renderer *glamour.TermRenderer
 }
@@ -201,9 +223,17 @@ func InitialProjectListModel() ProjectListModel {
 		listItems = append(listItems, &project)
 	}
 
+	selectedItems := make(map[int]*items.Project)
+
+	m := ProjectListModel{
+		keys:          listKeys,
+		progress:      progress.New(progress.WithGradient("#FFA336", "#02BF87")),
+		selectedItems: selectedItems,
+	}
+
 	itemList := list.New(
 		listItems,
-		customProjectDelegate{DefaultDelegate: list.NewDefaultDelegate()},
+		customProjectDelegate{DefaultDelegate: list.NewDefaultDelegate(), parent: &m},
 		0,
 		0,
 	)
@@ -211,8 +241,12 @@ func InitialProjectListModel() ProjectListModel {
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("project", "projects")
+	itemList.StatusMessageLifetime = 3 * time.Second
 	itemList.Title = "Projects"
-	itemList.Styles.Title = titleStyleProjects
+	itemList.Styles.Title = lipgloss.NewStyle().
+		Foreground(colors.BadgeText()).
+		Background(colors.Green()).
+		Padding(0, 1)
 	// Disable the quit keybindings, so we can implement our own.
 	itemList.DisableQuitKeybindings()
 	// Set our own prev/next page keys.
@@ -230,20 +264,20 @@ func InitialProjectListModel() ProjectListModel {
 			listKeys.addProject,
 			listKeys.editProject,
 			listKeys.deleteProject,
+			listKeys.toggleSelect,
 		}
 	}
+
+	m.list = itemList
 
 	renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
 	if err != nil {
 		panic(err)
 	}
 
-	return ProjectListModel{
-		list:     itemList,
-		keys:     listKeys,
-		renderer: renderer,
-		progress: progress.New(progress.WithGradient("#FFA336", "#02BF87")),
-	}
+	m.renderer = renderer
+
+	return m
 }
 
 // Init initializes the Bubble Tea program
@@ -295,6 +329,10 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case vcs.CommitDoneMsg:
+		// Remove all map entries after successful commit.
+		for k := range m.selectedItems {
+			delete(m.selectedItems, k)
+		}
 		m.status = "🗘  Changes committed"
 		m.progressDone = true
 		return m, m.progress.SetPercent(1.0)
@@ -338,9 +376,15 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.progress.SetPercent(0.0)
 
 	case items.ProjectDeleteDoneMsg:
-		m.list.RemoveItem(m.list.GlobalIndex())
-		m.status = "🗑  Project deleted"
-		return m, m.progress.SetPercent(0.5)
+		for i, project := range m.selectedItems {
+			if idx := project.FindListIndexByID(m.list.Items()); idx >= 0 {
+				m.list.RemoveItem(idx)
+				delete(m.selectedItems, i)
+				m.status = "🗑  Project(s) deleted"
+
+				return m, m.progress.SetPercent(0.5)
+			}
+		}
 
 	case items.ProjectDeleteErrorMsg:
 		m.mode = 2
@@ -358,16 +402,26 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
-				if m.list.SelectedItem() != nil {
-					cmds = append(cmds,
-						m.progress.SetPercent(0.10),
-						tickCmd(),
-						m.list.SelectedItem().(*items.Project).DeleteProjectFromFS(),
-						vcs.CommitCmd(m.list.SelectedItem().(*items.Project).ID,
-							"delete: "+m.list.SelectedItem().(*items.Project).Title),
-					)
-					m.status = ""
+				if len(m.selectedItems) == 0 {
+
+					m.mode = modeNormal
+					return m, nil
 				}
+
+				var projectNames, projectPaths []string
+				var deleteCmds []tea.Cmd
+				for _, item := range m.selectedItems {
+					projectNames = append(projectNames, item.Title)
+					projectPaths = append(projectPaths, item.ID)
+					deleteCmds = append(deleteCmds, item.DeleteProjectFromFS())
+				}
+
+				message := fmt.Sprintf("delete: %d project(s)\n\n- %s", len(projectNames), strings.Join(projectNames, "\n- "))
+				cmds = append(cmds, m.progress.SetPercent(0.10), tickCmd())
+				cmds = append(cmds, deleteCmds...)
+				cmds = append(cmds, vcs.CommitCmd(message, projectPaths...))
+
+				m.status = ""
 
 				m.mode = modeNormal
 				return m, tea.Batch(cmds...)
@@ -408,10 +462,15 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.deleteProject):
-				if m.list.SelectedItem() != nil {
+				if len(m.selectedItems) > 0 {
 					m.mode = modeConfirmDelete
+				} else {
+					cmds = append(cmds, m.list.NewStatusMessage(lipgloss.NewStyle().
+						Foreground(colors.Red()).
+						Render("No project selected")))
 				}
-				return m, nil
+
+				return m, tea.Batch(cmds...)
 
 			case key.Matches(msg, m.keys.editProject):
 				if m.list.SelectedItem() != nil {
@@ -428,6 +487,19 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				formModel := newProjectFormModel(project, &m, false)
 				return formModel, tea.WindowSize()
+
+			case key.Matches(msg, m.keys.toggleSelect):
+				if m.list.SelectedItem() != nil {
+					p := m.list.SelectedItem().(*items.Project)
+					i := m.list.GlobalIndex()
+
+					if _, ok := m.selectedItems[i]; ok {
+						delete(m.selectedItems, i)
+					} else {
+						m.selectedItems[i] = p
+					}
+					return m, nil
+				}
 			}
 		default:
 			panic("unhandled default case in project list")
@@ -453,23 +525,27 @@ func (m ProjectListModel) View() string {
 	// Display progress bar at 100%
 	if m.progressDone && m.waitingAfterDone {
 		return centeredStyle.Bold(true).
-			Render(textStyleGreen(m.status) + "\n\n" + m.progress.ViewAs(1.0))
+			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
+				"\n\n" + m.progress.ViewAs(1.0))
 	}
 
 	// Display progress bar if not at 0%
 	if m.progress.Percent() != 0.0 {
 		return centeredStyle.Bold(true).
-			Render(textStyleGreen(m.status) + "\n\n" + m.progress.View())
+			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
+				"\n\n" + m.progress.View())
 	}
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
-		selected := m.list.SelectedItem().(*items.Project)
-
-		return centeredStyle.Render(
-			fmt.Sprintf("Delete \"%s\"?\n\n", selected.Title) +
-				textStyleRed("[y] Yes") + "    " + textStyleGreen("[n] No"),
-		)
+		if len(m.selectedItems) > 0 {
+			return centeredStyle.Render(
+				fmt.Sprintf("Delete %d project(s)?\n\n%s%s%s", len(m.selectedItems),
+					"[y] Yes",
+					"    ",
+					"[n] No",
+				))
+		}
 	}
 
 	// Display VCS error view
