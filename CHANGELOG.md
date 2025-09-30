@@ -1,3 +1,13 @@
+## v0.19.0 (2025-09-30)
+
+### Feat
+
+- bulk actions (#40)
+
+### Fix
+
+- improve remote configuration
+
 ## v0.18.2 (2025-09-30)
 
 ### Fix
