@@ -21,6 +21,7 @@
 package vcs
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -75,14 +76,10 @@ func jjInitCmd() tea.Cmd {
 }
 
 // jjCommitCmd stages and commits the specified file with the given message.
-// If jj remote support is enabled, it fetches from the remote before committing.
+// If jj remote support is enabled, it fetches from the remote and rebases before committing.
 // Returns a CommitDoneMsg or CommitErrorMsg.
 func jjCommitCmd(message string) tea.Cmd {
 	return func() tea.Msg {
-		if err := jjCommit(message); err != nil {
-			return CommitErrorMsg{err}
-		}
-
 		if viper.GetBool("jj.remote.enable") {
 			if err := jjFetch(); err != nil {
 				return PullErrorMsg{err}
@@ -91,7 +88,13 @@ func jjCommitCmd(message string) tea.Cmd {
 			if err := jjRebase(); err != nil {
 				return PullErrorMsg{err}
 			}
+		}
 
+		if err := jjCommit(message); err != nil {
+			return CommitErrorMsg{err}
+		}
+
+		if viper.GetBool("jj.remote.enable") {
 			if err := jjPush(); err != nil {
 				return PushErrorMsg{err}
 			}
@@ -125,52 +128,32 @@ func jjPullCmd() tea.Cmd {
 // jjFetch changes the working directory to the configured storage path
 // and performs a jj git fetch. Returns an error if any step fails.
 func jjFetch() error {
-	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-		return err
-	}
-
-	if err := exec.Command("jj",
-		"git",
-		"fetch",
-		viper.GetString("jj.remote.name"),
-		viper.GetString("jj.default_branch"),
-	).Run(); err != nil {
-		return err
-	}
-
-	return nil
+	cmd := exec.Command("jj", "git", "fetch")
+	cmd.Dir = viper.GetString("storage.path")
+	return cmd.Run()
 }
 
 // jjRebase changes the working directory to the configured storage path
 // and performs a jj rebase. Returns an error if any step fails.
 func jjRebase() error {
-	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-		return err
-	}
+	branch := viper.GetString("jj.default_branch")
+	remote := viper.GetString("jj.remote.name")
 
-	if err := exec.Command("jj",
+	cmd := exec.Command("jj",
 		"rebase",
-		"--branch",
-		viper.GetString("jj.default_branch")+"@"+viper.GetString("jj.remote.name"),
 		"--source",
 		"@",
-		"--destination",
-		"trunk()",
-	).Run(); err != nil {
-		return err
-	}
+		"--destination", fmt.Sprintf("%s@%s", branch, remote),
+	)
 
-	return nil
+	cmd.Dir = viper.GetString("storage.path")
+	return cmd.Run()
 }
 
 // jjCommit commits working copy changes with the given message.
 // If remote is enabled, it pushes the commit to the configured remote and branch.
 // Returns an error if any Git command fails.
 func jjCommit(message string) error {
-	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
-		return err
-	}
-
 	cmd := exec.Command("jj",
 		"diff",
 		"--stat",
@@ -179,6 +162,7 @@ func jjCommit(message string) error {
 		"--revisions",
 		"@",
 	)
+	cmd.Dir = viper.GetString("storage.path")
 	out, err := cmd.Output()
 	if err != nil {
 		return err
@@ -187,15 +171,11 @@ func jjCommit(message string) error {
 		return nil // no changes
 	}
 
-	if err := exec.Command("jj",
+	commitCmd := exec.Command("jj",
 		"commit",
-		"--message",
-		message,
-	).Run(); err != nil {
-		return err
-	}
-
-	return nil
+		"--message", message)
+	commitCmd.Dir = viper.GetString("storage.path")
+	return commitCmd.Run()
 }
 
 // jjPush updates the default branch bookmark in the local Jujutsu repository
@@ -208,30 +188,20 @@ func jjCommit(message string) error {
 //  3. Pushes that bookmark to the Git remote specified in
 //     "jj.remote.name".
 func jjPush() error {
-	if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+	branch := viper.GetString("jj.default_branch")
+	remote := viper.GetString("jj.remote.name")
+
+	bookmarkCmd := exec.Command("jj", "bookmark", "set", branch, "--revision", "@-")
+	bookmarkCmd.Dir = viper.GetString("storage.path")
+	if err := bookmarkCmd.Run(); err != nil {
 		return err
 	}
 
-	defaultBranch := viper.GetString("jj.default_branch")
-	if err := exec.Command("jj",
-		"bookmark",
-		"set",
-		defaultBranch,
-		"--revision=@-",
-		defaultBranch,
-	).Run(); err != nil {
-		return err
-	}
-
-	if err := exec.Command("jj", "git", "push",
+	pushCmd := exec.Command("jj", "git", "push",
 		"--allow-new",
-		"--remote",
-		viper.GetString("jj.remote.name"),
-		"--bookmark",
-		viper.GetString("jj.default_branch"),
-	).Run(); err != nil {
-		return err
-	}
-
-	return nil
+		"--remote", remote,
+		"--bookmark", branch,
+	)
+	pushCmd.Dir = viper.GetString("storage.path")
+	return pushCmd.Run()
 }
