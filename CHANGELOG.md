@@ -1,3 +1,10 @@
+## v0.18.2 (2025-09-30)
+
+### Fix
+
+- tell jj where to fetch and rebase from (#42)
+- run rebase command prior to push
+
 ## v0.18.1 (2025-09-27)
 
 ### Fix
