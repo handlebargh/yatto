@@ -140,13 +140,14 @@ func gitCommit(message string, files ...string) ([]byte, error) {
 		return output, err
 	}
 
-	if err := exec.Command("git",
+	diffCmd := exec.Command("git",
 		"diff",
 		"--cached",
-		"--quiet",
-	).Run(); err == nil {
-		// Exit code 0 = no staged changes
-		return []byte{}, nil // Already committed.
+	)
+	diffCmd.Dir = viper.GetString("storage.path")
+	output, _ = diffCmd.CombinedOutput()
+	if len(output) == 0 {
+		return output, nil
 	}
 
 	commitCmd := exec.Command("git",
@@ -154,7 +155,7 @@ func gitCommit(message string, files ...string) ([]byte, error) {
 		"--message",
 		message,
 	)
-	addCmd.Dir = viper.GetString("storage.path")
+	commitCmd.Dir = viper.GetString("storage.path")
 	output, err = commitCmd.CombinedOutput()
 	if err != nil {
 		return output, err
