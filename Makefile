@@ -57,7 +57,10 @@ test-cover:
 .PHONY: build
 build:
 	@echo 'Building yatto...'
-	CGO_ENABLED=0 go build -v \
-		-ldflags="-s -w" \
+	CGO_ENABLED=0 \
+	GO111MODULE=on \
+	GOFLAGS="-mod=readonly -trimpath" \
+	go build -v \
+		-ldflags="-s -w -extldflags=-zrelro -extldflags=-znow" \
 		-o=bin/yatto
 	@echo 'Placing binary in ./bin directory'
