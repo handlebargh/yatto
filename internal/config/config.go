@@ -118,7 +118,7 @@ func CreateConfigFile(set Settings) error {
 			)
 			if err == nil {
 				viper.Set("jj.colocate", true)
-			} else if err != nil && !errors.Is(err, helpers.ErrUnexpectedInput) {
+			} else if !errors.Is(err, helpers.ErrUnexpectedInput) {
 				return fmt.Errorf("error reading input: %w", err)
 			}
 		}

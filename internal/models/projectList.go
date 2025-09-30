@@ -177,6 +177,7 @@ type ProjectListModel struct {
 	selected         bool
 	keys             *projectListKeyMap
 	mode             mode
+	cmdOutput        string
 	err              error
 	progress         progress.Model
 	progressDone     bool
@@ -300,6 +301,19 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case vcs.CommitErrorMsg:
 		m.mode = 2
+		m.cmdOutput = msg.CmdOutput
+		m.err = msg.Err
+		return m, m.progress.SetPercent(0.0)
+
+	case vcs.PullErrorMsg:
+		m.mode = 2
+		m.cmdOutput = msg.CmdOutput
+		m.err = msg.Err
+		return m, m.progress.SetPercent(0.0)
+
+	case vcs.PushErrorMsg:
+		m.mode = 2
+		m.cmdOutput = msg.CmdOutput
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
 
@@ -464,7 +478,7 @@ func (m ProjectListModel) View() string {
 
 		e.WriteString("An error occurred during a backend operation:")
 		e.WriteString("\n\n")
-		e.WriteString(m.err.Error())
+		e.WriteString(m.cmdOutput)
 		e.WriteString("\n\n")
 		e.WriteString("Please commit manually!")
 
