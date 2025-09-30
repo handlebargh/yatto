@@ -305,6 +305,18 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.Err
 		return m, m.progress.SetPercent(0.0)
 
+	case vcs.PullErrorMsg:
+		m.mode = 2
+		m.cmdOutput = msg.CmdOutput
+		m.err = msg.Err
+		return m, m.progress.SetPercent(0.0)
+
+	case vcs.PushErrorMsg:
+		m.mode = 2
+		m.cmdOutput = msg.CmdOutput
+		m.err = msg.Err
+		return m, m.progress.SetPercent(0.0)
+
 	case items.WriteProjectJSONDoneMsg:
 		switch msg.Kind {
 		case "create":
