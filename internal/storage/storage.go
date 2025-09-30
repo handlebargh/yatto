@@ -63,6 +63,20 @@ func CreateStorageDir(set Settings) error {
 			return err
 		}
 
+		// Prompt for storage directory creation
+		_, err := helpers.PromptUser(
+			set.Input,
+			set.Output,
+			fmt.Sprintf("Create storage directory at %s? [y|N]: ", storageDir),
+			"yes", "y",
+		)
+		if errors.Is(err, helpers.ErrUnexpectedInput) {
+			return ErrUserAborted
+		}
+		if err != nil {
+			return fmt.Errorf("error reading input: %w", err)
+		}
+
 		backend := viper.GetString("vcs.backend")
 		if viper.GetBool(backend + ".remote.enable") {
 
@@ -97,20 +111,6 @@ func CreateStorageDir(set Settings) error {
 				}
 			}
 		} else {
-			// Prompt for storage directory creation
-			_, err := helpers.PromptUser(
-				set.Input,
-				set.Output,
-				fmt.Sprintf("Create storage directory at %s? [y|N]: ", storageDir),
-				"yes", "y",
-			)
-			if errors.Is(err, helpers.ErrUnexpectedInput) {
-				return ErrUserAborted
-			}
-			if err != nil {
-				return fmt.Errorf("error reading input: %w", err)
-			}
-
 			if err := os.MkdirAll(storageDir, 0o700); err != nil {
 				return fmt.Errorf("fatal error creating storage directory: %w", err)
 			}

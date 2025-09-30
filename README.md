@@ -147,7 +147,15 @@ To set up a remote
    The repository must be empty, meaning that nothing must be committed at creation
    (uncheck README, .gitignore and license files).
 
-2. Enable remote in the config.
+#### From scratch
+
+2. Run yatto and enter your SSH URL in the config dialog.
+
+#### With existing storage directory
+
+2. Push the current state manually to the remote.
+
+3. Enable remote in the config.
 
    #### Git
     ```toml

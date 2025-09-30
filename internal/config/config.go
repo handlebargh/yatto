@@ -125,6 +125,27 @@ func CreateConfigFile(set Settings) error {
 
 		viper.Set("vcs.backend", inputVCS)
 
+		// Prompt for remote URL
+		inputRemote, err := helpers.PromptUser(
+			set.Input,
+			set.Output,
+			"Enter your remote repository URL (empty for none): ",
+		)
+		if errors.Is(err, helpers.ErrUnexpectedInput) {
+			return ErrUserAborted
+		}
+		if err != nil {
+			return fmt.Errorf("error reading input: %w", err)
+		}
+
+		if inputRemote != "" && inputVCS == "git" {
+			viper.Set("git.remote.enable", true)
+			viper.Set("git.remote.url", inputRemote)
+		} else if inputRemote != "" && inputVCS == "jj" {
+			viper.Set("jj.remote.enable", true)
+			viper.Set("jj.remote.url", inputRemote)
+		}
+
 		// Create config dir
 		if err := os.MkdirAll(filepath.Join(set.Home, ".config/yatto"), 0o755); err != nil {
 			return fmt.Errorf("error creating config directory: %w", err)
