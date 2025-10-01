@@ -1,3 +1,9 @@
+## v0.19.2 (2025-10-01)
+
+### Fix
+
+- get rid of emojis here as their support is not guaranteed
+
 ## v0.19.1 (2025-10-01)
 
 ### Fix
