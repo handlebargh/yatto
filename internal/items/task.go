@@ -223,43 +223,52 @@ func (t *Task) FindListIndexByID(items []list.Item) int {
 // TaskToMarkdown returns a Markdown-formatted string representing the task,
 // including metadata like description, due date, priority, labels, and completion status.
 func (t *Task) TaskToMarkdown() string {
-	title := fmt.Sprintf("# %s\n\n", t.Title)
+	var content strings.Builder
 
-	completed := "✅  **Done**: ❌ No\n\n"
+	content.WriteString(fmt.Sprintf("# %s\n\n", t.Title))
+	content.WriteString(fmt.Sprintf("## Description\n\n%s\n\n", t.Description))
+
+	content.WriteString("## Metadata\n\n")
+	content.WriteString("| **Done** | **In Progress** | **Priority** |\n")
+	content.WriteString("| -------- | --------------- | ------------ |\n")
+
+	completed := "NO"
 	if t.Completed {
-		completed = "✅  **Done**: ✅ Yes\n\n"
+		completed = "YES"
 	}
 
-	inProgress := ""
-	if !t.Completed {
-		inProgress = "🚧  **In Progress**: ❌ No\n\n"
-		if t.InProgress {
-			inProgress = "🚧  **In Progress**: ✅ Yes\n\n"
-		}
+	inProgress := "NO"
+	if !t.Completed && t.InProgress {
+		inProgress = "YES"
 	}
-	inProgress += "---\n\n"
 
-	priority := fmt.Sprintf("🎯  **Priority**: %s\n\n", strings.ToUpper(t.Priority))
+	priority := fmt.Sprintf("%s", strings.ToUpper(t.Priority))
+
+	content.WriteString("|" + completed + "|" + inProgress + "|" + priority + "\n\n")
 
 	dueDate := ""
 	if t.DueDate != nil {
-		dueDate = fmt.Sprintf("📅  **Due At**: %s\n\n", t.DueDate.Format(time.RFC1123))
+		dueDate = fmt.Sprintf("%s", t.DueDate.Format(time.RFC1123))
 	}
-	dueDate += "---\n\n"
 
-	description := fmt.Sprintf("📝  **Description**\n\n%s\n\n---\n\n", t.Description)
+	content.WriteString("| **Due Date** |\n")
+	content.WriteString("| ------------ |\n")
+	content.WriteString(fmt.Sprintf("| %s |\n\n", dueDate))
 
-	labels := ""
 	if t.Labels != "" {
-		labels = "🏷️  **Labels**\n\n"
+		content.WriteString("| **Labels** |\n")
+		content.WriteString("| ---------- |\n")
+
 		labelsSeq := strings.SplitSeq(t.Labels, ",")
 		for label := range labelsSeq {
-			labels += "- " + label + "\n\n"
+			content.WriteString(fmt.Sprintf("| - %s |\n", label))
 		}
-		labels += "\n\n---\n\n"
+		content.WriteString("\n")
 	}
 
-	id := fmt.Sprintf("🆔  **ID**: %s", t.ID)
+	content.WriteString("| **ID** |\n")
+	content.WriteString("| ------ |\n")
+	content.WriteString(fmt.Sprintf("| %s |\n\n", t.ID))
 
-	return title + completed + inProgress + priority + dueDate + description + labels + id
+	return content.String()
 }
