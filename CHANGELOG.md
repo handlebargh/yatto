@@ -1,3 +1,10 @@
+## v0.19.1 (2025-10-01)
+
+### Fix
+
+- fix argument position
+- rename initial branch if necessary
+
 ## v0.19.0 (2025-09-30)
 
 ### Feat
