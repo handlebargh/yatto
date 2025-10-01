@@ -110,6 +110,18 @@ func CreateStorageDir(set Settings) error {
 					return err
 				}
 			}
+
+			// Rename branch if it's not our default.
+			if backend == "git" {
+				moveCmd := exec.Command("git",
+					"branch",
+					"--move", viper.GetString("git.default_branch"),
+				)
+				moveCmd.Dir = storageDir
+				if err := moveCmd.Run(); err != nil {
+					return err
+				}
+			}
 		} else {
 			if err := os.MkdirAll(storageDir, 0o700); err != nil {
 				return fmt.Errorf("fatal error creating storage directory: %w", err)
