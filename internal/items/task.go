@@ -242,13 +242,13 @@ func (t *Task) TaskToMarkdown() string {
 		inProgress = "YES"
 	}
 
-	priority := fmt.Sprintf("%s", strings.ToUpper(t.Priority))
+	priority := strings.ToUpper(t.Priority)
 
 	content.WriteString("|" + completed + "|" + inProgress + "|" + priority + "\n\n")
 
 	dueDate := ""
 	if t.DueDate != nil {
-		dueDate = fmt.Sprintf("%s", t.DueDate.Format(time.RFC1123))
+		dueDate = t.DueDate.Format(time.RFC1123)
 	}
 
 	content.WriteString("| **Due Date** |\n")
