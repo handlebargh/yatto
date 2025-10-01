@@ -229,8 +229,8 @@ func (t *Task) TaskToMarkdown() string {
 	content.WriteString(fmt.Sprintf("## Description\n\n%s\n\n", t.Description))
 
 	content.WriteString("## Metadata\n\n")
-	content.WriteString("| **Done** | **In Progress** | **Priority** |\n")
-	content.WriteString("| -------- | --------------- | ------------ |\n")
+	content.WriteString("| **Completed** | **In Progress** | **Priority** |\n")
+	content.WriteString("| ------------- | --------------- | ------------ |\n")
 
 	completed := "NO"
 	if t.Completed {

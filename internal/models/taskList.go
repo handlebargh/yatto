@@ -243,7 +243,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Padding(0, 1).
 			Background(colors.Green()).
 			Foreground(colors.BadgeText()).
-			Render("done")
+			Render("completed")
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
@@ -535,7 +535,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					func(t *items.Task) { t.InProgress = !t.InProgress },
 					func(t *items.Task) (bool, string) {
 						if t.Completed {
-							return false, "Cannot set done task as in progress"
+							return false, "Cannot set completed task as in progress"
 						}
 						return true, ""
 					},

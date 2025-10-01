@@ -27,10 +27,10 @@ import (
 )
 
 // completedString returns a string representation of the task completion state.
-// It returns "done" if completed is true, otherwise "open".
+// It returns "completed" if completed is true, otherwise "open".
 func completedString(completed bool) string {
 	if completed {
-		return "done"
+		return "completed"
 	}
 
 	return "open"
