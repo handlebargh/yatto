@@ -57,7 +57,7 @@ func gitInitCmd() tea.Cmd {
 			return InitErrorMsg{"cannot write INIT file", err}
 		}
 
-		if output, err := gitCommit("INIT", "Initial commit"); err != nil {
+		if output, err := gitCommit("Initial commit", "INIT"); err != nil {
 			return InitErrorMsg{string(output), err}
 		}
 
