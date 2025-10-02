@@ -1,3 +1,9 @@
+## v0.19.4 (2025-10-02)
+
+### Refactor
+
+- use completed instead of done everywhere
+
 ## v0.19.3 (2025-10-01)
 
 ### Fix
