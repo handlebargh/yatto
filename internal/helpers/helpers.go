@@ -225,3 +225,22 @@ func PromptUser(input io.Reader, output io.Writer, message string, expectedInput
 
 	return "", ErrUnexpectedInput
 }
+
+func UniqueNonEmptyStrings(input string) []string {
+	rows := strings.Split(input, "\n")
+	uniqueItems := make(map[string]bool)
+
+	for _, item := range rows {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			uniqueItems[item] = true
+		}
+	}
+
+	result := make([]string, 0, len(uniqueItems))
+	for item := range uniqueItems {
+		result = append(result, item)
+	}
+
+	return result
+}

@@ -24,8 +24,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
 )
@@ -235,4 +237,30 @@ func jjPush() ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+func jjUserEmail() (string, error) {
+	emailCmd := exec.Command("jj", "config", "get", "user.email")
+	emailCmd.Dir = viper.GetString("storage.path")
+
+	output, err := emailCmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+func jjContributorEmailAddresses() ([]string, error) {
+	emailsCmd := exec.Command("jj", "log", "--template={author_email}")
+	emailsCmd.Dir = viper.GetString("storage.path")
+
+	output, err := emailsCmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	emails := helpers.UniqueNonEmptyStrings(string(output))
+
+	return emails, nil
 }

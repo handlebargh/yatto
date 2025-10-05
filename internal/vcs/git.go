@@ -23,8 +23,10 @@ package vcs
 import (
 	"os"
 	"os/exec"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
 )
@@ -182,4 +184,30 @@ func gitPush() ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+func gitUserEmail() (string, error) {
+	emailCmd := exec.Command("git", "config", "user.email")
+	emailCmd.Dir = viper.GetString("storage.path")
+
+	output, err := emailCmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+func gitContributorEmailAddresses() ([]string, error) {
+	emailsCmd := exec.Command("git", "log", "--format=%aE")
+	emailsCmd.Dir = viper.GetString("storage.path")
+
+	output, err := emailsCmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	emails := helpers.UniqueNonEmptyStrings(string(output))
+
+	return emails, nil
 }

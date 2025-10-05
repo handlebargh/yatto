@@ -84,6 +84,8 @@ type taskFormVars struct {
 	taskDueDate        string
 	taskLabels         string
 	taskLabelsSelected []string
+	taskAuthor         string
+	taskAssignee       string
 	taskCompleted      bool
 }
 
@@ -98,6 +100,8 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		taskDueDate:        t.DueDateToString(),
 		taskLabels:         "", // Clear labels as we have them already selected.
 		taskLabelsSelected: t.LabelsList(),
+		taskAuthor:         *t.Author,
+		taskAssignee:       *t.Assignee,
 		taskCompleted:      t.Completed,
 	}
 
@@ -114,6 +118,8 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	if edit {
 		confirmQuestion = "Edit task?"
 	} else {
+		// Ignore error for now
+		m.vars.taskAuthor, _ = vcs.UserEmail()
 		confirmQuestion = "Create task?"
 	}
 
@@ -179,6 +185,14 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Title("Enter additional labels:").
 				Value(&m.vars.taskLabels).
 				Description("Comma-separated list of labels."),
+		),
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Key("existingEmailAddresses").
+				Title("Choose an assignee:").
+				Height(15).
+				OptionsFunc(m.sortEmailAddressesOptions, nil).
+				Value(&m.vars.taskAssignee),
 		),
 		huh.NewGroup(
 			huh.NewConfirm().
@@ -443,7 +457,8 @@ func (m taskFormModel) generatePreviewContent() string {
 
 // formVarsToTask updates the Task object with values from the form variables.
 //
-// It sets the task's title, description, priority, completion status, and due date.
+// It sets the task's title, description, priority, author, assignee, completion status,
+// and due date.
 // For labels, it merges labels selected via the multi-select widget with additional
 // labels entered as a comma-separated string, deduplicates them (case-insensitive),
 // trims whitespace, and stores them as a single comma-separated string on the task.
@@ -454,6 +469,8 @@ func (m taskFormModel) formVarsToTask() error {
 	m.task.Title = m.vars.taskTitle
 	m.task.Description = m.vars.taskDescription
 	m.task.Priority = m.vars.taskPriority
+	m.task.Author = &m.vars.taskAuthor
+	m.task.Assignee = &m.vars.taskAssignee
 
 	// Merge labels from MultiSelect (selected) and freeform input (typed)
 	typedLabels := helpers.LabelsStringToSlice(m.vars.taskLabels)
@@ -560,6 +577,31 @@ func (m taskFormModel) sortLabelsOptions() []huh.Option[string] {
 	for _, item := range sortedLabels {
 		opt := huh.NewOption[string](item.Label, item.Label)
 		if _, selected := selectedSet[item.Label]; selected {
+			opt = opt.Selected(true)
+		}
+		opts = append(opts, opt)
+	}
+
+	return opts
+}
+
+func (m taskFormModel) sortEmailAddressesOptions() []huh.Option[string] {
+	emails, _ := vcs.AllContributorEmailAddresses()
+
+	// Sort: selected first, then alphabetical
+	slices.SortFunc(emails, func(a, b string) int {
+		// Selected email comes first
+		// TODO
+
+		// Case-insensitive alphabetical
+		return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+	})
+
+	// Build sorted options
+	opts := make([]huh.Option[string], 0, len(emails))
+	for _, item := range emails {
+		opt := huh.NewOption[string](item, item)
+		if item == *m.task.Assignee {
 			opt = opt.Selected(true)
 		}
 		opts = append(opts, opt)

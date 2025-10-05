@@ -66,3 +66,25 @@ func PullCmd() tea.Cmd {
 		return nil
 	}
 }
+
+func UserEmail() (string, error) {
+	switch viper.GetString("vcs.backend") {
+	case "git":
+		return gitUserEmail()
+	case "jj":
+		return jjUserEmail()
+	default:
+		return "", nil
+	}
+}
+
+func AllContributorEmailAddresses() ([]string, error) {
+	switch viper.GetString("vcs.backend") {
+	case "git":
+		return gitContributorEmailAddresses()
+	case "jj":
+		return jjContributorEmailAddresses()
+	default:
+		return nil, nil
+	}
+}
