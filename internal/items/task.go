@@ -246,14 +246,11 @@ func (t *Task) TaskToMarkdown() string {
 
 	content.WriteString("|" + completed + "|" + inProgress + "|" + priority + "\n\n")
 
-	dueDate := ""
 	if t.DueDate != nil {
-		dueDate = t.DueDate.Format(time.RFC1123)
+		content.WriteString("| **Due Date** |\n")
+		content.WriteString("| ------------ |\n")
+		content.WriteString(fmt.Sprintf("| %s |\n\n", t.DueDate.Format(time.RFC1123)))
 	}
-
-	content.WriteString("| **Due Date** |\n")
-	content.WriteString("| ------------ |\n")
-	content.WriteString(fmt.Sprintf("| %s |\n\n", dueDate))
 
 	if t.Labels != "" {
 		content.WriteString("| **Labels** |\n")
