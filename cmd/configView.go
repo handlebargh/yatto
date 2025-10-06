@@ -25,7 +25,7 @@ import (
 // configViewCmd represents the configView command
 var configViewCmd = &cobra.Command{
 	Use:   "view",
-	Short: "View the configuration",
+	Short: "View the configuration file",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		file, err := os.Open(configPath)
 		if err != nil {

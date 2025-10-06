@@ -29,7 +29,7 @@ var ErrNoEditorSet = fmt.Errorf("environment variable EDITOR not set")
 // configEditCmd represents the configEdit command
 var configEditCmd = &cobra.Command{
 	Use:   "edit",
-	Short: "Edit the configuration",
+	Short: "Edit the configuration file",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		editor := os.Getenv("EDITOR")
 		if editor == "" {
