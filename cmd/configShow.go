@@ -22,10 +22,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// configViewCmd represents the configView command
-var configViewCmd = &cobra.Command{
-	Use:   "view",
-	Short: "View the configuration file",
+// configShowCmd represents the config show command
+var configShowCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Show the configuration file",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		file, err := os.Open(configPath)
 		if err != nil {
@@ -46,5 +46,5 @@ var configViewCmd = &cobra.Command{
 }
 
 func init() {
-	configCmd.AddCommand(configViewCmd)
+	configCmd.AddCommand(configShowCmd)
 }

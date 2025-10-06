@@ -26,7 +26,7 @@ import (
 // ErrNoEditorSet is returned when the EDITOR environment variable is empty.
 var ErrNoEditorSet = fmt.Errorf("environment variable EDITOR not set")
 
-// configEditCmd represents the configEdit command
+// configEditCmd represents the config edit command
 var configEditCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Edit the configuration file",
