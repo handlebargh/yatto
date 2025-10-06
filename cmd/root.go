@@ -44,7 +44,8 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use: "yatto",
+	Use:   "yatto",
+	Short: "Interactive VCS-based todo-list for the command-line",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		setCfg := config.Settings{
 			ConfigPath: configPath,
