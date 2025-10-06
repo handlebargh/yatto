@@ -35,6 +35,55 @@ import (
 // ErrUserAborted is returned when a user cancels config file creation.
 var ErrUserAborted = errors.New("user aborted config creation")
 
+// InitConfig sets default values for application configuration and
+// attempts to load configuration from a file.
+func InitConfig(home string, configPath *string) {
+	viper.SetDefault("storage.path", filepath.Join(home, ".yatto"))
+
+	// vcs
+	viper.SetDefault("vcs.backend", "git")
+
+	// Git
+	viper.SetDefault("git.default_branch", "main")
+	viper.SetDefault("git.remote.enable", false)
+	viper.SetDefault("git.remote.name", "origin")
+
+	// jj
+	viper.SetDefault("jj.default_branch", "main")
+	viper.SetDefault("jj.remote.enable", false)
+	viper.SetDefault("jj.remote.name", "origin")
+	viper.SetDefault("jj.remote.colocate", false)
+
+	// colors
+	viper.SetDefault("colors.red_light", "#FE5F86")
+	viper.SetDefault("colors.red_dark", "#FE5F86")
+	viper.SetDefault("colors.vividRed_light", "#FE134D")
+	viper.SetDefault("colors.vividRed_dark", "#FE134D")
+	viper.SetDefault("colors.indigo_light", "#5A56E0")
+	viper.SetDefault("colors.indigo_dark", "#7571F9")
+	viper.SetDefault("colors.green_light", "#02BA84")
+	viper.SetDefault("colors.green_dark", "#02BF87")
+	viper.SetDefault("colors.orange_light", "#FFB733")
+	viper.SetDefault("colors.orange_dark", "#FFA336")
+	viper.SetDefault("colors.blue_light", "#1E90FF")
+	viper.SetDefault("colors.blue_dark", "#1E90FF")
+	viper.SetDefault("colors.yellow_light", "#CCCC00")
+	viper.SetDefault("colors.yellow_dark", "#CCCC00")
+	viper.SetDefault("colors.badge_text_light", "#000000")
+	viper.SetDefault("colors.badge_text_dark", "#000000")
+
+	// Form themes
+	viper.SetDefault("colors.form.theme", "Base16")
+
+	if *configPath != "" {
+		viper.SetConfigFile(*configPath)
+	} else {
+		viper.SetConfigName("config")
+		viper.SetConfigType("toml")
+		viper.AddConfigPath(filepath.Join(home, ".config/yatto"))
+	}
+}
+
 // Settings defines the runtime settings used by CreateConfigFile.
 //
 // Fields:
