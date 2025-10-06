@@ -21,21 +21,15 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/handlebargh/yatto/internal/version"
 	"github.com/spf13/cobra"
 )
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print application version",
-	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println(version.Header())
-		fmt.Println(version.Info())
-	},
+// configCmd represents the config command
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Manage configuration settings",
 }
 
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(configCmd)
 }

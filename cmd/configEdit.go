@@ -1,8 +1,3 @@
-// Copyright 2025 handlebargh and contributors
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
@@ -22,20 +17,34 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
-	"github.com/handlebargh/yatto/internal/version"
 	"github.com/spf13/cobra"
 )
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print application version",
-	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println(version.Header())
-		fmt.Println(version.Info())
+// ErrNoEditorSet is returned when the EDITOR environment variable is empty.
+var ErrNoEditorSet = fmt.Errorf("environment variable EDITOR not set")
+
+// configEditCmd represents the configEdit command
+var configEditCmd = &cobra.Command{
+	Use:   "edit",
+	Short: "Edit the configuration",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		editor := os.Getenv("EDITOR")
+		if editor == "" {
+			return ErrNoEditorSet
+		}
+
+		cmd := exec.Command(editor, configPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+
+		return cmd.Run()
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	configCmd.AddCommand(configEditCmd)
 }

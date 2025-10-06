@@ -21,8 +21,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/handlebargh/yatto/internal/config"
@@ -39,15 +37,11 @@ var (
 var printCmd = &cobra.Command{
 	Use:   "print",
 	Short: "Print tasks to stdout",
-	Run: func(_ *cobra.Command, _ []string) {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			panic(fmt.Errorf("fatal error getting user home directory: %w", err))
-		}
-
-		config.InitConfig(home, &configPath)
-
+	RunE: func(_ *cobra.Command, _ []string) error {
+		config.InitConfig(homePath, &configPath)
 		printTaskList(printProjects, printRegex)
+
+		return nil
 	},
 }
 

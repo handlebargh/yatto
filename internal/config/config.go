@@ -80,7 +80,8 @@ func InitConfig(home string, configPath *string) {
 	} else {
 		viper.SetConfigName("config")
 		viper.SetConfigType("toml")
-		viper.AddConfigPath(filepath.Join(home, ".config/yatto"))
+		viper.AddConfigPath(filepath.Join(home, ".config", "yatto"))
+		*configPath = filepath.Join(home, ".config", "yatto", "config.toml")
 	}
 }
 
@@ -120,7 +121,7 @@ func CreateConfigFile(set Settings) error {
 			return fmt.Errorf("fatal error getting config: %w", err)
 		}
 
-		path := filepath.Join(set.Home, ".config", "config.toml")
+		path := filepath.Join(set.Home, ".config", "yatto", "config.toml")
 		if set.ConfigPath != "" {
 			path = set.ConfigPath
 		}

@@ -24,7 +24,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -38,22 +37,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-var configPath string
+var (
+	configPath string
+	homePath   string
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "yatto",
-	Short: "Interactive VCS-based todo-list for the command-line ",
-	Run: func(_ *cobra.Command, _ []string) {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			panic(fmt.Errorf("fatal error getting user home directory: %w", err))
-		}
-
-		config.InitConfig(home, &configPath)
+	Use: "yatto",
+	RunE: func(_ *cobra.Command, _ []string) error {
 		setCfg := config.Settings{
 			ConfigPath: configPath,
-			Home:       home,
+			Home:       homePath,
 			Input:      os.Stdin,
 			Output:     os.Stdout,
 			Exit:       os.Exit,
@@ -63,7 +58,7 @@ var rootCmd = &cobra.Command{
 			if errors.Is(err, config.ErrUserAborted) {
 				os.Exit(0)
 			}
-			log.Fatalf("failed to create config: %v", err)
+			return err
 		}
 
 		// Enforce valid vcs backend
@@ -87,7 +82,7 @@ var rootCmd = &cobra.Command{
 			if errors.Is(err, storage.ErrUserAborted) {
 				os.Exit(0)
 			}
-			log.Fatalf("failed to create storage directory: %v", err)
+			return err
 		}
 
 		if viper.GetBool("git.remote.enable") || viper.GetBool("jj.remote.enable") {
@@ -102,21 +97,29 @@ var rootCmd = &cobra.Command{
 			}
 
 			if _, err := tea.NewProgram(fetchModel, tea.WithAltScreen()).Run(); err != nil {
-				fmt.Println("Error running program:", err)
-				os.Exit(1)
+				return err
 			}
 		}
 
 		if _, err := tea.NewProgram(models.InitialProjectListModel(), tea.WithAltScreen()).Run(); err != nil {
-			fmt.Println("Error running program:", err)
-			os.Exit(1)
+			return err
 		}
+
+		return nil
 	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	var homeErr error
+	homePath, homeErr := os.UserHomeDir()
+	if homeErr != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "fatal error getting user home directory: %v\n", homeErr)
+		os.Exit(1)
+	}
+
+	config.InitConfig(homePath, &configPath)
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

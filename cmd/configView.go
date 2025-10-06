@@ -1,8 +1,3 @@
-// Copyright 2025 handlebargh and contributors
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
@@ -21,21 +16,35 @@
 package cmd
 
 import (
-	"fmt"
+	"io"
+	"os"
 
-	"github.com/handlebargh/yatto/internal/version"
 	"github.com/spf13/cobra"
 )
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print application version",
-	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println(version.Header())
-		fmt.Println(version.Info())
+// configViewCmd represents the configView command
+var configViewCmd = &cobra.Command{
+	Use:   "view",
+	Short: "View the configuration",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		file, err := os.Open(configPath)
+		if err != nil {
+			return err
+		}
+
+		var closeError error
+		defer func() {
+			closeError = file.Close()
+		}()
+
+		if _, err := io.Copy(os.Stdout, file); err != nil {
+			return err
+		}
+
+		return closeError
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	configCmd.AddCommand(configViewCmd)
 }
