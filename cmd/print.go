@@ -23,7 +23,6 @@ package cmd
 import (
 	"strings"
 
-	"github.com/handlebargh/yatto/internal/config"
 	"github.com/handlebargh/yatto/internal/printer"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +37,6 @@ var printCmd = &cobra.Command{
 	Use:   "print",
 	Short: "Print tasks to stdout",
 	RunE: func(_ *cobra.Command, _ []string) error {
-		config.InitConfig(homePath, &configPath)
 		printTaskList(printProjects, printRegex)
 
 		return nil
