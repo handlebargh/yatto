@@ -1,3 +1,17 @@
+## v0.20.0 (2025-10-06)
+
+### Feat
+
+- add the cobra library with its first commands  (#49)
+
+### Fix
+
+- move priority badge color logic to helper function (#50)
+
+### Refactor
+
+- show due date only if it is set
+
 ## v0.19.4 (2025-10-02)
 
 ### Refactor
