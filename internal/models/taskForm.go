@@ -321,18 +321,6 @@ func (m taskFormModel) View() string {
 	v := strings.TrimSuffix(m.form.View(), "\n\n")
 	form := s.Base.Margin(1, 0).Render(v)
 
-	// Status (right side)
-	switch m.vars.taskPriority {
-	case "high":
-		s.Priority = s.Priority.Background(colors.Red())
-	case "medium":
-		s.Priority = s.Priority.Background(colors.Orange())
-	case "low":
-		s.Priority = s.Priority.Background(colors.Indigo())
-	default:
-		s.Priority = s.Priority.Background(colors.Indigo())
-	}
-
 	switch m.vars.taskCompleted {
 	case true:
 		s.Completed = s.Completed.Background(colors.Green())
@@ -429,9 +417,22 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 //
 // Returns the full preview string, ready to be set as the viewport's content.
 func (m taskFormModel) generatePreviewContent() string {
+	s := m.styles
+
+	switch m.vars.taskPriority {
+	case "high":
+		s.Priority = s.Priority.Background(colors.Red())
+	case "medium":
+		s.Priority = s.Priority.Background(colors.Orange())
+	case "low":
+		s.Priority = s.Priority.Background(colors.Indigo())
+	default:
+		s.Priority = s.Priority.Background(colors.Indigo())
+	}
+
 	title := fmt.Sprintf("%s %s %s",
 		m.styles.Title.Render(m.vars.taskTitle),
-		m.styles.Priority.Render(m.vars.taskPriority),
+		s.Priority.Render(m.vars.taskPriority),
 		m.styles.Completed.Render(completedString(m.vars.taskCompleted)))
 
 	// We need to wrap our content so it fits into the statusViewport.
