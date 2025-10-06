@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package version provides helper functions used to output version information
+// when the version cobra-command is run.
 package version
 
 import (

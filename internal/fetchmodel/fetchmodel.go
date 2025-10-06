@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package fetchmodel provides the spinner animation that runs during the
+// pull command at startup.
 package fetchmodel
 
 import (
