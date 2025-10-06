@@ -82,7 +82,7 @@ This allows you to verify the integrity and authenticity of the binaries.
 3. Check that the binaries match the signed checksums
 
     ```shell
-    sha256sum -c path/to/checksums.txt
+    sha256sum --check --ignore-missing path/to/checksums.txt
     ```
 
 ## Configuration
