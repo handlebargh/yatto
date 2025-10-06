@@ -197,7 +197,7 @@ func CreateConfigFile(set Settings) error {
 		}
 
 		// Create config dir
-		if err := os.MkdirAll(filepath.Join(set.Home, ".config/yatto"), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(set.Home, ".config", "yatto"), 0o755); err != nil {
 			return fmt.Errorf("error creating config directory: %w", err)
 		}
 
