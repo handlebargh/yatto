@@ -1,8 +1,3 @@
-// Copyright 2025 handlebargh and contributors
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
@@ -18,13 +13,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package main initializes and runs the Yatto TUI application.
-// It handles configuration, git synchronization (optional), and loads the project list UI.
-package main
+package cmd
 
-import "github.com/handlebargh/yatto/cmd"
+import (
+	"fmt"
+	"os"
+	"os/exec"
 
-// main is the entry point of the Yatto application.
-func main() {
-	cmd.Execute()
+	"github.com/spf13/cobra"
+)
+
+// ErrNoEditorSet is returned when the EDITOR environment variable is empty.
+var ErrNoEditorSet = fmt.Errorf("environment variable EDITOR not set")
+
+// configEditCmd represents the config edit command
+var configEditCmd = &cobra.Command{
+	Use:   "edit",
+	Short: "Edit the configuration file",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		editor := os.Getenv("EDITOR")
+		if editor == "" {
+			return ErrNoEditorSet
+		}
+
+		cmd := exec.Command(editor, configPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+
+		return cmd.Run()
+	},
+}
+
+func init() {
+	configCmd.AddCommand(configEditCmd)
 }

@@ -18,13 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package main initializes and runs the Yatto TUI application.
-// It handles configuration, git synchronization (optional), and loads the project list UI.
-package main
+package cmd
 
-import "github.com/handlebargh/yatto/cmd"
+import (
+	"github.com/spf13/cobra"
+)
 
-// main is the entry point of the Yatto application.
-func main() {
-	cmd.Execute()
+// configCmd represents the config command
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Manage configuration settings",
+}
+
+func init() {
+	rootCmd.AddCommand(configCmd)
 }

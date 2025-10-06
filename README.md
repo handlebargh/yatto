@@ -96,7 +96,7 @@ See [examples/config.toml](examples/config.toml) as a reference with all availab
 > Alternatively, a config file may also be supplied by adding the `-config` flag:
 >
 > ```bash
-> yatto -config $PATH_TO_CONFIG_FILE
+> yatto --config $PATH_TO_CONFIG_FILE
 > ```
 
 ### Colors and themes
@@ -176,17 +176,17 @@ To set up a remote
 You can print a static list of your tasks to standard output:
 
 ```shell
-yatto -print
+yatto print
 
 # Limit to any project you want
 # Get the IDs from the directory names in your storage directory
 # Run this command to print all project's metadata files:
 # find ${HOME}/.yatto -type f -name "project.json" -exec cat {} +
-yatto -print -projects "2023255a-1749-4f6c-9877-0c73ab42e5ab b5811d17-dbc7-4556-886b-92047a27e0f6"
+yatto print --projects "2023255a-1749-4f6c-9877-0c73ab42e5ab b5811d17-dbc7-4556-886b-92047a27e0f6"
 
 # Filter labels with regular expression
 # The next command will only show tasks that have a label "frontend"
-yatto -print -regex frontend
+yatto print --regex frontend
 ```
 
 If you want to print this list whenever you run an interactive shell,
@@ -197,7 +197,7 @@ open your `~/.bashrc` (or `~/.zshrc`) and add the following snippet:
 case $- in
     *i*)
         if command -v yatto >/dev/null 2>&1; then
-            yatto -print
+            yatto print
         fi
         ;;
 esac

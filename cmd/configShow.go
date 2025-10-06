@@ -1,8 +1,3 @@
-// Copyright 2025 handlebargh and contributors
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
@@ -18,13 +13,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package main initializes and runs the Yatto TUI application.
-// It handles configuration, git synchronization (optional), and loads the project list UI.
-package main
+package cmd
 
-import "github.com/handlebargh/yatto/cmd"
+import (
+	"io"
+	"os"
 
-// main is the entry point of the Yatto application.
-func main() {
-	cmd.Execute()
+	"github.com/spf13/cobra"
+)
+
+// configShowCmd represents the config show command
+var configShowCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Show the configuration file",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		file, err := os.Open(configPath)
+		if err != nil {
+			return err
+		}
+
+		var closeError error
+		defer func() {
+			closeError = file.Close()
+		}()
+
+		if _, err := io.Copy(os.Stdout, file); err != nil {
+			return err
+		}
+
+		return closeError
+	},
+}
+
+func init() {
+	configCmd.AddCommand(configShowCmd)
 }
