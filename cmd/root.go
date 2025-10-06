@@ -113,7 +113,7 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
 	var homeErr error
-	homePath, homeErr := os.UserHomeDir()
+	homePath, homeErr = os.UserHomeDir()
 	if homeErr != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "fatal error getting user home directory: %v\n", homeErr)
 		os.Exit(1)
