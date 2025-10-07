@@ -86,6 +86,7 @@ type taskFormVars struct {
 	taskLabelsSelected []string
 	taskAuthor         string
 	taskAssignee       string
+	taskAssigneeNew    string
 	taskCompleted      bool
 }
 
@@ -102,6 +103,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		taskLabelsSelected: t.LabelsList(),
 		taskAuthor:         t.Author,
 		taskAssignee:       t.Assignee,
+		taskAssigneeNew:    "", // Clear this field
 		taskCompleted:      t.Completed,
 	}
 
@@ -172,7 +174,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 
 					return nil
 				}),
-		),
+		).Title("Due Date"),
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Key("existingLabels").
@@ -185,7 +187,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Title("Enter additional labels:").
 				Value(&m.vars.taskLabels).
 				Description("Comma-separated list of labels."),
-		),
+		).Title("Labels"),
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Key("existingEmailAddresses").
@@ -193,7 +195,13 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Height(15).
 				OptionsFunc(m.sortEmailAddressesOptions, nil).
 				Value(&m.vars.taskAssignee),
-		),
+
+			huh.NewInput().
+				Key("newEmailAddress").
+				Title("Enter a new email address:").
+				Value(&m.vars.taskAssigneeNew).
+				Description("This will overwrite the selected assignee."),
+		).Title("Assignee"),
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title(confirmQuestion).
@@ -281,6 +289,10 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.form.State == huh.StateCompleted {
 		if m.vars.confirm {
+			if m.vars.taskAssigneeNew != "" {
+				m.vars.taskAssignee = m.vars.taskAssigneeNew
+			}
+
 			err := m.formVarsToTask()
 			if err != nil {
 				// TODO: we should probably return a message here.
@@ -588,10 +600,23 @@ func (m taskFormModel) sortLabelsOptions() []huh.Option[string] {
 func (m taskFormModel) sortEmailAddressesOptions() []huh.Option[string] {
 	emails, _ := vcs.AllContributorEmailAddresses()
 
-	// Sort: selected first, then alphabetical
+	// Sort: selected first, then author's address, then alphabetical
 	slices.SortFunc(emails, func(a, b string) int {
 		// Selected email comes first
-		// TODO
+		if a == m.task.Assignee {
+			return -1
+		}
+		if b == m.task.Assignee {
+			return 1
+		}
+
+		// Author's address
+		if a == m.task.Author {
+			return -1
+		}
+		if b == m.task.Author {
+			return 1
+		}
 
 		// Case-insensitive alphabetical
 		return strings.Compare(strings.ToLower(a), strings.ToLower(b))

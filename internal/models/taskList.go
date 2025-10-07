@@ -39,6 +39,7 @@ import (
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/vcs"
+	"github.com/spf13/viper"
 )
 
 const taskEntryLength = 53
@@ -129,6 +130,21 @@ type customTaskDelegate struct {
 	parent *taskListModel
 }
 
+func (d customTaskDelegate) Height() int {
+	showAuthor := viper.GetBool("author.show")
+	showAssignee := viper.GetBool("assignee.show")
+
+	if showAuthor && showAssignee {
+		return 4
+	}
+
+	if showAuthor || showAssignee {
+		return 3
+	}
+
+	return 2
+}
+
 // Render draws a single task item within the task list.
 func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	taskItem, ok := item.(*items.Task)
@@ -150,6 +166,14 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		Foreground(colors.Blue()).
 		Padding(0, 1)
 
+	authorStyle := lipgloss.NewStyle().
+		Foreground(colors.Green()).
+		Padding(0, 1)
+
+	assigneeStyle := lipgloss.NewStyle().
+		Foreground(colors.Orange()).
+		Padding(0, 1)
+
 	priorityValueStyle := lipgloss.NewStyle().
 		Foreground(colors.BadgeText()).
 		Padding(0, 1)
@@ -158,16 +182,22 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	case "low":
 		titleStyle = titleStyle.BorderForeground(colors.Indigo())
 		labelsStyle = labelsStyle.BorderForeground(colors.Indigo())
+		authorStyle = authorStyle.BorderForeground(colors.Indigo())
+		assigneeStyle = assigneeStyle.BorderForeground(colors.Indigo())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Indigo()).Background(colors.Indigo())
 	case "medium":
 		titleStyle = titleStyle.BorderForeground(colors.Orange())
 		labelsStyle = labelsStyle.BorderForeground(colors.Orange())
+		authorStyle = authorStyle.BorderForeground(colors.Orange())
+		assigneeStyle = assigneeStyle.BorderForeground(colors.Orange())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Orange()).Background(colors.Orange())
 	case "high":
 		titleStyle = titleStyle.BorderForeground(colors.Red())
 		labelsStyle = labelsStyle.BorderForeground(colors.Red())
+		authorStyle = authorStyle.BorderForeground(colors.Red())
+		assigneeStyle = assigneeStyle.BorderForeground(colors.Red())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Red()).Background(colors.Red())
 	}
@@ -179,9 +209,17 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		labelsStyle = labelsStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			MarginLeft(0)
+		authorStyle = authorStyle.
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			MarginLeft(0)
+		assigneeStyle = assigneeStyle.
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			MarginLeft(0)
 	} else {
 		titleStyle = titleStyle.MarginLeft(1)
 		labelsStyle = labelsStyle.MarginLeft(1)
+		authorStyle = authorStyle.MarginLeft(1)
+		assigneeStyle = assigneeStyle.MarginLeft(1)
 	}
 
 	// Check if item is selected
@@ -194,10 +232,28 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Render("⟹  ")
 	}
 
-	left := titleStyle.Render(marker+taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
-		labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength))
+	var left strings.Builder
 
-	right := priorityValueStyle.Render(taskItem.Priority)
+	left.WriteString(marker)
+	left.WriteString(titleStyle.Render(taskItem.CropTaskTitle(taskEntryLength)))
+	left.WriteString("\n")
+	left.WriteString(labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength)))
+
+	if viper.GetBool("author.show") {
+		left.WriteString("\n")
+		left.WriteString(authorStyle.Render("Author: "))
+		left.WriteString(taskItem.Author)
+	}
+
+	if viper.GetBool("assignee.show") {
+		left.WriteString("\n")
+		left.WriteString(assigneeStyle.Render("Assignee: "))
+		left.WriteString(taskItem.Assignee)
+	}
+
+	var right strings.Builder
+
+	right.WriteString(priorityValueStyle.Render(taskItem.Priority))
 
 	now := time.Now()
 	dueDate := taskItem.DueDate
@@ -205,50 +261,51 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if dueDate != nil &&
 		items.IsToday(dueDate) &&
 		dueDate.After(now) {
-		right += lipgloss.NewStyle().
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.VividRed()).
 			Foreground(colors.BadgeText()).
-			Render("due today")
+			Render("due today"))
 	}
 
 	if dueDate != nil && dueDate.Before(now) {
-		right += lipgloss.NewStyle().
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.VividRed()).
 			Foreground(colors.BadgeText()).
-			Render("overdue")
+			Render("overdue"))
 	}
 
 	if taskItem.InProgress {
-		right += lipgloss.NewStyle().
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Blue()).
 			Foreground(colors.BadgeText()).
-			Render("in progress")
+			Render("in progress"))
 	}
 
 	if dueDate != nil &&
 		!dueDate.Before(now) &&
 		!items.IsToday(dueDate) {
-		right += lipgloss.NewStyle().
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Yellow()).
 			Foreground(colors.BadgeText()).
-			Render("due in " + taskItem.DaysUntilToString() + " day(s)")
+			Render("due in " + taskItem.DaysUntilToString() + " day(s)"))
 	}
 
 	if taskItem.Completed {
-		right = lipgloss.NewStyle().
+		right.Reset()
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Green()).
 			Foreground(colors.BadgeText()).
-			Render("completed")
+			Render("completed"))
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Render(left),
-		right,
+		lipgloss.NewStyle().Render(left.String()),
+		right.String(),
 	)
 
 	_, err := fmt.Fprint(w, row)

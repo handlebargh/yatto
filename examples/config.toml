@@ -1,3 +1,9 @@
+[assignee]
+show = false
+
+[author]
+show = false
+
 [colors]
 badge_text_dark = "#000000"
 badge_text_light = "#000000"
@@ -29,6 +35,7 @@ default_branch = "main"
 [git.remote]
 enable = false
 name = "origin"
+url = "git@github:<username>/<repo>.git"
 
 [jj]
 default_branch = "main"
@@ -37,6 +44,7 @@ default_branch = "main"
 enable = false
 colocate = false
 name = "origin"
+url = "git@github:<username>/<repo>.git"
 
 [storage]
 # replace with your actual home directory

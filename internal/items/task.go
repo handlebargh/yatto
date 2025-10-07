@@ -113,7 +113,13 @@ func (t *Task) CropTaskLabels(length int) string {
 		return strings.ReplaceAll(t.Labels[:length-len(ellipses)]+ellipses, ",", ", ")
 	}
 
-	return strings.ReplaceAll(t.Labels, ",", ", ")
+	labels := strings.ReplaceAll(t.Labels, ",", ", ")
+
+	if labels == "" {
+		return "No labels"
+	}
+
+	return labels
 }
 
 // DueDateToString formats the task's due date as a string using DueDateLayout.
