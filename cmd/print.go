@@ -89,6 +89,6 @@ func init() {
 	printCmd.Flags().BoolVarP(&authorFlag, "author", "a", false, "Print tasks only authored by you")
 	printCmd.Flags().BoolVarP(&assigneeFlag, "assignee", "A", false, "Print tasks only assigned to you")
 	printCmd.Flags().StringVarP(&printProjects, "projects", "P", "", "List of project UUIDs to print from")
-	printCmd.Flags().StringVarP(&printRegex, "regex", "r", "", "Regex to be used on task labels")
+	printCmd.Flags().StringVarP(&printRegex, "regex", "r", "", "Regex to filter task labels")
 	rootCmd.AddCommand(printCmd)
 }
