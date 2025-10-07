@@ -1,3 +1,13 @@
+## v0.20.1 (2025-10-07)
+
+### Fix
+
+- resolve some issues that were introduced with the addition of cobra
+- fetch from remote only if backend and remote are enabled
+fix: stop shadowing variable and print message when no printable tasks are found
+fix: run config and storage dir init on every command
+fix: if print is run with --pull then do actually pull
+
 ## v0.20.0 (2025-10-06)
 
 ### Feat
