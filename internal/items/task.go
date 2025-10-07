@@ -72,8 +72,8 @@ type Task struct {
 	Description string     `json:"description,omitempty"`
 	Priority    string     `json:"priority"`
 	Labels      string     `json:"labels,omitempty"`
-	Author      *string    `json:"author"`
-	Assignee    *string    `json:"assignee,omitempty"`
+	Author      string     `json:"author,omitempty"`
+	Assignee    string     `json:"assignee,omitempty"`
 	InProgress  bool       `json:"in_progress"`
 	Completed   bool       `json:"completed"`
 	DueDate     *time.Time `json:"due_date,omitempty"`
@@ -248,17 +248,17 @@ func (t *Task) TaskToMarkdown() string {
 
 	content.WriteString("|" + completed + "|" + inProgress + "|" + priority + "\n\n")
 
-	if t.Author != nil {
+	if t.Author != "" {
 		content.WriteString("| **Task Author** |\n")
 		content.WriteString("| --------------- |\n\n")
-		content.WriteString(*t.Author)
+		content.WriteString(t.Author)
 		content.WriteString("\n\n")
 	}
 
-	if t.Assignee != nil {
+	if t.Assignee != "" {
 		content.WriteString("| **Assigned to** |\n")
 		content.WriteString("| --------------- |\n\n")
-		content.WriteString(*t.Assignee)
+		content.WriteString(t.Assignee)
 		content.WriteString("\n\n")
 	}
 
