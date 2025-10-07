@@ -78,8 +78,38 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			return m, nil
-		}
 
+		case key.Matches(msg, m.listModel.keys.toggleInProgress):
+			return m.toggleSelectedTask(
+				func(t *items.Task) { t.InProgress = !t.InProgress },
+				func(t *items.Task) (bool, string) {
+					if t.Completed {
+						return false, "Cannot set completed task as in progress"
+					}
+					return true, ""
+				},
+				func(t *items.Task) string {
+					if t.InProgress {
+						return "start"
+					}
+					return "stop"
+				},
+				"progress",
+			)
+
+		case key.Matches(msg, m.listModel.keys.toggleComplete):
+			return m.toggleSelectedTask(
+				func(t *items.Task) { t.Completed = !t.Completed; t.InProgress = false },
+				func(_ *items.Task) (bool, string) { return true, "" },
+				func(t *items.Task) string {
+					if t.Completed {
+						return "complete"
+					}
+					return "reopen"
+				},
+				"completion",
+			)
+		}
 	case tea.WindowSizeMsg:
 		footerHeight := lipgloss.Height(m.footerView())
 
@@ -120,4 +150,43 @@ func (m taskPagerModel) footerView() string {
 		Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
 	line := strings.Repeat(" ", max(0, m.viewport.Width-lipgloss.Width(info)))
 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+}
+
+// toggleSelectedTask toggles the state of the currently selected task using
+// the provided mutation, validation, and labeling functions.
+//
+// Returns the updated list model and any resulting Bubble Tea commands.
+func (m taskPagerModel) toggleSelectedTask(
+	toggleFunc func(t *items.Task),
+	precondition func(t *items.Task) (bool, string),
+	commitKind func(t *items.Task) string,
+	actionName string,
+) (tea.Model, tea.Cmd) {
+	// Clear previous selections.
+	for k := range m.listModel.selectedItems {
+		delete(m.listModel.selectedItems, k)
+	}
+
+	var listModel tea.Model
+	var cmds []tea.Cmd
+
+	if selected := m.listModel.list.SelectedItem(); selected != nil {
+		t := selected.(*items.Task)
+		i := m.listModel.list.GlobalIndex()
+
+		m.listModel.selectedItems[i] = t
+
+		var toggleCmds []tea.Cmd
+		listModel, toggleCmds = m.listModel.toggleTasks(
+			toggleFunc,
+			precondition,
+			commitKind,
+			actionName,
+		)
+
+		delete(m.listModel.selectedItems, i)
+		cmds = append(cmds, toggleCmds...)
+	}
+
+	return listModel, tea.Batch(cmds...)
 }
