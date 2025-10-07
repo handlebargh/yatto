@@ -170,11 +170,11 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	// Base styles.
 	titleStyle := lipgloss.NewStyle().
-		Foreground(colors.Blue()).
 		Padding(0, 1).
 		Width(60)
 
 	labelsStyle := lipgloss.NewStyle().
+		Foreground(colors.Blue()).
 		Padding(0, 1)
 
 	authorStyle := lipgloss.NewStyle().
@@ -256,10 +256,15 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		left.WriteString(taskItem.Author)
 	}
 
+	me, _ := vcs.UserEmail()
 	if viper.GetBool("assignee.show") {
 		left.WriteString("\n")
 		left.WriteString(assigneeStyle.Render("Assignee: "))
-		left.WriteString(lipgloss.NewStyle().Foreground(colors.Red()).Render(taskItem.Assignee))
+		if taskItem.Assignee == me {
+			left.WriteString(lipgloss.NewStyle().Foreground(colors.Red()).Render(taskItem.Assignee))
+		} else {
+			left.WriteString(taskItem.Assignee)
+		}
 	}
 
 	var right strings.Builder
