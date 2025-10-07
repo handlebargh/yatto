@@ -130,6 +130,7 @@ type customTaskDelegate struct {
 	parent *taskListModel
 }
 
+// Height returns the delegate's preferred height.
 func (d customTaskDelegate) Height() int {
 	showAuthor := viper.GetBool("author.show")
 	showAssignee := viper.GetBool("assignee.show")
