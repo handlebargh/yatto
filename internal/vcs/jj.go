@@ -239,6 +239,8 @@ func jjPush() ([]byte, error) {
 	return output, nil
 }
 
+// jjUserEmail returns the email address that is returned by the
+// jj config get command.
 func jjUserEmail() (string, error) {
 	emailCmd := exec.Command("jj", "config", "get", "user.email")
 	emailCmd.Dir = viper.GetString("storage.path")
@@ -251,6 +253,8 @@ func jjUserEmail() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+// jjContributorEmailAddresses returns all commit author email addresses
+// found by the jj log command.
 func jjContributorEmailAddresses() ([]string, error) {
 	emailsCmd := exec.Command("jj", "log", "--template={author_email}")
 	emailsCmd.Dir = viper.GetString("storage.path")

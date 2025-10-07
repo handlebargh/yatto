@@ -100,8 +100,8 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		taskDueDate:        t.DueDateToString(),
 		taskLabels:         "", // Clear labels as we have them already selected.
 		taskLabelsSelected: t.LabelsList(),
-		taskAuthor:         *t.Author,
-		taskAssignee:       *t.Assignee,
+		taskAuthor:         t.Author,
+		taskAssignee:       t.Assignee,
 		taskCompleted:      t.Completed,
 	}
 
@@ -469,8 +469,8 @@ func (m taskFormModel) formVarsToTask() error {
 	m.task.Title = m.vars.taskTitle
 	m.task.Description = m.vars.taskDescription
 	m.task.Priority = m.vars.taskPriority
-	m.task.Author = &m.vars.taskAuthor
-	m.task.Assignee = &m.vars.taskAssignee
+	m.task.Author = m.vars.taskAuthor
+	m.task.Assignee = m.vars.taskAssignee
 
 	// Merge labels from MultiSelect (selected) and freeform input (typed)
 	typedLabels := helpers.LabelsStringToSlice(m.vars.taskLabels)
@@ -601,7 +601,7 @@ func (m taskFormModel) sortEmailAddressesOptions() []huh.Option[string] {
 	opts := make([]huh.Option[string], 0, len(emails))
 	for _, item := range emails {
 		opt := huh.NewOption[string](item, item)
-		if item == *m.task.Assignee {
+		if item == m.task.Assignee {
 			opt = opt.Selected(true)
 		}
 		opts = append(opts, opt)

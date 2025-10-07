@@ -67,6 +67,8 @@ func PullCmd() tea.Cmd {
 	}
 }
 
+// UserEmail returns the backend specific userEmail command according
+// to configuration.
 func UserEmail() (string, error) {
 	switch viper.GetString("vcs.backend") {
 	case "git":
@@ -78,6 +80,8 @@ func UserEmail() (string, error) {
 	}
 }
 
+// AllContributorEmailAddresses returns the backend specific
+// contributorEmailAddresses command according to configuration.
 func AllContributorEmailAddresses() ([]string, error) {
 	switch viper.GetString("vcs.backend") {
 	case "git":

@@ -226,6 +226,8 @@ func PromptUser(input io.Reader, output io.Writer, message string, expectedInput
 	return "", ErrUnexpectedInput
 }
 
+// UniqueNonEmptyStrings splits the input string by newlines, trims whitespace from each line,
+// and returns a slice of unique, non-empty strings in arbitrary order.
 func UniqueNonEmptyStrings(input string) []string {
 	rows := strings.Split(input, "\n")
 	uniqueItems := make(map[string]bool)

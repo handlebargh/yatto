@@ -186,6 +186,8 @@ func gitPush() ([]byte, error) {
 	return output, nil
 }
 
+// gitUserEmail returns the email address that is returned by the
+// git config command.
 func gitUserEmail() (string, error) {
 	emailCmd := exec.Command("git", "config", "user.email")
 	emailCmd.Dir = viper.GetString("storage.path")
@@ -198,6 +200,8 @@ func gitUserEmail() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+// gitContributorEmailAddresses returns all commit author email addresses
+// found by the git log command.
 func gitContributorEmailAddresses() ([]string, error) {
 	emailsCmd := exec.Command("git", "log", "--format=%aE")
 	emailsCmd.Dir = viper.GetString("storage.path")
