@@ -54,6 +54,8 @@ type taskListKeyMap struct {
 	deleteItem       key.Binding
 	sortByPriority   key.Binding
 	sortByDueDate    key.Binding
+	sortByAuthor     key.Binding
+	sortByAssignee   key.Binding
 	toggleInProgress key.Binding
 	toggleComplete   key.Binding
 	goBackVim        key.Binding
@@ -84,6 +86,14 @@ func newTaskListKeyMap() *taskListKeyMap {
 		sortByDueDate: key.NewBinding(
 			key.WithKeys("alt+d"),
 			key.WithHelp("alt+d", "sort by due date"),
+		),
+		sortByAuthor: key.NewBinding(
+			key.WithKeys("alt+a"),
+			key.WithHelp("alt+a", "sort by author"),
+		),
+		sortByAssignee: key.NewBinding(
+			key.WithKeys("alt+A"),
+			key.WithHelp("alt+A", "sort by assignee"),
 		),
 		deleteItem: key.NewBinding(
 			key.WithKeys("D"),
@@ -249,7 +259,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if viper.GetBool("assignee.show") {
 		left.WriteString("\n")
 		left.WriteString(assigneeStyle.Render("Assignee: "))
-		left.WriteString(taskItem.Assignee)
+		left.WriteString(lipgloss.NewStyle().Foreground(colors.Red()).Render(taskItem.Assignee))
 	}
 
 	var right strings.Builder
@@ -391,6 +401,8 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
 			listKeys.sortByDueDate,
+			listKeys.sortByAuthor,
+			listKeys.sortByAssignee,
 			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
 			listKeys.toggleSelect,
@@ -579,6 +591,14 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				sortTasksByKeys(&m.list, []string{"state", "dueDate"})
 				return m, nil
 
+			case key.Matches(msg, m.keys.sortByAuthor):
+				sortTasksByKeys(&m.list, []string{"state", "author", "dueDate", "priority"})
+				return m, nil
+
+			case key.Matches(msg, m.keys.sortByAssignee):
+				sortTasksByKeys(&m.list, []string{"state", "assignee", "dueDate", "priority"})
+				return m, nil
+
 			case key.Matches(msg, m.keys.chooseItem):
 				if m.list.SelectedItem() != nil {
 					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
@@ -742,53 +762,83 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 		}
 	}
 
+	me, _ := vcs.UserEmail()
+
 	slices.SortStableFunc(tasks, func(x, y *items.Task) int {
 		for _, k := range keys {
+			var cmpResult int
 			switch k {
-			case "priority":
-				// Completed tasks to bottom
-				if x.Completed && !y.Completed {
-					return 1
+			case "state":
+				if x.Completed != y.Completed {
+					if x.Completed {
+						cmpResult = 1
+					} else {
+						cmpResult = -1
+					}
+				} else if x.InProgress != y.InProgress {
+					if x.InProgress {
+						cmpResult = -1
+					} else {
+						cmpResult = 1
+					}
+				} else {
+					cmpResult = 0
 				}
-				if !x.Completed && y.Completed {
-					return -1
+			case "assignee":
+				if x.Assignee == "" && y.Assignee != "" {
+					cmpResult = 1
+				} else if x.Assignee != "" && y.Assignee == "" {
+					cmpResult = -1
+				} else if x.Assignee == me && y.Assignee != me {
+					cmpResult = -1
+				} else if x.Assignee != me && y.Assignee == me {
+					cmpResult = 1
+				} else {
+					cmpResult = strings.Compare(strings.ToLower(x.Assignee), strings.ToLower(y.Assignee))
 				}
-				// Higher number = higher priority
-				if compare := cmp.Compare(y.PriorityValue(), x.PriorityValue()); compare != 0 {
-					return compare
-				}
-
 			case "dueDate":
 				dx, dy := x.DueDate, y.DueDate
 				switch {
 				case dx == nil && dy != nil:
-					return 1
+					cmpResult = 1
 				case dx != nil && dy == nil:
-					return -1
+					cmpResult = -1
 				case dx != nil && dy != nil:
 					if dx.Before(*dy) {
-						return -1
+						cmpResult = -1
+					} else if dx.After(*dy) {
+						cmpResult = 1
+					} else {
+						cmpResult = 0
 					}
-					if dx.After(*dy) {
-						return 1
+				default:
+					cmpResult = 0
+				}
+			case "priority":
+				if x.Completed != y.Completed {
+					if x.Completed {
+						cmpResult = 1
+					} else {
+						cmpResult = -1
 					}
+				} else {
+					cmpResult = cmp.Compare(y.PriorityValue(), x.PriorityValue())
 				}
-
-			case "state":
-				// Completed tasks go to bottom
-				if x.Completed && !y.Completed {
-					return 1
+			case "author":
+				if x.Author == "" && y.Author != "" {
+					cmpResult = 1
+				} else if x.Author != "" && y.Author == "" {
+					cmpResult = -1
+				} else if x.Author == me && y.Author != me {
+					cmpResult = -1
+				} else if x.Author != me && y.Author == me {
+					cmpResult = 1
+				} else {
+					cmpResult = strings.Compare(strings.ToLower(x.Author), strings.ToLower(y.Author))
 				}
-				if !x.Completed && y.Completed {
-					return -1
-				}
-				// In-progress before others
-				if x.InProgress && !y.InProgress {
-					return -1
-				}
-				if !x.InProgress && y.InProgress {
-					return 1
-				}
+			}
+			if cmpResult != 0 {
+				return cmpResult
 			}
 		}
 		return 0
