@@ -245,17 +245,18 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	var left strings.Builder
 
+	// Title
 	left.WriteString(marker)
 	left.WriteString(titleStyle.Render(taskItem.CropTaskTitle(taskEntryLength)))
-	left.WriteString("\n")
-	left.WriteString(labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength)))
 
+	// Author
 	if viper.GetBool("author.show") {
 		left.WriteString("\n")
 		left.WriteString(authorStyle.Render("Author: "))
 		left.WriteString(taskItem.Author)
 	}
 
+	// Assignee
 	me, _ := vcs.UserEmail()
 	if viper.GetBool("assignee.show") {
 		left.WriteString("\n")
@@ -266,6 +267,10 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			left.WriteString(taskItem.Assignee)
 		}
 	}
+
+	// Labels
+	left.WriteString("\n")
+	left.WriteString(labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength)))
 
 	var right strings.Builder
 
