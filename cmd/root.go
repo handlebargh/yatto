@@ -46,7 +46,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "yatto",
 	Short: "Interactive VCS-based todo-list for the command-line",
-	RunE: func(_ *cobra.Command, _ []string) error {
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 		setCfg := config.Settings{
 			ConfigPath: configPath,
 			Home:       homePath,
@@ -86,7 +86,11 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		if viper.GetBool("git.remote.enable") || viper.GetBool("jj.remote.enable") {
+		return nil
+	},
+	RunE: func(_ *cobra.Command, _ []string) error {
+		if (viper.GetString("vcs.backend") == "git" && viper.GetBool("git.remote.enable")) ||
+			(viper.GetString("vcs.backend") == "jj" && viper.GetBool("jj.remote.enable")) {
 			s := spinner.New()
 			s.Spinner = spinner.Dot
 			s.Style = s.Style.

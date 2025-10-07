@@ -23,8 +23,13 @@ package cmd
 import (
 	"strings"
 
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/fetchmodel"
 	"github.com/handlebargh/yatto/internal/printer"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -37,6 +42,24 @@ var printCmd = &cobra.Command{
 	Use:   "print",
 	Short: "Print tasks to stdout",
 	RunE: func(_ *cobra.Command, _ []string) error {
+		if pullFlag &&
+			((viper.GetString("vcs.backend") == "git" && viper.GetBool("git.remote.enable")) ||
+				(viper.GetString("vcs.backend") == "jj" && viper.GetBool("jj.remote.enable"))) {
+			s := spinner.New()
+			s.Spinner = spinner.Dot
+			s.Style = s.Style.
+				Foreground(lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}).
+				Bold(true)
+
+			fetchModel := fetchmodel.FetchModel{
+				Spinner: s,
+			}
+
+			if _, err := tea.NewProgram(fetchModel, tea.WithAltScreen()).Run(); err != nil {
+				return err
+			}
+		}
+
 		printTaskList(printProjects, printRegex)
 
 		return nil
