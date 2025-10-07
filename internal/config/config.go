@@ -42,9 +42,11 @@ func InitConfig(home string, configPath *string) {
 
 	// assignee
 	viper.SetDefault("assignee.show", false)
+	viper.SetDefault("assignee.show_printer", false)
 
 	// author
 	viper.SetDefault("author.show", false)
+	viper.SetDefault("author.show_printer", false)
 
 	// vcs
 	viper.SetDefault("vcs.backend", "git")

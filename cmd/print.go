@@ -34,6 +34,8 @@ import (
 
 var (
 	pullFlag      bool
+	authorFlag    bool
+	assigneeFlag  bool
 	printProjects string
 	printRegex    string
 )
@@ -79,11 +81,13 @@ func printTaskList(printProjects, printRegex string) {
 	// Get a slice of strings from user input.
 	projects := strings.Fields(printProjects)
 
-	printer.PrintTasks(printRegex, projects...)
+	printer.PrintTasks(printRegex, authorFlag, assigneeFlag, projects...)
 }
 
 func init() {
 	printCmd.Flags().BoolVarP(&pullFlag, "pull", "p", false, "Pull the remote before printing")
+	printCmd.Flags().BoolVarP(&authorFlag, "author", "a", false, "Print tasks only authored by you")
+	printCmd.Flags().BoolVarP(&assigneeFlag, "assignee", "A", false, "Print tasks only assigned to you")
 	printCmd.Flags().StringVarP(&printProjects, "projects", "P", "", "List of project UUIDs to print from")
 	printCmd.Flags().StringVarP(&printRegex, "regex", "r", "", "Regex to be used on task labels")
 	rootCmd.AddCommand(printCmd)

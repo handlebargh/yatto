@@ -27,12 +27,15 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
+	"github.com/handlebargh/yatto/internal/vcs"
+	"github.com/spf13/viper"
 )
 
 // projectTask represents a single task along with the project it belongs to.
@@ -92,9 +95,34 @@ func getProjectTasks(projectsIDs ...string) ([]projectTask, []string) {
 //
 // The sort is stable, preserving the relative order of equal elements across criteria.
 func sortTasks(tasks []projectTask) {
+	me, _ := vcs.UserEmail()
+
 	slices.SortStableFunc(tasks, func(x, y projectTask) int {
-		for _, key := range []string{"state", "dueDate", "priority"} {
+		for _, key := range []string{"state", "assignee", "dueDate", "priority"} {
 			switch key {
+			case "state":
+				// In-progress before others
+				if x.task.InProgress && !y.task.InProgress {
+					return -1
+				}
+				if !x.task.InProgress && y.task.InProgress {
+					return 1
+				}
+
+			case "assignee":
+				switch {
+				case x.task.Assignee == "" && y.task.Assignee != "":
+					return 1
+				case x.task.Assignee != "" && y.task.Assignee == "":
+					return -1
+				case x.task.Assignee == me && y.task.Assignee != me:
+					return -1
+				case x.task.Assignee != me && y.task.Assignee == me:
+					return 1
+				default:
+					return strings.Compare(strings.ToLower(x.task.Assignee), strings.ToLower(y.task.Assignee))
+				}
+
 			case "priority":
 				// Higher number = higher priority
 				if compare := cmp.Compare(y.task.PriorityValue(), x.task.PriorityValue()); compare != 0 {
@@ -116,15 +144,6 @@ func sortTasks(tasks []projectTask) {
 						return 1
 					}
 				}
-
-			case "state":
-				// In-progress before others
-				if x.task.InProgress && !y.task.InProgress {
-					return -1
-				}
-				if !x.task.InProgress && y.task.InProgress {
-					return 1
-				}
 			}
 		}
 		return 0
@@ -144,7 +163,7 @@ func sortTasks(tasks []projectTask) {
 //   - Priority, styled by level (low, medium, high)
 //   - Badges indicating task state, including:
 //   - "due today", "overdue", "in progress", or "due in N day(s)"
-func PrintTasks(labelRegex string, projectsIDs ...string) {
+func PrintTasks(labelRegex string, author, assignee bool, projectsIDs ...string) {
 	projTask, missing := getProjectTasks(projectsIDs...)
 
 	if len(missing) > 0 {
@@ -157,12 +176,22 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		}
 	}
 
+	me, _ := vcs.UserEmail()
 	regex := regexp.MustCompile(labelRegex)
 
 	var pendingTasks []projectTask
 	for _, pt := range projTask {
 		if !pt.task.Completed && regex.MatchString(pt.task.Labels) {
-			pendingTasks = append(pendingTasks, pt)
+			switch {
+			case author && pt.task.Author == me:
+				pendingTasks = append(pendingTasks, pt)
+			case assignee && pt.task.Assignee == me:
+				pendingTasks = append(pendingTasks, pt)
+			case !author && !assignee:
+				pendingTasks = append(pendingTasks, pt)
+			default:
+				break
+			}
 		}
 	}
 
@@ -183,20 +212,31 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 			Render(pt.project.Title)
 		taskPriority := pt.task.Priority
 
-		var taskLabels string
-		if len(pt.task.Labels) > 0 {
-			taskLabels = lipgloss.NewStyle().
-				Foreground(colors.Blue()).
-				Render("\n  " + pt.task.CropTaskLabels(40))
+		var left strings.Builder
+
+		left.WriteString("\n")
+		left.WriteString(lipgloss.NewStyle().Width(50).Render(taskTitle))
+		left.WriteString("\n")
+		left.WriteString(lipgloss.NewStyle().Width(50).Render(projectTitle))
+		left.WriteString("\n")
+		left.WriteString(lipgloss.NewStyle().Width(50).Foreground(colors.Blue()).Render(pt.task.CropTaskLabels(40)))
+
+		if viper.GetBool("author.show_printer") {
+			left.WriteString("\n")
+			left.WriteString(lipgloss.NewStyle().Foreground(colors.Green()).Render("Author: "))
+			left.WriteString(pt.task.Author)
 		}
 
-		left := lipgloss.NewStyle().
-			Width(50).
-			Render(
-				"\n  " +
-					taskTitle + "\n  " +
-					projectTitle +
-					taskLabels)
+		me, _ := vcs.UserEmail()
+		if viper.GetBool("assignee.show_printer") {
+			left.WriteString("\n")
+			left.WriteString(lipgloss.NewStyle().Foreground(colors.Orange()).Render("Assignee: "))
+			if pt.task.Assignee == me {
+				left.WriteString(lipgloss.NewStyle().Foreground(colors.Red()).Render(pt.task.Assignee))
+			} else {
+				left.WriteString(pt.task.Assignee)
+			}
+		}
 
 		priorityValueStyle := lipgloss.NewStyle().
 			Foreground(colors.BadgeText()).
@@ -211,9 +251,10 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 			priorityValueStyle = priorityValueStyle.Background(colors.Red())
 		}
 
-		right := lipgloss.NewStyle().Render(
-			"\n" + priorityValueStyle.Render(taskPriority),
-		)
+		var right strings.Builder
+
+		right.WriteString("\n")
+		right.WriteString(priorityValueStyle.Render(taskPriority))
 
 		now := time.Now()
 		dueDate := pt.task.DueDate
@@ -221,40 +262,40 @@ func PrintTasks(labelRegex string, projectsIDs ...string) {
 		if dueDate != nil &&
 			items.IsToday(dueDate) &&
 			dueDate.After(now) {
-			right += lipgloss.NewStyle().
+			right.WriteString(lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.VividRed()).
 				Foreground(colors.BadgeText()).
-				Render("due today")
+				Render("due today"))
 		}
 
 		if dueDate != nil && dueDate.Before(now) {
-			right += lipgloss.NewStyle().
+			right.WriteString(lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.VividRed()).
 				Foreground(colors.BadgeText()).
-				Render("overdue")
+				Render("overdue"))
 		}
 
 		if pt.task.InProgress {
-			right += lipgloss.NewStyle().
+			right.WriteString(lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.Blue()).
 				Foreground(colors.BadgeText()).
-				Render("in progress")
+				Render("in progress"))
 		}
 
 		if dueDate != nil &&
 			!dueDate.Before(now) &&
 			!items.IsToday(dueDate) {
-			right += lipgloss.NewStyle().
+			right.WriteString(lipgloss.NewStyle().
 				Padding(0, 1).
 				Background(colors.Yellow()).
 				Foreground(colors.BadgeText()).
-				Render("due in " + pt.task.DaysUntilToString() + " day(s)")
+				Render("due in " + pt.task.DaysUntilToString() + " day(s)"))
 		}
 
-		row := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+		row := lipgloss.JoinHorizontal(lipgloss.Top, left.String(), right.String())
 
 		fmt.Println(row)
 	}
