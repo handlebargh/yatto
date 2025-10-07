@@ -170,11 +170,11 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	// Base styles.
 	titleStyle := lipgloss.NewStyle().
+		Foreground(colors.Blue()).
 		Padding(0, 1).
 		Width(60)
 
 	labelsStyle := lipgloss.NewStyle().
-		Foreground(colors.Blue()).
 		Padding(0, 1)
 
 	authorStyle := lipgloss.NewStyle().
@@ -769,31 +769,29 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 			var cmpResult int
 			switch k {
 			case "state":
-				if x.Completed != y.Completed {
-					if x.Completed {
-						cmpResult = 1
-					} else {
-						cmpResult = -1
-					}
-				} else if x.InProgress != y.InProgress {
-					if x.InProgress {
-						cmpResult = -1
-					} else {
-						cmpResult = 1
-					}
-				} else {
+				switch {
+				case x.Completed && !y.Completed:
+					cmpResult = 1
+				case !x.Completed && y.Completed:
+					cmpResult = -1
+				case x.InProgress && !y.InProgress:
+					cmpResult = -1
+				case !x.InProgress && y.InProgress:
+					cmpResult = 1
+				default:
 					cmpResult = 0
 				}
 			case "assignee":
-				if x.Assignee == "" && y.Assignee != "" {
+				switch {
+				case x.Assignee == "" && y.Assignee != "":
 					cmpResult = 1
-				} else if x.Assignee != "" && y.Assignee == "" {
+				case x.Assignee != "" && y.Assignee == "":
 					cmpResult = -1
-				} else if x.Assignee == me && y.Assignee != me {
+				case x.Assignee == me && y.Assignee != me:
 					cmpResult = -1
-				} else if x.Assignee != me && y.Assignee == me {
+				case x.Assignee != me && y.Assignee == me:
 					cmpResult = 1
-				} else {
+				default:
 					cmpResult = strings.Compare(strings.ToLower(x.Assignee), strings.ToLower(y.Assignee))
 				}
 			case "dueDate":
@@ -804,11 +802,12 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 				case dx != nil && dy == nil:
 					cmpResult = -1
 				case dx != nil && dy != nil:
-					if dx.Before(*dy) {
+					switch {
+					case dx.Before(*dy):
 						cmpResult = -1
-					} else if dx.After(*dy) {
+					case dx.After(*dy):
 						cmpResult = 1
-					} else {
+					default:
 						cmpResult = 0
 					}
 				default:
@@ -825,15 +824,16 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 					cmpResult = cmp.Compare(y.PriorityValue(), x.PriorityValue())
 				}
 			case "author":
-				if x.Author == "" && y.Author != "" {
+				switch {
+				case x.Author == "" && y.Author != "":
 					cmpResult = 1
-				} else if x.Author != "" && y.Author == "" {
+				case x.Author != "" && y.Author == "":
 					cmpResult = -1
-				} else if x.Author == me && y.Author != me {
+				case x.Author == me && y.Author != me:
 					cmpResult = -1
-				} else if x.Author != me && y.Author == me {
+				case x.Author != me && y.Author == me:
 					cmpResult = 1
-				} else {
+				default:
 					cmpResult = strings.Compare(strings.ToLower(x.Author), strings.ToLower(y.Author))
 				}
 			}
