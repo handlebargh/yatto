@@ -598,7 +598,7 @@ func (m taskFormModel) sortLabelsOptions() []huh.Option[string] {
 }
 
 func (m taskFormModel) sortEmailAddressesOptions() []huh.Option[string] {
-	emails, _ := vcs.AllContributorEmailAddresses()
+	emails, _ := vcs.AllContributors()
 
 	// Sort: selected first, then author's address, then alphabetical
 	slices.SortFunc(emails, func(a, b string) int {

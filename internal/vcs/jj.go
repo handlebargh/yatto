@@ -260,14 +260,14 @@ func jjUser() (string, error) {
 	var result strings.Builder
 	result.WriteString(strings.TrimSpace(string(nameOut)))
 	result.WriteString(" ")
-	result.WriteString(strings.TrimSpace(string(emailOut)))
+	result.WriteString(helpers.AddAngleBracketsToEmail(strings.TrimSpace(string(emailOut))))
 
 	return result.String(), nil
 }
 
 // jjContributorEmailAddresses returns all commit author email addresses
 // found by the jj log command.
-func jjContributorEmailAddresses() ([]string, error) {
+func jjContributors() ([]string, error) {
 	emailsCmd := exec.Command("jj", "log", "--template=author")
 	emailsCmd.Dir = viper.GetString("storage.path")
 
@@ -276,13 +276,11 @@ func jjContributorEmailAddresses() ([]string, error) {
 		return nil, err
 	}
 
-	unique := helpers.UniqueNonEmptyStrings(string(output))
-
-	var result []string
-	for _, authorRaw := range unique {
+	var authors []string
+	for _, authorRaw := range strings.Split(string(output), "\n") {
 		author := strings.Split(authorRaw, " ")[1:]
-		result = append(result, strings.Join(author, " "))
+		authors = append(authors, strings.Join(author, " "))
 	}
 
-	return helpers.RemoveEmptyAndDuplicates(result), nil
+	return helpers.UniqueNonEmptyStrings(authors), nil
 }

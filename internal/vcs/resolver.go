@@ -80,14 +80,14 @@ func User() (string, error) {
 	}
 }
 
-// AllContributorEmailAddresses returns the backend specific
-// contributorEmailAddresses command according to configuration.
-func AllContributorEmailAddresses() ([]string, error) {
+// AllContributors returns the backend specific
+// contributors command according to configuration.
+func AllContributors() ([]string, error) {
 	switch viper.GetString("vcs.backend") {
 	case "git":
-		return gitContributorEmailAddresses()
+		return gitContributors()
 	case "jj":
-		return jjContributorEmailAddresses()
+		return jjContributors()
 	default:
 		return nil, nil
 	}

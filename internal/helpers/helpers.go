@@ -228,11 +228,10 @@ func PromptUser(input io.Reader, output io.Writer, message string, expectedInput
 
 // UniqueNonEmptyStrings splits the input string by newlines, trims whitespace from each line,
 // and returns a slice of unique, non-empty strings in arbitrary order.
-func UniqueNonEmptyStrings(input string) []string {
-	rows := strings.Split(input, "\n")
+func UniqueNonEmptyStrings(slice []string) []string {
 	uniqueItems := make(map[string]bool)
 
-	for _, item := range rows {
+	for _, item := range slice {
 		item = strings.TrimSpace(item)
 		if item != "" {
 			uniqueItems[item] = true
@@ -241,26 +240,33 @@ func UniqueNonEmptyStrings(input string) []string {
 
 	result := make([]string, 0, len(uniqueItems))
 	for item := range uniqueItems {
-		result = append(result, item)
+		result = append(result, AddAngleBracketsToEmail(item))
 	}
 
 	return result
 }
 
-// RemoveEmptyAndDuplicates removes empty and duplicate entries from a
-// slice of string and returns a sanitized slice.
-func RemoveEmptyAndDuplicates(slice []string) []string {
-	seen := make(map[string]bool)
-	var result []string
-
-	for _, item := range slice {
-		if item == "" {
-			continue // Skip empty strings
-		}
-		if !seen[item] {
-			seen[item] = true
-			result = append(result, item)
-		}
+// AddAngleBracketsToEmail wraps the email address in a string with "<" and ">"
+// if it is not already wrapped. The function assumes the email is the last
+// word in the string (or the only word containing "@").
+//
+// If the email is already wrapped in "<" and ">", the string is returned unchanged.
+// If no email is found, the string is returned as-is.
+func AddAngleBracketsToEmail(s string) string {
+	atIndex := strings.Index(s, "@")
+	if atIndex == -1 {
+		return s
 	}
-	return result
+
+	start := strings.LastIndex(s[:atIndex], " ") + 1
+	end := len(s)
+
+	email := s[start:end]
+
+	// Check if the email is already wrapped in < and >
+	if strings.HasPrefix(email, "<") && strings.HasSuffix(email, ">") {
+		return s
+	}
+
+	return s[:start] + "<" + email + ">"
 }

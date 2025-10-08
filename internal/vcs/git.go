@@ -207,14 +207,14 @@ func gitUser() (string, error) {
 	var result strings.Builder
 	result.WriteString(strings.TrimSpace(string(nameOut)))
 	result.WriteString(" ")
-	result.WriteString(strings.TrimSpace(string(emailOut)))
+	result.WriteString(helpers.AddAngleBracketsToEmail(strings.TrimSpace(string(emailOut))))
 
 	return result.String(), nil
 }
 
 // gitContributorEmailAddresses returns all commit author email addresses
 // found by the git log command.
-func gitContributorEmailAddresses() ([]string, error) {
+func gitContributors() ([]string, error) {
 	emailsCmd := exec.Command("git", "log", "--format=%aN %aE")
 	emailsCmd.Dir = viper.GetString("storage.path")
 
@@ -223,7 +223,7 @@ func gitContributorEmailAddresses() ([]string, error) {
 		return nil, err
 	}
 
-	emails := helpers.UniqueNonEmptyStrings(string(output))
+	authors := strings.Split(string(output), "\n")
 
-	return emails, nil
+	return helpers.UniqueNonEmptyStrings(authors), nil
 }

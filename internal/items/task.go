@@ -26,6 +26,7 @@
 package items
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -178,12 +179,16 @@ func (t *Task) PriorityValue() int {
 // MarshalTask returns a pretty-printed JSON representation of the task.
 // Panics if serialization fails.
 func (t *Task) MarshalTask() []byte {
-	bytes, err := json.MarshalIndent(t, "", "\t")
-	if err != nil {
+	var buf bytes.Buffer
+	encoder := json.NewEncoder(&buf)
+	encoder.SetIndent("", "\t")
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(t); err != nil {
 		panic(err)
 	}
 
-	return bytes
+	// Remove the trailing newline added by Encode
+	return bytes.TrimSuffix(buf.Bytes(), []byte("\n"))
 }
 
 // WriteTaskJSON writes the given task JSON to disk under the project directory,

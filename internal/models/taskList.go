@@ -251,6 +251,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	// Author
 	if viper.GetBool("author.show") {
+		// Strip email address in list view.
 		authorSlice := strings.Split(taskItem.Author, " ")
 		authorString := strings.Join(authorSlice[:len(authorSlice)-1], " ")
 
@@ -262,13 +263,14 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	// Assignee
 	me, _ := vcs.User()
 	if viper.GetBool("assignee.show") {
+		// Strip email address in list view.
 		assigneeSlice := strings.Split(taskItem.Assignee, " ")
 		assigneeString := strings.Join(assigneeSlice[:len(assigneeSlice)-1], " ")
 
 		left.WriteString("\n")
 		left.WriteString(assigneeStyle.Render("Assignee: "))
 		if taskItem.Assignee == me {
-			left.WriteString(lipgloss.NewStyle().Foreground(colors.Red()).Render(taskItem.Assignee))
+			left.WriteString(lipgloss.NewStyle().Foreground(colors.Red()).Render(assigneeString))
 		} else {
 			left.WriteString(assigneeString)
 		}
