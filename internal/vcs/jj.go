@@ -24,8 +24,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
 )
@@ -235,4 +237,50 @@ func jjPush() ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+// jjUser returns the name and email address that is returned by the
+// jj config get command.
+func jjUser() (string, error) {
+	nameCmd := exec.Command("jj", "config", "get", "user.name")
+	nameCmd.Dir = viper.GetString("storage.path")
+	nameOut, err := nameCmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	emailCmd := exec.Command("jj", "config", "get", "user.email")
+	emailCmd.Dir = viper.GetString("storage.path")
+
+	emailOut, err := emailCmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	var result strings.Builder
+	result.WriteString(strings.TrimSpace(string(nameOut)))
+	result.WriteString(" ")
+	result.WriteString(helpers.AddAngleBracketsToEmail(strings.TrimSpace(string(emailOut))))
+
+	return result.String(), nil
+}
+
+// jjContributorEmailAddresses returns all commit author email addresses
+// found by the jj log command.
+func jjContributors() ([]string, error) {
+	emailsCmd := exec.Command("jj", "log", "--template=author")
+	emailsCmd.Dir = viper.GetString("storage.path")
+
+	output, err := emailsCmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	var authors []string
+	for _, authorRaw := range strings.Split(string(output), "\n") {
+		author := strings.Split(authorRaw, " ")[1:]
+		authors = append(authors, strings.Join(author, " "))
+	}
+
+	return helpers.UniqueNonEmptyStrings(authors), nil
 }

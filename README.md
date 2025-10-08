@@ -20,7 +20,7 @@ task directory as a Git or Jujutsu repository for versioning, synchronization an
 - **Task attributes** include due dates and searchable labels.
 - Tasks can be:
   - written in **markdown**
-  - **sorted** by due date or priority
+  - **sorted** by author, assignee, due date and priority
   - **marked** as in progress
 - **Non-interactive output**: Print all open tasks from any project
 - Supports **simple theme customization**
@@ -93,7 +93,7 @@ it will ask you to set up a configuration file located at: `${HOME}/.config/yatt
 See [examples/config.toml](examples/config.toml) as a reference with all available configuration values.
 
 > [!TIP]
-> Alternatively, a config file may also be supplied by adding the `-config` flag:
+> Alternatively, a config file may also be supplied by adding the `--config` flag:
 >
 > ```bash
 > yatto --config $PATH_TO_CONFIG_FILE
@@ -204,7 +204,7 @@ esac
 ```
 
 > [!TIP]
-> Add the -pull flag to pull from a configured remote before printing.
+> Add the --pull flag to pull from a configured remote before printing.
 
 ## License
 

@@ -225,3 +225,48 @@ func PromptUser(input io.Reader, output io.Writer, message string, expectedInput
 
 	return "", ErrUnexpectedInput
 }
+
+// UniqueNonEmptyStrings splits the input string by newlines, trims whitespace from each line,
+// and returns a slice of unique, non-empty strings in arbitrary order.
+func UniqueNonEmptyStrings(slice []string) []string {
+	uniqueItems := make(map[string]bool)
+
+	for _, item := range slice {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			uniqueItems[item] = true
+		}
+	}
+
+	result := make([]string, 0, len(uniqueItems))
+	for item := range uniqueItems {
+		result = append(result, AddAngleBracketsToEmail(item))
+	}
+
+	return result
+}
+
+// AddAngleBracketsToEmail wraps the email address in a string with "<" and ">"
+// if it is not already wrapped. The function assumes the email is the last
+// word in the string (or the only word containing "@").
+//
+// If the email is already wrapped in "<" and ">", the string is returned unchanged.
+// If no email is found, the string is returned as-is.
+func AddAngleBracketsToEmail(s string) string {
+	atIndex := strings.Index(s, "@")
+	if atIndex == -1 {
+		return s
+	}
+
+	start := strings.LastIndex(s[:atIndex], " ") + 1
+	end := len(s)
+
+	email := s[start:end]
+
+	// Check if the email is already wrapped in < and >
+	if strings.HasPrefix(email, "<") && strings.HasSuffix(email, ">") {
+		return s
+	}
+
+	return s[:start] + "<" + email + ">"
+}

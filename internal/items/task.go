@@ -26,6 +26,7 @@
 package items
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -71,10 +72,12 @@ type Task struct {
 	Title       string     `json:"title"`
 	Description string     `json:"description,omitempty"`
 	Priority    string     `json:"priority"`
-	DueDate     *time.Time `json:"due_date,omitempty"`
 	Labels      string     `json:"labels,omitempty"`
+	Author      string     `json:"author,omitempty"`
+	Assignee    string     `json:"assignee,omitempty"`
 	InProgress  bool       `json:"in_progress"`
 	Completed   bool       `json:"completed"`
+	DueDate     *time.Time `json:"due_date,omitempty"`
 }
 
 // LabelsList returns the task's labels as slice of string.
@@ -111,7 +114,13 @@ func (t *Task) CropTaskLabels(length int) string {
 		return strings.ReplaceAll(t.Labels[:length-len(ellipses)]+ellipses, ",", ", ")
 	}
 
-	return strings.ReplaceAll(t.Labels, ",", ", ")
+	labels := strings.ReplaceAll(t.Labels, ",", ", ")
+
+	if labels == "" {
+		return "No labels"
+	}
+
+	return labels
 }
 
 // DueDateToString formats the task's due date as a string using DueDateLayout.
@@ -170,12 +179,16 @@ func (t *Task) PriorityValue() int {
 // MarshalTask returns a pretty-printed JSON representation of the task.
 // Panics if serialization fails.
 func (t *Task) MarshalTask() []byte {
-	bytes, err := json.MarshalIndent(t, "", "\t")
-	if err != nil {
+	var buf bytes.Buffer
+	encoder := json.NewEncoder(&buf)
+	encoder.SetIndent("", "\t")
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(t); err != nil {
 		panic(err)
 	}
 
-	return bytes
+	// Remove the trailing newline added by Encode
+	return bytes.TrimSuffix(buf.Bytes(), []byte("\n"))
 }
 
 // WriteTaskJSON writes the given task JSON to disk under the project directory,
@@ -245,6 +258,20 @@ func (t *Task) TaskToMarkdown() string {
 	priority := strings.ToUpper(t.Priority)
 
 	content.WriteString("|" + completed + "|" + inProgress + "|" + priority + "\n\n")
+
+	if t.Author != "" {
+		content.WriteString("| **Task Author** |\n")
+		content.WriteString("| --------------- |\n\n")
+		content.WriteString(t.Author)
+		content.WriteString("\n\n")
+	}
+
+	if t.Assignee != "" {
+		content.WriteString("| **Assigned to** |\n")
+		content.WriteString("| --------------- |\n\n")
+		content.WriteString(t.Assignee)
+		content.WriteString("\n\n")
+	}
 
 	if t.DueDate != nil {
 		content.WriteString("| **Due Date** |\n")

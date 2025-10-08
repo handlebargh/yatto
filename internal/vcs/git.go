@@ -23,8 +23,10 @@ package vcs
 import (
 	"os"
 	"os/exec"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/viper"
 )
@@ -182,4 +184,46 @@ func gitPush() ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+// gitUser returns the name and email address that is returned by the
+// git config command.
+func gitUser() (string, error) {
+	nameCmd := exec.Command("git", "config", "user.name")
+	nameCmd.Dir = viper.GetString("storage.path")
+	nameOut, err := nameCmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	emailCmd := exec.Command("git", "config", "user.email")
+	emailCmd.Dir = viper.GetString("storage.path")
+
+	emailOut, err := emailCmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	var result strings.Builder
+	result.WriteString(strings.TrimSpace(string(nameOut)))
+	result.WriteString(" ")
+	result.WriteString(helpers.AddAngleBracketsToEmail(strings.TrimSpace(string(emailOut))))
+
+	return result.String(), nil
+}
+
+// gitContributorEmailAddresses returns all commit author email addresses
+// found by the git log command.
+func gitContributors() ([]string, error) {
+	emailsCmd := exec.Command("git", "log", "--format=%aN %aE")
+	emailsCmd.Dir = viper.GetString("storage.path")
+
+	output, err := emailsCmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	authors := strings.Split(string(output), "\n")
+
+	return helpers.UniqueNonEmptyStrings(authors), nil
 }

@@ -146,8 +146,12 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 			Render("⟹  ")
 	}
 
-	left := listItemStyle.Render(marker + projectItem.Title + "\n" +
-		projectItem.Description)
+	var left strings.Builder
+
+	left.WriteString(marker)
+	left.WriteString(listItemStyle.Render(projectItem.Title))
+	left.WriteString("\n")
+	left.WriteString(listItemStyle.Render(projectItem.Description))
 
 	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
 	if err != nil {
@@ -176,13 +180,15 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		taskTotalCompleteMessage = lipgloss.NewStyle().Foreground(colors.Green()).Render(taskTotalCompleteMessage)
 	}
 
-	right := listItemInfoStyle.Render(
-		fmt.Sprintf("%s\n%s", taskTotalCompleteMessage, taskDueMessage),
-	)
+	var right strings.Builder
+
+	right.WriteString(listItemInfoStyle.Render(taskTotalCompleteMessage))
+	right.WriteString("\n")
+	right.WriteString(taskDueMessage)
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Render(left),
-		right,
+		lipgloss.NewStyle().Render(left.String()),
+		right.String(),
 	)
 
 	_, err = fmt.Fprint(w, row)
