@@ -95,7 +95,7 @@ func getProjectTasks(projectsIDs ...string) ([]projectTask, []string) {
 //
 // The sort is stable, preserving the relative order of equal elements across criteria.
 func sortTasks(tasks []projectTask) {
-	me, _ := vcs.UserEmail()
+	me, _ := vcs.User()
 
 	slices.SortStableFunc(tasks, func(x, y projectTask) int {
 		for _, key := range []string{"state", "assignee", "dueDate", "priority"} {
@@ -176,7 +176,7 @@ func PrintTasks(labelRegex string, author, assignee bool, projectsIDs ...string)
 		}
 	}
 
-	me, _ := vcs.UserEmail()
+	me, _ := vcs.User()
 	regex := regexp.MustCompile(labelRegex)
 
 	var pendingTasks []projectTask
@@ -227,7 +227,7 @@ func PrintTasks(labelRegex string, author, assignee bool, projectsIDs ...string)
 			left.WriteString(pt.task.Author)
 		}
 
-		me, _ := vcs.UserEmail()
+		me, _ := vcs.User()
 		if viper.GetBool("assignee.show_printer") {
 			left.WriteString("\n")
 			left.WriteString(lipgloss.NewStyle().Foreground(colors.Orange()).Render("Assignee: "))

@@ -251,20 +251,26 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	// Author
 	if viper.GetBool("author.show") {
+		authorSlice := strings.Split(taskItem.Author, " ")
+		authorString := strings.Join(authorSlice[:len(authorSlice)-1], " ")
+
 		left.WriteString("\n")
 		left.WriteString(authorStyle.Render("Author: "))
-		left.WriteString(taskItem.Author)
+		left.WriteString(authorString)
 	}
 
 	// Assignee
-	me, _ := vcs.UserEmail()
+	me, _ := vcs.User()
 	if viper.GetBool("assignee.show") {
+		assigneeSlice := strings.Split(taskItem.Assignee, " ")
+		assigneeString := strings.Join(assigneeSlice[:len(assigneeSlice)-1], " ")
+
 		left.WriteString("\n")
 		left.WriteString(assigneeStyle.Render("Assignee: "))
 		if taskItem.Assignee == me {
 			left.WriteString(lipgloss.NewStyle().Foreground(colors.Red()).Render(taskItem.Assignee))
 		} else {
-			left.WriteString(taskItem.Assignee)
+			left.WriteString(assigneeString)
 		}
 	}
 
@@ -772,7 +778,7 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 		}
 	}
 
-	me, _ := vcs.UserEmail()
+	me, _ := vcs.User()
 
 	slices.SortStableFunc(tasks, func(x, y *items.Task) int {
 		for _, k := range keys {

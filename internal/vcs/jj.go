@@ -239,24 +239,36 @@ func jjPush() ([]byte, error) {
 	return output, nil
 }
 
-// jjUserEmail returns the email address that is returned by the
+// jjUser returns the name and email address that is returned by the
 // jj config get command.
-func jjUserEmail() (string, error) {
-	emailCmd := exec.Command("jj", "config", "get", "user.email")
-	emailCmd.Dir = viper.GetString("storage.path")
-
-	output, err := emailCmd.CombinedOutput()
+func jjUser() (string, error) {
+	nameCmd := exec.Command("jj", "config", "get", "user.name")
+	nameCmd.Dir = viper.GetString("storage.path")
+	nameOut, err := nameCmd.CombinedOutput()
 	if err != nil {
 		return "", err
 	}
 
-	return strings.TrimSpace(string(output)), nil
+	emailCmd := exec.Command("jj", "config", "get", "user.email")
+	emailCmd.Dir = viper.GetString("storage.path")
+
+	emailOut, err := emailCmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	var result strings.Builder
+	result.WriteString(strings.TrimSpace(string(nameOut)))
+	result.WriteString(" ")
+	result.WriteString(strings.TrimSpace(string(emailOut)))
+
+	return result.String(), nil
 }
 
 // jjContributorEmailAddresses returns all commit author email addresses
 // found by the jj log command.
 func jjContributorEmailAddresses() ([]string, error) {
-	emailsCmd := exec.Command("jj", "log", "--template={author_email}")
+	emailsCmd := exec.Command("jj", "log", "--template=author")
 	emailsCmd.Dir = viper.GetString("storage.path")
 
 	output, err := emailsCmd.CombinedOutput()
@@ -264,7 +276,13 @@ func jjContributorEmailAddresses() ([]string, error) {
 		return nil, err
 	}
 
-	emails := helpers.UniqueNonEmptyStrings(string(output))
+	unique := helpers.UniqueNonEmptyStrings(string(output))
 
-	return emails, nil
+	var result []string
+	for _, authorRaw := range unique {
+		author := strings.Split(authorRaw, " ")[1:]
+		result = append(result, strings.Join(author, " "))
+	}
+
+	return helpers.RemoveEmptyAndDuplicates(result), nil
 }

@@ -67,14 +67,14 @@ func PullCmd() tea.Cmd {
 	}
 }
 
-// UserEmail returns the backend specific userEmail command according
+// User returns the backend specific userEmail command according
 // to configuration.
-func UserEmail() (string, error) {
+func User() (string, error) {
 	switch viper.GetString("vcs.backend") {
 	case "git":
-		return gitUserEmail()
+		return gitUser()
 	case "jj":
-		return jjUserEmail()
+		return jjUser()
 	default:
 		return "", nil
 	}

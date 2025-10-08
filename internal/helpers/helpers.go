@@ -246,3 +246,21 @@ func UniqueNonEmptyStrings(input string) []string {
 
 	return result
 }
+
+// RemoveEmptyAndDuplicates removes empty and duplicate entries from a
+// slice of string and returns a sanitized slice.
+func RemoveEmptyAndDuplicates(slice []string) []string {
+	seen := make(map[string]bool)
+	var result []string
+
+	for _, item := range slice {
+		if item == "" {
+			continue // Skip empty strings
+		}
+		if !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+	return result
+}

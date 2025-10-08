@@ -121,7 +121,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		confirmQuestion = "Edit task?"
 	} else {
 		// Ignore error for now
-		m.vars.taskAuthor, _ = vcs.UserEmail()
+		m.vars.taskAuthor, _ = vcs.User()
 		confirmQuestion = "Create task?"
 	}
 

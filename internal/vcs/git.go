@@ -186,24 +186,36 @@ func gitPush() ([]byte, error) {
 	return output, nil
 }
 
-// gitUserEmail returns the email address that is returned by the
+// gitUser returns the name and email address that is returned by the
 // git config command.
-func gitUserEmail() (string, error) {
-	emailCmd := exec.Command("git", "config", "user.email")
-	emailCmd.Dir = viper.GetString("storage.path")
-
-	output, err := emailCmd.CombinedOutput()
+func gitUser() (string, error) {
+	nameCmd := exec.Command("git", "config", "user.name")
+	nameCmd.Dir = viper.GetString("storage.path")
+	nameOut, err := nameCmd.CombinedOutput()
 	if err != nil {
 		return "", err
 	}
 
-	return strings.TrimSpace(string(output)), nil
+	emailCmd := exec.Command("git", "config", "user.email")
+	emailCmd.Dir = viper.GetString("storage.path")
+
+	emailOut, err := emailCmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	var result strings.Builder
+	result.WriteString(strings.TrimSpace(string(nameOut)))
+	result.WriteString(" ")
+	result.WriteString(strings.TrimSpace(string(emailOut)))
+
+	return result.String(), nil
 }
 
 // gitContributorEmailAddresses returns all commit author email addresses
 // found by the git log command.
 func gitContributorEmailAddresses() ([]string, error) {
-	emailsCmd := exec.Command("git", "log", "--format=%aE")
+	emailsCmd := exec.Command("git", "log", "--format=%aN %aE")
 	emailsCmd.Dir = viper.GetString("storage.path")
 
 	output, err := emailsCmd.CombinedOutput()
