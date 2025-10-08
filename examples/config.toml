@@ -1,15 +1,15 @@
 [assignee]
-## Whether to show assignee in task list
+## Whether or not to show the assignee in task list
 show = false
 
-## Whether to show assignee when running yatto print
+## Whether or not to show the assignee when running yatto print
 show_printer = false
 
 [author]
-## Whether to show author in task list
+## Whether or not to show the author in task list
 show = false
 
-## Whether to show author when running yatto print
+## Whether or not to show the author when running yatto print
 show_printer = false
 
 ## The colors used throughout the application
@@ -71,10 +71,10 @@ url = "git@github:<username>/<repo>.git"
 default_branch = "main"
 
 [jj.remote]
-## Whether to enable a remote repository
+## Whether or not to enable a remote repository
 enable = false
 
-## Whether to colocate the Jujutsu repository
+## Whether or not to colocate the Jujutsu repository
 colocate = false
 
 ## Name of the jj/git remote
