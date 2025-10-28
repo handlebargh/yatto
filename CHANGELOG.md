@@ -1,3 +1,10 @@
+## v0.21.0 (2025-10-28)
+
+### Feat
+
+- add task author and assignee (#52)
+- toggle progress and complete state in pager model (#48)
+
 ## v0.20.1 (2025-10-07)
 
 ### Fix
