@@ -39,6 +39,7 @@ import (
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/vcs"
+	"github.com/spf13/viper"
 )
 
 const taskEntryLength = 53
@@ -53,6 +54,8 @@ type taskListKeyMap struct {
 	deleteItem       key.Binding
 	sortByPriority   key.Binding
 	sortByDueDate    key.Binding
+	sortByAuthor     key.Binding
+	sortByAssignee   key.Binding
 	toggleInProgress key.Binding
 	toggleComplete   key.Binding
 	goBackVim        key.Binding
@@ -83,6 +86,14 @@ func newTaskListKeyMap() *taskListKeyMap {
 		sortByDueDate: key.NewBinding(
 			key.WithKeys("alt+d"),
 			key.WithHelp("alt+d", "sort by due date"),
+		),
+		sortByAuthor: key.NewBinding(
+			key.WithKeys("alt+a"),
+			key.WithHelp("alt+a", "sort by author"),
+		),
+		sortByAssignee: key.NewBinding(
+			key.WithKeys("alt+A"),
+			key.WithHelp("alt+A", "sort by assignee"),
 		),
 		deleteItem: key.NewBinding(
 			key.WithKeys("D"),
@@ -129,6 +140,22 @@ type customTaskDelegate struct {
 	parent *taskListModel
 }
 
+// Height returns the delegate's preferred height.
+func (d customTaskDelegate) Height() int {
+	showAuthor := viper.GetBool("author.show")
+	showAssignee := viper.GetBool("assignee.show")
+
+	if showAuthor && showAssignee {
+		return 4
+	}
+
+	if showAuthor || showAssignee {
+		return 3
+	}
+
+	return 2
+}
+
 // Render draws a single task item within the task list.
 func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	taskItem, ok := item.(*items.Task)
@@ -150,6 +177,9 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		Foreground(colors.Blue()).
 		Padding(0, 1)
 
+	authorStyle := lipgloss.NewStyle().
+		Padding(0, 1)
+
 	priorityValueStyle := lipgloss.NewStyle().
 		Foreground(colors.BadgeText()).
 		Padding(0, 1)
@@ -158,16 +188,19 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	case "low":
 		titleStyle = titleStyle.BorderForeground(colors.Indigo())
 		labelsStyle = labelsStyle.BorderForeground(colors.Indigo())
+		authorStyle = authorStyle.BorderForeground(colors.Indigo())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Indigo()).Background(colors.Indigo())
 	case "medium":
 		titleStyle = titleStyle.BorderForeground(colors.Orange())
 		labelsStyle = labelsStyle.BorderForeground(colors.Orange())
+		authorStyle = authorStyle.BorderForeground(colors.Orange())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Orange()).Background(colors.Orange())
 	case "high":
 		titleStyle = titleStyle.BorderForeground(colors.Red())
 		labelsStyle = labelsStyle.BorderForeground(colors.Red())
+		authorStyle = authorStyle.BorderForeground(colors.Red())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Red()).Background(colors.Red())
 	}
@@ -179,9 +212,13 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		labelsStyle = labelsStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			MarginLeft(0)
+		authorStyle = authorStyle.
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			MarginLeft(0)
 	} else {
 		titleStyle = titleStyle.MarginLeft(1)
 		labelsStyle = labelsStyle.MarginLeft(1)
+		authorStyle = authorStyle.MarginLeft(1)
 	}
 
 	// Check if item is selected
@@ -194,10 +231,30 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Render("⟹  ")
 	}
 
-	left := titleStyle.Render(marker+taskItem.CropTaskTitle(taskEntryLength)) + "\n" +
-		labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength))
+	var left strings.Builder
 
-	right := priorityValueStyle.Render(taskItem.Priority)
+	// Title
+	left.WriteString(marker)
+	left.WriteString(titleStyle.Render(taskItem.CropTaskTitle(taskEntryLength)))
+
+	// Author
+	if viper.GetBool("author.show") {
+		// Strip email address in list view.
+		authorSlice := strings.Split(taskItem.Author, " ")
+		authorString := strings.Join(authorSlice[:len(authorSlice)-1], " ")
+
+		left.WriteString("\n")
+		left.WriteString(authorStyle.Render("Author: "))
+		left.WriteString(authorString)
+	}
+
+	// Labels
+	left.WriteString("\n")
+	left.WriteString(labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength)))
+
+	var right strings.Builder
+
+	right.WriteString(priorityValueStyle.Render(taskItem.Priority))
 
 	now := time.Now()
 	dueDate := taskItem.DueDate
@@ -205,50 +262,78 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if dueDate != nil &&
 		items.IsToday(dueDate) &&
 		dueDate.After(now) {
-		right += lipgloss.NewStyle().
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.VividRed()).
 			Foreground(colors.BadgeText()).
-			Render("due today")
+			Render("due today"))
 	}
 
 	if dueDate != nil && dueDate.Before(now) {
-		right += lipgloss.NewStyle().
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.VividRed()).
 			Foreground(colors.BadgeText()).
-			Render("overdue")
+			Render("overdue"))
 	}
 
 	if taskItem.InProgress {
-		right += lipgloss.NewStyle().
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Blue()).
 			Foreground(colors.BadgeText()).
-			Render("in progress")
+			Render("in progress"))
 	}
 
 	if dueDate != nil &&
 		!dueDate.Before(now) &&
 		!items.IsToday(dueDate) {
-		right += lipgloss.NewStyle().
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Yellow()).
 			Foreground(colors.BadgeText()).
-			Render("due in " + taskItem.DaysUntilToString() + " day(s)")
+			Render("due in " + taskItem.DaysUntilToString() + " day(s)"))
 	}
 
 	if taskItem.Completed {
-		right = lipgloss.NewStyle().
+		right.Reset()
+		right.WriteString(lipgloss.NewStyle().
 			Padding(0, 1).
 			Background(colors.Green()).
 			Foreground(colors.BadgeText()).
-			Render("completed")
+			Render("completed"))
+	}
+
+	// Assignee
+	me, _ := vcs.User()
+	if viper.GetBool("assignee.show") {
+		// Strip email address in list view.
+		assigneeSlice := strings.Split(taskItem.Assignee, " ")
+		assigneeString := strings.Join(assigneeSlice[:len(assigneeSlice)-1], " ")
+
+		right.WriteString("\n")
+		if taskItem.Assignee == me {
+			right.WriteString(
+				lipgloss.NewStyle().
+					Foreground(colors.BadgeText()).
+					Background(colors.Red()).
+					Padding(0, 1).
+					Render(assigneeString),
+			)
+		} else {
+			right.WriteString(
+				lipgloss.NewStyle().
+					Foreground(colors.BadgeText()).
+					Background(colors.Green()).
+					Padding(0, 1).
+					Render(assigneeString),
+			)
+		}
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Render(left),
-		right,
+		lipgloss.NewStyle().Render(left.String()),
+		right.String(),
 	)
 
 	_, err := fmt.Fprint(w, row)
@@ -333,6 +418,8 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
 			listKeys.sortByDueDate,
+			listKeys.sortByAuthor,
+			listKeys.sortByAssignee,
 			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
 			listKeys.toggleSelect,
@@ -521,6 +608,14 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				sortTasksByKeys(&m.list, []string{"state", "dueDate"})
 				return m, nil
 
+			case key.Matches(msg, m.keys.sortByAuthor):
+				sortTasksByKeys(&m.list, []string{"state", "author", "dueDate", "priority"})
+				return m, nil
+
+			case key.Matches(msg, m.keys.sortByAssignee):
+				sortTasksByKeys(&m.list, []string{"state", "assignee", "dueDate", "priority"})
+				return m, nil
+
 			case key.Matches(msg, m.keys.chooseItem):
 				if m.list.SelectedItem() != nil {
 					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
@@ -684,53 +779,83 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 		}
 	}
 
+	me, _ := vcs.User()
+
 	slices.SortStableFunc(tasks, func(x, y *items.Task) int {
 		for _, k := range keys {
+			var cmpResult int
 			switch k {
-			case "priority":
-				// Completed tasks to bottom
-				if x.Completed && !y.Completed {
-					return 1
+			case "state":
+				switch {
+				case x.Completed && !y.Completed:
+					cmpResult = 1
+				case !x.Completed && y.Completed:
+					cmpResult = -1
+				case x.InProgress && !y.InProgress:
+					cmpResult = -1
+				case !x.InProgress && y.InProgress:
+					cmpResult = 1
+				default:
+					cmpResult = 0
 				}
-				if !x.Completed && y.Completed {
-					return -1
+			case "assignee":
+				switch {
+				case x.Assignee == "" && y.Assignee != "":
+					cmpResult = 1
+				case x.Assignee != "" && y.Assignee == "":
+					cmpResult = -1
+				case x.Assignee == me && y.Assignee != me:
+					cmpResult = -1
+				case x.Assignee != me && y.Assignee == me:
+					cmpResult = 1
+				default:
+					cmpResult = strings.Compare(strings.ToLower(x.Assignee), strings.ToLower(y.Assignee))
 				}
-				// Higher number = higher priority
-				if compare := cmp.Compare(y.PriorityValue(), x.PriorityValue()); compare != 0 {
-					return compare
-				}
-
 			case "dueDate":
 				dx, dy := x.DueDate, y.DueDate
 				switch {
 				case dx == nil && dy != nil:
-					return 1
+					cmpResult = 1
 				case dx != nil && dy == nil:
-					return -1
+					cmpResult = -1
 				case dx != nil && dy != nil:
-					if dx.Before(*dy) {
-						return -1
+					switch {
+					case dx.Before(*dy):
+						cmpResult = -1
+					case dx.After(*dy):
+						cmpResult = 1
+					default:
+						cmpResult = 0
 					}
-					if dx.After(*dy) {
-						return 1
+				default:
+					cmpResult = 0
+				}
+			case "priority":
+				if x.Completed != y.Completed {
+					if x.Completed {
+						cmpResult = 1
+					} else {
+						cmpResult = -1
 					}
+				} else {
+					cmpResult = cmp.Compare(y.PriorityValue(), x.PriorityValue())
 				}
-
-			case "state":
-				// Completed tasks go to bottom
-				if x.Completed && !y.Completed {
-					return 1
+			case "author":
+				switch {
+				case x.Author == "" && y.Author != "":
+					cmpResult = 1
+				case x.Author != "" && y.Author == "":
+					cmpResult = -1
+				case x.Author == me && y.Author != me:
+					cmpResult = -1
+				case x.Author != me && y.Author == me:
+					cmpResult = 1
+				default:
+					cmpResult = strings.Compare(strings.ToLower(x.Author), strings.ToLower(y.Author))
 				}
-				if !x.Completed && y.Completed {
-					return -1
-				}
-				// In-progress before others
-				if x.InProgress && !y.InProgress {
-					return -1
-				}
-				if !x.InProgress && y.InProgress {
-					return 1
-				}
+			}
+			if cmpResult != 0 {
+				return cmpResult
 			}
 		}
 		return 0

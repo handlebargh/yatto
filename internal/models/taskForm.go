@@ -84,6 +84,9 @@ type taskFormVars struct {
 	taskDueDate        string
 	taskLabels         string
 	taskLabelsSelected []string
+	taskAuthor         string
+	taskAssignee       string
+	taskAssigneeNew    string
 	taskCompleted      bool
 }
 
@@ -98,6 +101,9 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		taskDueDate:        t.DueDateToString(),
 		taskLabels:         "", // Clear labels as we have them already selected.
 		taskLabelsSelected: t.LabelsList(),
+		taskAuthor:         t.Author,
+		taskAssignee:       t.Assignee,
+		taskAssigneeNew:    "", // Clear this field
 		taskCompleted:      t.Completed,
 	}
 
@@ -112,8 +118,13 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 
 	var confirmQuestion string
 	if edit {
+		if m.vars.taskAuthor == "" {
+			m.vars.taskAuthor, _ = vcs.User()
+		}
 		confirmQuestion = "Edit task?"
 	} else {
+		// Ignore error for now
+		m.vars.taskAuthor, _ = vcs.User()
 		confirmQuestion = "Create task?"
 	}
 
@@ -166,7 +177,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 
 					return nil
 				}),
-		),
+		).Title("Due Date"),
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Key("existingLabels").
@@ -179,7 +190,28 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Title("Enter additional labels:").
 				Value(&m.vars.taskLabels).
 				Description("Comma-separated list of labels."),
-		),
+		).Title("Labels"),
+		huh.NewGroup(
+			huh.NewInput().
+				Key("author").
+				Title("Enter the task author:").
+				Value(&m.vars.taskAuthor).
+				Description("This will set the task author."),
+		).Title("Author"),
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Key("existingEmailAddresses").
+				Title("Choose an assignee:").
+				Height(15).
+				OptionsFunc(m.sortEmailAddressesOptions, nil).
+				Value(&m.vars.taskAssignee),
+
+			huh.NewInput().
+				Key("newEmailAddress").
+				Title("Enter a new email address:").
+				Value(&m.vars.taskAssigneeNew).
+				Description("This will overwrite the selected assignee."),
+		).Title("Assignee"),
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title(confirmQuestion).
@@ -267,6 +299,10 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.form.State == huh.StateCompleted {
 		if m.vars.confirm {
+			if m.vars.taskAssigneeNew != "" {
+				m.vars.taskAssignee = m.vars.taskAssigneeNew
+			}
+
 			err := m.formVarsToTask()
 			if err != nil {
 				// TODO: we should probably return a message here.
@@ -443,7 +479,8 @@ func (m taskFormModel) generatePreviewContent() string {
 
 // formVarsToTask updates the Task object with values from the form variables.
 //
-// It sets the task's title, description, priority, completion status, and due date.
+// It sets the task's title, description, priority, author, assignee, completion status,
+// and due date.
 // For labels, it merges labels selected via the multi-select widget with additional
 // labels entered as a comma-separated string, deduplicates them (case-insensitive),
 // trims whitespace, and stores them as a single comma-separated string on the task.
@@ -454,6 +491,8 @@ func (m taskFormModel) formVarsToTask() error {
 	m.task.Title = m.vars.taskTitle
 	m.task.Description = m.vars.taskDescription
 	m.task.Priority = m.vars.taskPriority
+	m.task.Author = m.vars.taskAuthor
+	m.task.Assignee = m.vars.taskAssignee
 
 	// Merge labels from MultiSelect (selected) and freeform input (typed)
 	typedLabels := helpers.LabelsStringToSlice(m.vars.taskLabels)
@@ -560,6 +599,44 @@ func (m taskFormModel) sortLabelsOptions() []huh.Option[string] {
 	for _, item := range sortedLabels {
 		opt := huh.NewOption[string](item.Label, item.Label)
 		if _, selected := selectedSet[item.Label]; selected {
+			opt = opt.Selected(true)
+		}
+		opts = append(opts, opt)
+	}
+
+	return opts
+}
+
+func (m taskFormModel) sortEmailAddressesOptions() []huh.Option[string] {
+	emails, _ := vcs.AllContributors()
+
+	// Sort: selected first, then author's address, then alphabetical
+	slices.SortFunc(emails, func(a, b string) int {
+		// Selected email comes first
+		if a == m.task.Assignee {
+			return -1
+		}
+		if b == m.task.Assignee {
+			return 1
+		}
+
+		// Author's address
+		if a == m.task.Author {
+			return -1
+		}
+		if b == m.task.Author {
+			return 1
+		}
+
+		// Case-insensitive alphabetical
+		return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+	})
+
+	// Build sorted options
+	opts := make([]huh.Option[string], 0, len(emails))
+	for _, item := range emails {
+		opt := huh.NewOption[string](item, item)
+		if item == m.task.Assignee {
 			opt = opt.Selected(true)
 		}
 		opts = append(opts, opt)

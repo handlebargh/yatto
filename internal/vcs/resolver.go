@@ -66,3 +66,29 @@ func PullCmd() tea.Cmd {
 		return nil
 	}
 }
+
+// User returns the backend specific userEmail command according
+// to configuration.
+func User() (string, error) {
+	switch viper.GetString("vcs.backend") {
+	case "git":
+		return gitUser()
+	case "jj":
+		return jjUser()
+	default:
+		return "", nil
+	}
+}
+
+// AllContributors returns the backend specific
+// contributors command according to configuration.
+func AllContributors() ([]string, error) {
+	switch viper.GetString("vcs.backend") {
+	case "git":
+		return gitContributors()
+	case "jj":
+		return jjContributors()
+	default:
+		return nil, nil
+	}
+}

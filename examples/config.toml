@@ -1,3 +1,20 @@
+[assignee]
+## Whether or not to show the assignee in task list
+show = false
+
+## Whether or not to show the assignee when running yatto print
+show_printer = false
+
+[author]
+## Whether or not to show the author in task list
+show = false
+
+## Whether or not to show the author when running yatto print
+show_printer = false
+
+## The colors used throughout the application
+## If your terminal does not support true color
+## you will have to use ANSI 16 or ANSI 256 colors instead
 [colors]
 badge_text_dark = "#000000"
 badge_text_light = "#000000"
@@ -17,28 +34,58 @@ yellow_dark = "#CCCC00"
 yellow_light = "#CCCC00"
 
 [colors.form]
+## The theme used in the project/task form
+##
+## Available values are:
+##
+## - Charm
+## - Dracula
+## - Catppuccin
+## - Base16
+## - Base
 theme = "Base16"
 
 [vcs]
-# allowed values: "git", "jj"
+## The VCS used for backend operation
+## **DO NOT CHANGE AFTER INITIALIZATION**
+## allowed values: "git", "jj"
 backend = "git"
 
 [git]
+## Name of the git branch used by yatto
 default_branch = "main"
 
 [git.remote]
+## Whether to enable a remote repository
 enable = false
+
+## Name of the git remote
 name = "origin"
 
+## URL of the git remote
+url = "git@github:<username>/<repo>.git"
+
 [jj]
+## Name of the jj bookmark tracked by yatto
+## (falsely called branch, things don’t always go as planned)
 default_branch = "main"
 
 [jj.remote]
+## Whether or not to enable a remote repository
 enable = false
+
+## Whether or not to colocate the Jujutsu repository
 colocate = false
+
+## Name of the jj/git remote
 name = "origin"
 
+## URL of the jj/git remote
+url = "git@github:<username>/<repo>.git"
+
 [storage]
-# replace with your actual home directory
-# or any other path you'd like to use
+## Where to locate the storage directory.
+##
+## Replace with your actual home directory
+## or any other path you'd like to use.
 path = "/home/<me>/.yatto"
