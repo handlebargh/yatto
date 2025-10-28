@@ -178,11 +178,6 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		Padding(0, 1)
 
 	authorStyle := lipgloss.NewStyle().
-		Foreground(colors.Green()).
-		Padding(0, 1)
-
-	assigneeStyle := lipgloss.NewStyle().
-		Foreground(colors.Orange()).
 		Padding(0, 1)
 
 	priorityValueStyle := lipgloss.NewStyle().
@@ -194,21 +189,18 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		titleStyle = titleStyle.BorderForeground(colors.Indigo())
 		labelsStyle = labelsStyle.BorderForeground(colors.Indigo())
 		authorStyle = authorStyle.BorderForeground(colors.Indigo())
-		assigneeStyle = assigneeStyle.BorderForeground(colors.Indigo())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Indigo()).Background(colors.Indigo())
 	case "medium":
 		titleStyle = titleStyle.BorderForeground(colors.Orange())
 		labelsStyle = labelsStyle.BorderForeground(colors.Orange())
 		authorStyle = authorStyle.BorderForeground(colors.Orange())
-		assigneeStyle = assigneeStyle.BorderForeground(colors.Orange())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Orange()).Background(colors.Orange())
 	case "high":
 		titleStyle = titleStyle.BorderForeground(colors.Red())
 		labelsStyle = labelsStyle.BorderForeground(colors.Red())
 		authorStyle = authorStyle.BorderForeground(colors.Red())
-		assigneeStyle = assigneeStyle.BorderForeground(colors.Red())
 		priorityValueStyle = priorityValueStyle.
 			BorderForeground(colors.Red()).Background(colors.Red())
 	}
@@ -223,14 +215,10 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		authorStyle = authorStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			MarginLeft(0)
-		assigneeStyle = assigneeStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			MarginLeft(0)
 	} else {
 		titleStyle = titleStyle.MarginLeft(1)
 		labelsStyle = labelsStyle.MarginLeft(1)
 		authorStyle = authorStyle.MarginLeft(1)
-		assigneeStyle = assigneeStyle.MarginLeft(1)
 	}
 
 	// Check if item is selected
@@ -258,22 +246,6 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		left.WriteString("\n")
 		left.WriteString(authorStyle.Render("Author: "))
 		left.WriteString(authorString)
-	}
-
-	// Assignee
-	me, _ := vcs.User()
-	if viper.GetBool("assignee.show") {
-		// Strip email address in list view.
-		assigneeSlice := strings.Split(taskItem.Assignee, " ")
-		assigneeString := strings.Join(assigneeSlice[:len(assigneeSlice)-1], " ")
-
-		left.WriteString("\n")
-		left.WriteString(assigneeStyle.Render("Assignee: "))
-		if taskItem.Assignee == me {
-			left.WriteString(lipgloss.NewStyle().Foreground(colors.Red()).Render(assigneeString))
-		} else {
-			left.WriteString(assigneeString)
-		}
 	}
 
 	// Labels
@@ -330,6 +302,33 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Background(colors.Green()).
 			Foreground(colors.BadgeText()).
 			Render("completed"))
+	}
+
+	// Assignee
+	me, _ := vcs.User()
+	if viper.GetBool("assignee.show") {
+		// Strip email address in list view.
+		assigneeSlice := strings.Split(taskItem.Assignee, " ")
+		assigneeString := strings.Join(assigneeSlice[:len(assigneeSlice)-1], " ")
+
+		right.WriteString("\n")
+		if taskItem.Assignee == me {
+			right.WriteString(
+				lipgloss.NewStyle().
+					Foreground(colors.BadgeText()).
+					Background(colors.Red()).
+					Padding(0, 1).
+					Render(assigneeString),
+			)
+		} else {
+			right.WriteString(
+				lipgloss.NewStyle().
+					Foreground(colors.BadgeText()).
+					Background(colors.Green()).
+					Padding(0, 1).
+					Render(assigneeString),
+			)
+		}
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top,

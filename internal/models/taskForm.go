@@ -118,6 +118,9 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 
 	var confirmQuestion string
 	if edit {
+		if m.vars.taskAuthor == "" {
+			m.vars.taskAuthor, _ = vcs.User()
+		}
 		confirmQuestion = "Edit task?"
 	} else {
 		// Ignore error for now
@@ -188,6 +191,13 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Value(&m.vars.taskLabels).
 				Description("Comma-separated list of labels."),
 		).Title("Labels"),
+		huh.NewGroup(
+			huh.NewInput().
+				Key("author").
+				Title("Enter the task author:").
+				Value(&m.vars.taskAuthor).
+				Description("This will set the task author."),
+		).Title("Author"),
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Key("existingEmailAddresses").
