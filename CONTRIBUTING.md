@@ -17,9 +17,9 @@ I also recommend (and use) [Commitizen](https://commitizen-tools.github.io/commi
 
 - If you can, add more detail in the commit body - this helps reviewers and future maintainers understand why a change was made, not just what was changed.
   Use the body to include:
-  - The reasoning or motivation behind the change.
-  - Any limitations, trade-offs, or side effects.
-  - References to related issues and PRs.
+    - The reasoning or motivation behind the change.
+    - Any limitations, trade-offs, or side effects.
+    - References to related issues and PRs.
 
 ---
 
@@ -72,8 +72,8 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 5. Lint and format before committing - all code must pass golangci-lint:
 
     ```shell
-    make lint
-    make fmt
+    just lint
+    just fmt
     ```
 
     If it fails, fix all reported issues before committing.
@@ -81,7 +81,7 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
 6. Run the test suite before committing:
 
     ```shell
-    make test
+    just test
     ```
 
 7. Commit your changes.
