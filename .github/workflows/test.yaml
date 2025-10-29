@@ -9,10 +9,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   test:
-    permissions:
-      contents: read
     name: test
     strategy:
       matrix:

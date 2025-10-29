@@ -9,10 +9,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   test:
-    permissions:
-      contents: read
     name: build
     runs-on: ubuntu-latest
     steps:
