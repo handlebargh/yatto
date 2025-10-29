@@ -2,11 +2,13 @@
 
 ## Type of Change
 
-- [ ] Bug fix (non-breaking change)
-- [ ] New feature (non-breaking change)
-- [ ] Breaking change (fix or feature that would cause existing functionality to change)
-- [ ] Documentation update
-- [ ] Other
+(delete whichever not applicable)
+
+- Bug fix (non-breaking change)
+- New feature (non-breaking change)
+- Breaking change (fix or feature that would cause existing functionality to change)
+- Documentation update
+- Other
 
 ## Description
 
