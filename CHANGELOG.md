@@ -1,3 +1,9 @@
+## v0.21.1 (2025-10-29)
+
+### Fix
+
+- correctly indent list items when selected
+
 ## v0.21.0 (2025-10-28)
 
 ### Feat
