@@ -45,11 +45,10 @@ changelog:
 
 signs:
   - cmd: cosign
-    signature: "${artifact}.sig"
+    signature: "${artifact}.sig.bundle"
     args:
       - sign-blob
-      - --output-signature=${signature}
-      - --bundle=${signature}.bundle
+      - --bundle=${signature}
       - --yes
       - "${artifact}"
     artifacts: checksum
