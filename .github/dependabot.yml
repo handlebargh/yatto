@@ -11,9 +11,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    labels:
-      - "dependencies"
-      - "go"
     reviewers:
       - "handlebargh"
     groups:
@@ -36,9 +33,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    labels:
-      - "dependencies"
-      - "github-actions"
     reviewers:
       - "handlebargh"
     groups:
