@@ -27,13 +27,45 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/spf13/viper"
 )
 
-// ErrUserAborted is returned when a user cancels config file creation.
-var ErrUserAborted = errors.New("user aborted config creation")
+var (
+	// ErrUserAborted is returned when a user cancels config file creation.
+	ErrUserAborted = errors.New("user aborted config creation")
+
+	// branchNameRegexp validates branch names to prevent command injection.
+	branchNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9./_-]+$`)
+
+	// remoteNameRegexp validates remote names to prevent command injection.
+	remoteNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+
+	// Validates color codes
+	colorRegexp = regexp.MustCompile(`^#?[a-fA-F0-9]+$`)
+)
+
+// config is used to load all values from the configuration file
+// in order to validate them.
+type config struct {
+	assigneeShow        bool
+	assigneeShowPrinter bool
+	authorShow          bool
+	authorShowPrinter   bool
+	gitRemoteEnable     bool
+	jjRemoteEnable      bool
+	jjRemoteColocate    bool
+	storagePath         string
+	vcsBackend          string
+	gitDefaultBranch    string
+	gitRemoteName       string
+	jjDefaultBranch     string
+	jjRemoteName        string
+	colorsFormTheme     string
+	colorValues         map[string]string
+}
 
 // InitConfig sets default values for application configuration and
 // attempts to load configuration from a file.
@@ -65,8 +97,8 @@ func InitConfig(home string, configPath *string) {
 	// colors
 	viper.SetDefault("colors.red_light", "#FE5F86")
 	viper.SetDefault("colors.red_dark", "#FE5F86")
-	viper.SetDefault("colors.vividRed_light", "#FE134D")
-	viper.SetDefault("colors.vividRed_dark", "#FE134D")
+	viper.SetDefault("colors.vividred_light", "#FE134D")
+	viper.SetDefault("colors.vividred_dark", "#FE134D")
 	viper.SetDefault("colors.indigo_light", "#5A56E0")
 	viper.SetDefault("colors.indigo_dark", "#7571F9")
 	viper.SetDefault("colors.green_light", "#02BA84")
@@ -116,7 +148,7 @@ type Settings struct {
 // as a default value in the config.
 //
 // If necessary, the configuration directory ($HOME/.config/yatto) is created
-// with permissions 0755, and Viper writes the config file safely using
+// with permissions 0750, and Viper writes the config file safely using
 // viper.SafeWriteConfig.
 //
 // Returns ErrUserAborted if the user declines to create a config file, or an
@@ -205,13 +237,118 @@ func CreateConfigFile(set Settings) error {
 		}
 
 		// Create config dir
-		if err := os.MkdirAll(filepath.Join(set.Home, ".config", "yatto"), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(set.Home, ".config", "yatto"), 0o750); err != nil {
 			return fmt.Errorf("error creating config directory: %w", err)
 		}
 
 		// Write config file
 		if err := viper.SafeWriteConfig(); err != nil {
 			return fmt.Errorf("error writing config file: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// LoadAndValidateConfig loads configuration values from viper and validates them.
+// It returns an error if any configuration value is invalid or missing required fields.
+// This function should be called at application startup after viper has been initialized.
+func LoadAndValidateConfig() error {
+	cfg := &config{
+		assigneeShow:        viper.GetBool("assignee.show"),
+		assigneeShowPrinter: viper.GetBool("assignee.show_printer"),
+		authorShow:          viper.GetBool("author.show"),
+		authorShowPrinter:   viper.GetBool("author.show_printer"),
+		gitRemoteEnable:     viper.GetBool("git.remote.enable"),
+		jjRemoteEnable:      viper.GetBool("jj.remote.enable"),
+		jjRemoteColocate:    viper.GetBool("jj.remote.colocate"),
+		storagePath:         viper.GetString("storage.path"),
+		vcsBackend:          viper.GetString("vcs.backend"),
+		gitDefaultBranch:    viper.GetString("git.default_branch"),
+		gitRemoteName:       viper.GetString("git.remote.name"),
+		jjDefaultBranch:     viper.GetString("jj.default_branch"),
+		jjRemoteName:        viper.GetString("jj.remote.name"),
+		colorsFormTheme:     viper.GetString("colors.form.theme"),
+		colorValues: map[string]string{
+			"colors.red_light":        viper.GetString("colors.red_light"),
+			"colors.red_dark":         viper.GetString("colors.red_dark"),
+			"colors.vividred_light":   viper.GetString("colors.vividred_light"),
+			"colors.vividred_dark":    viper.GetString("colors.vividred_dark"),
+			"colors.indigo_light":     viper.GetString("colors.indigo_light"),
+			"colors.indigo_dark":      viper.GetString("colors.indigo_dark"),
+			"colors.green_light":      viper.GetString("colors.green_light"),
+			"colors.green_dark":       viper.GetString("colors.green_dark"),
+			"colors.orange_light":     viper.GetString("colors.orange_light"),
+			"colors.orange_dark":      viper.GetString("colors.orange_dark"),
+			"colors.blue_light":       viper.GetString("colors.blue_light"),
+			"colors.blue_dark":        viper.GetString("colors.blue_dark"),
+			"colors.yellow_light":     viper.GetString("colors.yellow_light"),
+			"colors.yellow_dark":      viper.GetString("colors.yellow_dark"),
+			"colors.badge_text_light": viper.GetString("colors.badge_text_light"),
+			"colors.badge_text_dark":  viper.GetString("colors.badge_text_dark"),
+		},
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Validate checks that all configuration values are valid and consistent.
+// It validates storage paths, VCS backend settings (git/jj), branch and remote names
+// to prevent command injection, form theme names, and color codes.
+// Returns an error describing the first validation failure encountered.
+func (c *config) Validate() error {
+	// Storage path validation
+	if c.storagePath == "" {
+		return fmt.Errorf("storage path cannot be empty")
+	}
+	if !filepath.IsAbs(c.storagePath) {
+		return fmt.Errorf("storage path must be absolute: %q", c.storagePath)
+	}
+
+	// VCS backend validation
+	switch c.vcsBackend {
+	case "git":
+		if !branchNameRegexp.MatchString(c.gitDefaultBranch) {
+			return fmt.Errorf("invalid branch name: %q", c.gitDefaultBranch)
+		}
+		if !remoteNameRegexp.MatchString(c.gitRemoteName) {
+			return fmt.Errorf("invalid remote name: %q", c.gitRemoteName)
+		}
+	case "jj":
+		if !branchNameRegexp.MatchString(c.jjDefaultBranch) {
+			return fmt.Errorf("invalid branch name: %q", c.jjDefaultBranch)
+		}
+		if !remoteNameRegexp.MatchString(c.jjRemoteName) {
+			return fmt.Errorf("invalid remote name: %q", c.jjRemoteName)
+		}
+	default:
+		return fmt.Errorf("unknown vcs backend: %s", c.vcsBackend)
+	}
+
+	// Form theme validation
+	validThemes := map[string]bool{
+		"Charm":      true,
+		"Dracula":    true,
+		"Catppuccin": true,
+		"Base16":     true,
+		"Base":       true,
+	}
+
+	if !validThemes[c.colorsFormTheme] {
+		return fmt.Errorf(
+			"unknown colors.form.theme: %s (valid: Charm, Dracula, Catppuccin, Base16, Base)",
+			c.colorsFormTheme,
+		)
+	}
+
+	// Color values validation
+	for k, v := range c.colorValues {
+		if !colorRegexp.MatchString(v) {
+			return fmt.Errorf("invalid color value for '%s': %q", k, v)
 		}
 	}
 

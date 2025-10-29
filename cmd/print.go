@@ -21,13 +21,17 @@
 package cmd
 
 import (
+	"errors"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/config"
 	"github.com/handlebargh/yatto/internal/fetchmodel"
 	"github.com/handlebargh/yatto/internal/printer"
+	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -44,6 +48,40 @@ var printCmd = &cobra.Command{
 	Use:   "print",
 	Short: "Print tasks to stdout",
 	RunE: func(_ *cobra.Command, _ []string) error {
+		setCfg := config.Settings{
+			ConfigPath: configPath,
+			Home:       homePath,
+			Input:      os.Stdin,
+			Output:     os.Stdout,
+			Exit:       os.Exit,
+		}
+
+		if err := config.CreateConfigFile(setCfg); err != nil {
+			if errors.Is(err, config.ErrUserAborted) {
+				os.Exit(0)
+			}
+			return err
+		}
+
+		err := config.LoadAndValidateConfig()
+		if err != nil {
+			return err
+		}
+
+		setStorage := storage.Settings{
+			Path:   viper.GetString("storage.path"),
+			Input:  os.Stdin,
+			Output: os.Stdout,
+			Exit:   os.Exit,
+		}
+
+		if err := storage.CreateStorageDir(setStorage); err != nil {
+			if errors.Is(err, storage.ErrUserAborted) {
+				os.Exit(0)
+			}
+			return err
+		}
+
 		if pullFlag &&
 			((viper.GetString("vcs.backend") == "git" && viper.GetBool("git.remote.enable")) ||
 				(viper.GetString("vcs.backend") == "jj" && viper.GetBool("jj.remote.enable"))) {

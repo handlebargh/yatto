@@ -46,7 +46,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "yatto",
 	Short: "Interactive VCS-based todo-list for the command-line",
-	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		setCfg := config.Settings{
 			ConfigPath: configPath,
 			Home:       homePath,
@@ -62,14 +62,9 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		// Enforce valid vcs backend
-		switch viper.GetString("vcs.backend") {
-		case "git":
-			break
-		case "jj":
-			break
-		default:
-			panic(fmt.Errorf("unknown vcs backend: %s", viper.GetString("vcs.backend")))
+		err := config.LoadAndValidateConfig()
+		if err != nil {
+			return err
 		}
 
 		setStorage := storage.Settings{
@@ -86,9 +81,6 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		return nil
-	},
-	RunE: func(_ *cobra.Command, _ []string) error {
 		if (viper.GetString("vcs.backend") == "git" && viper.GetBool("git.remote.enable")) ||
 			(viper.GetString("vcs.backend") == "jj" && viper.GetBool("jj.remote.enable")) {
 			s := spinner.New()

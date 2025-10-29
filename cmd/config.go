@@ -21,6 +21,10 @@
 package cmd
 
 import (
+	"errors"
+	"os"
+
+	"github.com/handlebargh/yatto/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -28,6 +32,24 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage configuration settings",
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+		setCfg := config.Settings{
+			ConfigPath: configPath,
+			Home:       homePath,
+			Input:      os.Stdin,
+			Output:     os.Stdout,
+			Exit:       os.Exit,
+		}
+
+		if err := config.CreateConfigFile(setCfg); err != nil {
+			if errors.Is(err, config.ErrUserAborted) {
+				os.Exit(0)
+			}
+			return err
+		}
+
+		return nil
+	},
 }
 
 func init() {
