@@ -1,3 +1,9 @@
+## v0.21.3 (2025-10-29)
+
+### Fix
+
+- adjust goreleaser config after cosign update
+
 ## v0.21.2 (2025-10-29)
 
 ## v0.21.1 (2025-10-29)
