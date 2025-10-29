@@ -59,5 +59,3 @@ release:
     name: yatto
   prerelease: auto
   make_latest: true
-  extra_files:
-    - glob: dist/*.bundle
