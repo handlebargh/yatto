@@ -51,7 +51,7 @@ func ReadProjectsFromFS() []items.Project {
 	if err != nil {
 		panic(fmt.Errorf("could not open storage directory: %w", err))
 	}
-	defer root.Close()
+	defer root.Close() //nolint:errcheck
 
 	entries, err := fs.ReadDir(root.FS(), ".")
 	if err != nil {
@@ -100,7 +100,7 @@ func AllLabels() map[string]int {
 	if err != nil {
 		panic(fmt.Errorf("could not open storage directory: %w", err))
 	}
-	defer root.Close()
+	defer root.Close() //nolint:errcheck
 
 	// Store labels in a map and track their frequency.
 	labelCount := make(map[string]int)

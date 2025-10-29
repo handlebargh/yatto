@@ -77,7 +77,7 @@ func (p *Project) ReadTasksFromFS() []Task {
 	if err != nil {
 		panic(fmt.Errorf("could not open storage directory: %w", err))
 	}
-	defer root.Close()
+	defer root.Close() //nolint:errcheck
 
 	taskFiles, err := fs.ReadDir(root.FS(), p.ID)
 	if err != nil {
@@ -141,7 +141,7 @@ func (p *Project) WriteProjectJSON(json []byte, kind string) tea.Cmd {
 		if err != nil {
 			panic(fmt.Errorf("could not open storage directory: %w", err))
 		}
-		defer root.Close()
+		defer root.Close() //nolint:errcheck
 
 		// ensure project directory
 		if err := root.MkdirAll(p.ID, 0o700); err != nil {
@@ -168,7 +168,7 @@ func (p *Project) NumOfTasks() (int, int, int, error) {
 	if err != nil {
 		panic(fmt.Errorf("could not open storage directory: %w", err))
 	}
-	defer root.Close()
+	defer root.Close() //nolint:errcheck
 
 	entries, err := fs.ReadDir(root.FS(), p.ID)
 	if err != nil {

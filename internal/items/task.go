@@ -199,7 +199,7 @@ func (t *Task) WriteTaskJSON(json []byte, p Project, kind string) tea.Cmd {
 		if err != nil {
 			panic(fmt.Errorf("could not open storage directory: %w", err))
 		}
-		defer root.Close()
+		defer root.Close() //nolint:errcheck
 
 		file := filepath.Join(p.ID, t.ID+".json")
 
