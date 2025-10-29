@@ -23,6 +23,7 @@ package items
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -72,10 +73,15 @@ func (p *Project) FilterValue() string { return p.Title }
 // and returns them as a slice of Task. It panics if the directory
 // or any task file cannot be read or parsed.
 func (p *Project) ReadTasksFromFS() []Task {
-	storageDir := viper.GetString("storage.path")
-	taskFiles, err := os.ReadDir(filepath.Join(storageDir, p.ID))
+	root, err := os.OpenRoot(viper.GetString("storage.path"))
 	if err != nil {
-		panic(fmt.Errorf("fatal error reading storage directory: %w", err))
+		panic(fmt.Errorf("could not open storage directory: %w", err))
+	}
+	defer root.Close()
+
+	taskFiles, err := fs.ReadDir(root.FS(), p.ID)
+	if err != nil {
+		panic(fmt.Errorf("could not read project directory: %w", err))
 	}
 
 	var tasks []Task
@@ -84,8 +90,8 @@ func (p *Project) ReadTasksFromFS() []Task {
 			continue
 		}
 
-		filePath := filepath.Join(storageDir, p.ID, entry.Name())
-		fileContent, err := os.ReadFile(filePath)
+		filePath := filepath.Join(p.ID, entry.Name())
+		fileContent, err := fs.ReadFile(root.FS(), filePath)
 		if err != nil {
 			panic(err)
 		}
@@ -131,16 +137,19 @@ func (p *Project) MarshalProject() []byte {
 // Returns a Tea message indicating success or error.
 func (p *Project) WriteProjectJSON(json []byte, kind string) tea.Cmd {
 	return func() tea.Msg {
-		storageDir := viper.GetString("storage.path")
+		root, err := os.OpenRoot(viper.GetString("storage.path"))
+		if err != nil {
+			panic(fmt.Errorf("could not open storage directory: %w", err))
+		}
+		defer root.Close()
 
 		// ensure project directory
-		dir := filepath.Join(storageDir, p.ID)
-		if err := os.MkdirAll(dir, 0o700); err != nil {
+		if err := root.MkdirAll(p.ID, 0o700); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
 
-		file := filepath.Join(storageDir, p.ID, "project.json")
-		if err := os.WriteFile(file, json, 0o600); err != nil {
+		file := filepath.Join(p.ID, "project.json")
+		if err := root.WriteFile(file, json, 0o600); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
 
@@ -155,8 +164,13 @@ func (p *Project) WriteProjectJSON(json []byte, kind string) tea.Cmd {
 //
 // Returns an error if the directory cannot be read or if a task cannot be parsed.
 func (p *Project) NumOfTasks() (int, int, int, error) {
-	dir := filepath.Join(viper.GetString("storage.path"), p.ID)
-	entries, err := os.ReadDir(dir)
+	root, err := os.OpenRoot(viper.GetString("storage.path"))
+	if err != nil {
+		panic(fmt.Errorf("could not open storage directory: %w", err))
+	}
+	defer root.Close()
+
+	entries, err := fs.ReadDir(root.FS(), p.ID)
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -167,8 +181,8 @@ func (p *Project) NumOfTasks() (int, int, int, error) {
 			continue
 		}
 
-		filePath := filepath.Join(dir, entry.Name())
-		data, err := os.ReadFile(filePath)
+		filePath := filepath.Join(p.ID, entry.Name())
+		data, err := root.ReadFile(filePath)
 		if err != nil {
 			continue
 		}

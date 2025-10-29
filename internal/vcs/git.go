@@ -45,7 +45,7 @@ func gitInitCmd() tea.Cmd {
 			return InitErrorMsg{"cannot change dir to configured storage path", err}
 		}
 
-		initCmd := exec.Command("git",
+		initCmd := exec.Command("git", // #nosec G204 Command uses validated config value
 			"init",
 			"--initial-branch",
 			viper.GetString("git.default_branch"),
@@ -135,7 +135,7 @@ func gitPull() ([]byte, error) {
 func gitCommit(message string, files ...string) ([]byte, error) {
 	args := append([]string{"add"}, files...)
 
-	addCmd := exec.Command("git", args...)
+	addCmd := exec.Command("git", args...) // #nosec G204 Command uses only UUIDs as filenames
 	addCmd.Dir = viper.GetString("storage.path")
 	output, err := addCmd.CombinedOutput()
 	if err != nil {
@@ -170,7 +170,7 @@ func gitCommit(message string, files ...string) ([]byte, error) {
 // and executes a Git push command to the specified remote and branch.
 // It returns an error if changing the directory or running the Git command fails.
 func gitPush() ([]byte, error) {
-	pushCmd := exec.Command("git",
+	pushCmd := exec.Command("git", // #nosec G204 Command uses validated config values
 		"push",
 		"--set-upstream",
 		viper.GetString("git.remote.name"),

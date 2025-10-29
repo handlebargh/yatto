@@ -47,8 +47,13 @@ var ErrUnexpectedInput = errors.New("unexpected input")
 // Returns a slice of all successfully read projects.
 // Panics if the storage directory can't be read or if project files are invalid.
 func ReadProjectsFromFS() []items.Project {
-	storageDir := viper.GetString("storage.path")
-	entries, err := os.ReadDir(storageDir)
+	root, err := os.OpenRoot(viper.GetString("storage.path"))
+	if err != nil {
+		panic(fmt.Errorf("could not open storage directory: %w", err))
+	}
+	defer root.Close()
+
+	entries, err := fs.ReadDir(root.FS(), ".")
 	if err != nil {
 		panic(fmt.Errorf("fatal error reading storage directory: %w", err))
 	}
@@ -59,9 +64,7 @@ func ReadProjectsFromFS() []items.Project {
 			continue
 		}
 
-		dirPath := filepath.Join(storageDir, entry.Name())
-
-		projectFile, err := os.ReadFile(filepath.Join(dirPath, "project.json"))
+		projectFile, err := root.ReadFile(filepath.Join(entry.Name(), "project.json"))
 		if err != nil {
 			panic(err)
 		}
@@ -93,12 +96,16 @@ func ReadProjectsFromFS() []items.Project {
 // parsed), the function will panic immediately rather than attempting to
 // recover.
 func AllLabels() map[string]int {
-	storageDir := viper.GetString("storage.path")
+	root, err := os.OpenRoot(viper.GetString("storage.path"))
+	if err != nil {
+		panic(fmt.Errorf("could not open storage directory: %w", err))
+	}
+	defer root.Close()
 
 	// Store labels in a map and track their frequency.
 	labelCount := make(map[string]int)
 
-	err := filepath.WalkDir(storageDir, func(path string, d fs.DirEntry, walkErr error) error {
+	err = fs.WalkDir(root.FS(), ".", func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			panic(fmt.Sprintf("unexpected FS walk error at %s: %v", path, walkErr))
 		}
@@ -107,7 +114,7 @@ func AllLabels() map[string]int {
 			return nil
 		}
 
-		data, err := os.ReadFile(path)
+		data, err := root.ReadFile(path)
 		if err != nil {
 			panic(fmt.Sprintf("unexpected read error for %s: %v", path, err))
 		}
@@ -126,7 +133,7 @@ func AllLabels() map[string]int {
 		return nil
 	})
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error walking storage dir %s: %v", storageDir, err))
+		panic(fmt.Sprintf("unexpected error walking storage dir %s: %v", viper.GetString("storage.path"), err))
 	}
 
 	return labelCount

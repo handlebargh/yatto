@@ -101,7 +101,7 @@ func CreateStorageDir(set Settings) error {
 
 			args, ok := cmds[backend]
 			if ok {
-				cmd := exec.Command(args[0], args[1:]...)
+				cmd := exec.Command(args[0], args[1:]...) // #nosec G204 Command uses validated config values
 
 				cmd.Stdout = set.Output
 				cmd.Stderr = set.Output
@@ -113,7 +113,7 @@ func CreateStorageDir(set Settings) error {
 
 			// Rename branch if it's not our default.
 			if backend == "git" {
-				moveCmd := exec.Command("git",
+				moveCmd := exec.Command("git", // #nosec G204 Command uses validated config value
 					"branch",
 					"--move", viper.GetString("git.default_branch"),
 				)

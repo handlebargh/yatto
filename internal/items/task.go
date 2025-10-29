@@ -195,9 +195,15 @@ func (t *Task) MarshalTask() []byte {
 // using the task's ID as the filename. Returns a Tea message on success or error.
 func (t *Task) WriteTaskJSON(json []byte, p Project, kind string) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), p.ID, t.ID+".json")
+		root, err := os.OpenRoot(viper.GetString("storage.path"))
+		if err != nil {
+			panic(fmt.Errorf("could not open storage directory: %w", err))
+		}
+		defer root.Close()
 
-		if err := os.WriteFile(file, json, 0o600); err != nil {
+		file := filepath.Join(p.ID, t.ID+".json")
+
+		if err := root.WriteFile(file, json, 0o600); err != nil {
 			return WriteTaskJSONErrorMsg{err}
 		}
 

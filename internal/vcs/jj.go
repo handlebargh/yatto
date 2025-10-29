@@ -148,7 +148,7 @@ func jjRebase() ([]byte, error) {
 	branch := viper.GetString("jj.default_branch")
 	remote := viper.GetString("jj.remote.name")
 
-	rebaseCmd := exec.Command("jj",
+	rebaseCmd := exec.Command("jj", // #nosec G204 Command use validated config values
 		"rebase",
 		"--source",
 		"@",
@@ -213,7 +213,7 @@ func jjPush() ([]byte, error) {
 	branch := viper.GetString("jj.default_branch")
 	remote := viper.GetString("jj.remote.name")
 
-	bookmarkCmd := exec.Command("jj",
+	bookmarkCmd := exec.Command("jj", // #nosec G204 Command uses validated config value
 		"bookmark", "set", branch,
 		"--revision", "@-",
 	)
@@ -224,7 +224,7 @@ func jjPush() ([]byte, error) {
 		return output, err
 	}
 
-	pushCmd := exec.Command("jj", "git", "push",
+	pushCmd := exec.Command("jj", "git", "push", // #nosec G204 Command uses validated config values
 		"--allow-new",
 		"--remote", remote,
 		"--bookmark", branch,

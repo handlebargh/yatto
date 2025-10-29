@@ -19,12 +19,21 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 
 	"github.com/spf13/cobra"
 )
 
-// ErrNoEditorSet is returned when the EDITOR environment variable is empty.
-var ErrNoEditorSet = fmt.Errorf("environment variable EDITOR not set")
+var (
+	// ErrNoEditorSet is returned when the EDITOR environment variable is empty.
+	ErrNoEditorSet = fmt.Errorf("environment variable EDITOR not set")
+
+	// ErrInvalidEditorSet is returned when the EDITOR environment variable contains illegal characters.
+	ErrInvalidEditorSet = fmt.Errorf("environment variable EDITOR contains illegal characters")
+
+	// editorRegexp validates the EDITOR environement variable.
+	editorRegexp = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+)
 
 // configEditCmd represents the config edit command
 var configEditCmd = &cobra.Command{
@@ -34,9 +43,11 @@ var configEditCmd = &cobra.Command{
 		editor := os.Getenv("EDITOR")
 		if editor == "" {
 			return ErrNoEditorSet
+		} else if !editorRegexp.MatchString(editor) {
+			return ErrInvalidEditorSet
 		}
 
-		cmd := exec.Command(editor, configPath)
+		cmd := exec.Command(editor, configPath) // #nosec G204 Command uses validated variables
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
