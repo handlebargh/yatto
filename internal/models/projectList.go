@@ -140,10 +140,12 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	_, selected := d.parent.selectedItems[index]
 
 	marker := ""
+	indentation := ""
 	if selected {
 		marker = lipgloss.NewStyle().
 			Foreground(colors.Red()).
 			Render("⟹  ")
+		indentation = "   "
 	}
 
 	var left strings.Builder
@@ -151,6 +153,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	left.WriteString(marker)
 	left.WriteString(listItemStyle.Render(projectItem.Title))
 	left.WriteString("\n")
+	left.WriteString(indentation)
 	left.WriteString(listItemStyle.Render(projectItem.Description))
 
 	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()

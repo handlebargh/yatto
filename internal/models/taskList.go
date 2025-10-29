@@ -225,10 +225,12 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	_, selected := d.parent.selectedItems[index]
 
 	marker := ""
+	indentation := ""
 	if selected {
 		marker = lipgloss.NewStyle().
 			Foreground(colors.Red()).
 			Render("⟹  ")
+		indentation = "   "
 	}
 
 	var left strings.Builder
@@ -244,12 +246,14 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		authorString := strings.Join(authorSlice[:len(authorSlice)-1], " ")
 
 		left.WriteString("\n")
+		left.WriteString(indentation)
 		left.WriteString(authorStyle.Render("Author: "))
 		left.WriteString(authorString)
 	}
 
 	// Labels
 	left.WriteString("\n")
+	left.WriteString(indentation)
 	left.WriteString(labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength)))
 
 	var right strings.Builder
