@@ -105,7 +105,7 @@ func newProjectFormModel(
 					if len(strings.TrimSpace(str)) < 1 {
 						return errors.New("title must not be empty")
 					}
-					if len(str) > 32 {
+					if len([]rune(str)) > 32 {
 						return errors.New("title is too long (only 32 character allowed)")
 					}
 					return nil
