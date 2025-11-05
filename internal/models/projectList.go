@@ -407,6 +407,10 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 	case tea.KeyMsg:
+		if m.progress.Percent() != 0.0 {
+			break
+		}
+
 		switch m.mode {
 		case modeConfirmDelete:
 			switch msg.String() {
