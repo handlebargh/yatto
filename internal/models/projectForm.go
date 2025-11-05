@@ -33,6 +33,7 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/handlebargh/yatto/internal/vcs"
+	"github.com/mattn/go-runewidth"
 )
 
 // projectFormModel defines the Bubble Tea model for a form-based interface
@@ -105,8 +106,8 @@ func newProjectFormModel(
 					if len(strings.TrimSpace(str)) < 1 {
 						return errors.New("title must not be empty")
 					}
-					if len(str) > 32 {
-						return errors.New("title is too long (only 32 character allowed)")
+					if runewidth.StringWidth(str) > 32 {
+						return errors.New("title is too long (max 32 terminal columns)")
 					}
 					return nil
 				}),
