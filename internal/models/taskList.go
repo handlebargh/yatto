@@ -556,6 +556,13 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch m.mode {
+		case modeBackendError:
+			switch msg.String() {
+			case "esc", "q":
+				m.mode = modeNormal
+				return m, nil
+			}
+
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
