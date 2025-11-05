@@ -407,6 +407,10 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlC {
+			return m, tea.Quit
+		}
+
 		if m.progress.Percent() != 0.0 {
 			break
 		}
@@ -455,10 +459,6 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Don't match any of the keys below if we're actively filtering.
 			if m.list.FilterState() == list.Filtering {
 				break
-			}
-
-			if msg.Type == tea.KeyCtrlC {
-				return m, tea.Quit
 			}
 
 			switch {
