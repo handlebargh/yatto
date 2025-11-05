@@ -37,6 +37,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-runewidth"
 	"github.com/spf13/viper"
 )
 
@@ -98,9 +99,12 @@ func (t *Task) FilterValue() string { return fmt.Sprintf("%s %s", t.Title, t.Lab
 // CropTaskTitle returns the task's title cropped to fit
 // length with a concatenated ellipses.
 func (t *Task) CropTaskTitle(length int) string {
-	runes := []rune(t.Title)
-	if len(runes) > length {
-		return string(runes[:length-len([]rune(ellipses))]) + ellipses
+	ellipsesWidth := runewidth.StringWidth(ellipses)
+	titleWidth := runewidth.StringWidth(t.Title)
+
+	if titleWidth > length {
+		truncated := runewidth.Truncate(t.Title, length-ellipsesWidth, "")
+		return truncated + ellipses
 	}
 
 	return t.Title
