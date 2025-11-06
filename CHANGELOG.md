@@ -1,3 +1,16 @@
+## v0.21.4 (2025-11-06)
+
+### Fix
+
+- do not accept user input while progress bar is showing (#59)
+- check task and project title length by runes instead of bytes (#57)
+
+### Refactor
+
+- resolve linter errors
+- resolve gosec warnings
+- validate config file at startup
+
 ## v0.21.3 (2025-10-29)
 
 ### Fix
