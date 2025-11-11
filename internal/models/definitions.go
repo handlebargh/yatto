@@ -24,16 +24,11 @@
 package models
 
 import (
-	"time"
-
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
 )
 
 type (
-	// tickMsg is a message type used to trigger time-based updates, such as animations.
-	tickMsg time.Time
-
 	// mode defines the state of the TUI, used for contextual behavior (e.g., normal, confirm delete, error).
 	mode int
 
