@@ -191,10 +191,10 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			action = "update"
 		}
 
+		m.listModel.spinning = true
 		cmds = append(
 			cmds,
-			m.listModel.progress.SetPercent(0.10),
-			tickCmd(),
+			m.listModel.spinner.Tick,
 			m.project.WriteProjectJSON(json, action),
 			vcs.CommitCmd(
 				fmt.Sprintf("%s: %s", action, m.project.Title),

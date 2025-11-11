@@ -31,7 +31,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/progress"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
@@ -355,8 +355,8 @@ type taskListModel struct {
 	mode             mode
 	cmdOutput        string
 	err              error
-	progress         progress.Model
-	progressDone     bool
+	spinner          spinner.Model
+	spinning         bool
 	waitingAfterDone bool
 	status           string
 	width, height    int
@@ -381,12 +381,18 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 		Background(color).
 		Padding(0, 1)
 
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = lipgloss.NewStyle().Foreground(colors.Orange())
+
 	m := taskListModel{
-		project:       project,
-		projectModel:  projectModel,
-		keys:          listKeys,
-		selectedItems: make(map[int]*items.Task),
-		progress:      progress.New(progress.WithGradient("#FFA336", "#02BF87")),
+		project:          project,
+		projectModel:     projectModel,
+		keys:             listKeys,
+		spinner:          sp,
+		spinning:         false,
+		waitingAfterDone: false,
+		selectedItems:    make(map[int]*items.Task),
 	}
 
 	itemList := list.New(
@@ -437,7 +443,7 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 
 // Init initializes the taskListModel and returns an initial command.
 func (m taskListModel) Init() tea.Cmd {
-	return tickCmd()
+	return nil
 }
 
 // Update handles incoming messages and updates the taskListModel accordingly.
@@ -445,30 +451,24 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case tickMsg:
-		if m.progress.Percent() >= 1.0 && !m.waitingAfterDone {
-			m.progressDone = true
-			m.waitingAfterDone = true
+	case spinner.TickMsg:
+		if m.spinning {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
 
-			// Return a timer command to keep displaying 100% progress
-			// for half a second.
+		if !m.waitingAfterDone {
+			// Return a timer command to keep displaying spinner for half a second.
 			return m, tea.Tick(time.Millisecond*500, func(_ time.Time) tea.Msg {
 				return doneWaitingMsg{}
 			})
 		}
 
-		return m, tickCmd()
-
-	// FrameMsg is sent when the progress bar wants to animate itself
-	case progress.FrameMsg:
-		progressModel, cmd := m.progress.Update(msg)
-		m.progress = progressModel.(progress.Model)
-		return m, cmd
-
 	case doneWaitingMsg:
-		m.progressDone, m.waitingAfterDone = false, false
-		// Reset the progress bar.
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		m.waitingAfterDone = false
+		return m, nil
 
 	case vcs.CommitDoneMsg:
 		// Remove all map entries after successful commit.
@@ -476,73 +476,81 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			delete(m.selectedItems, k)
 		}
 		m.status = "🗘  Changes committed"
-		m.progressDone = true
-		return m, m.progress.SetPercent(1.0)
+
+		m.waitingAfterDone = true
+
+		// Wait 1 second before fully stopping spinner
+		return m, tea.Tick(time.Second, func(time.Time) tea.Msg {
+			return doneWaitingMsg{}
+		})
 
 	case vcs.CommitErrorMsg:
-		m.mode = 2
+		m.mode = modeBackendError
 		m.cmdOutput = msg.CmdOutput
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		return m, nil
 
 	case vcs.PullErrorMsg:
-		m.mode = 2
+		m.mode = modeBackendError
 		m.cmdOutput = msg.CmdOutput
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		return m, nil
 
 	case vcs.PushErrorMsg:
-		m.mode = 2
+		m.mode = modeBackendError
 		m.cmdOutput = msg.CmdOutput
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		return m, nil
 
 	case items.WriteTaskJSONDoneMsg:
 		switch msg.Kind {
 		case "create":
 			m.list.InsertItem(0, &msg.Task)
-			m.status = "🗸  Task created"
+			m.status = "🗸  Task created ― committing changes"
 
 		case "update":
-			m.status = "🗸  Task updated"
+			m.status = "🗸  Task updated ― committing changes"
 
 		case "start":
-			m.status = "🗸  Task(s) started"
+			m.status = "🗸  Task(s) started ― committing changes"
 
 		case "stop":
-			m.status = "🗸  Task(s) stopped"
+			m.status = "🗸  Task(s) stopped ― committing changes"
 
 		case "complete":
-			m.status = "🗸  Task(s) completed"
+			m.status = "🗸  Task(s) completed ― committing changes"
 
 		case "reopen":
-			m.status = "🗸  Task(s) reopened"
+			m.status = "🗸  Task(s) reopened ― committing changes"
 
 		default:
 			return m, nil
 		}
-		return m, m.progress.SetPercent(0.5)
+		return m, nil
 
 	case items.WriteTaskJSONErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		return m, nil
 
 	case items.TaskDeleteDoneMsg:
 		for i, task := range m.selectedItems {
 			if idx := task.FindListIndexByID(m.list.Items()); idx >= 0 {
 				m.list.RemoveItem(idx)
 				delete(m.selectedItems, i)
-				m.status = "🗑  Task(s) deleted"
-
-				return m, m.progress.SetPercent(0.5)
 			}
 		}
+		m.status = "🗑  Task(s) deleted"
+		return m, nil
 
 	case items.TaskDeleteErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		return m, nil
 
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
@@ -585,7 +593,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				message := fmt.Sprintf("delete: %d task(s)\n\n- %s", len(taskNames), strings.Join(taskNames, "\n- "))
-				cmds = append(cmds, m.progress.SetPercent(0.10), tickCmd())
+
+				m.spinning = true
+
+				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, deleteCmds...)
 				cmds = append(cmds, vcs.CommitCmd(message, taskPaths...))
 
@@ -737,18 +748,10 @@ func (m taskListModel) View() string {
 		Align(lipgloss.Center).
 		AlignVertical(lipgloss.Center)
 
-	// Display progress bar at 100%
-	if m.progressDone && m.waitingAfterDone {
-		return centeredStyle.Bold(true).
-			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
-				"\n\n" + m.progress.ViewAs(1.0))
-	}
-
-	// Display progress bar if not at 0%
-	if m.progress.Percent() != 0.0 {
-		return centeredStyle.Bold(true).
-			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
-				"\n\n" + m.progress.View())
+	// Spinner active view
+	if m.spinning {
+		return centeredStyle.
+			Render(fmt.Sprintf("%s  %s", m.spinner.View(), m.status))
 	}
 
 	// Display deletion confirm view.
@@ -946,7 +949,9 @@ func (m taskListModel) toggleTasks(
 	commitMsg := fmt.Sprintf("Change %s state of %d task(s)\n\n- %s",
 		actionName, len(taskNames), strings.Join(taskNames, "\n- "))
 
-	cmds = append(cmds, tickCmd(), m.progress.SetPercent(0.10))
+	m.spinning = true
+
+	cmds = append(cmds, m.spinner.Tick)
 	cmds = append(cmds, writeCmds...)
 	cmds = append(cmds, vcs.CommitCmd(commitMsg, taskPaths...))
 

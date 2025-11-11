@@ -28,7 +28,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/progress"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -209,8 +209,8 @@ type ProjectListModel struct {
 	mode             mode
 	cmdOutput        string
 	err              error
-	progress         progress.Model
-	progressDone     bool
+	spinner          spinner.Model
+	spinning         bool
 	waitingAfterDone bool
 	status           string
 	width, height    int
@@ -233,11 +233,16 @@ func InitialProjectListModel() ProjectListModel {
 	}
 
 	selectedItems := make(map[int]*items.Project)
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = lipgloss.NewStyle().Foreground(colors.Orange())
 
 	m := ProjectListModel{
-		keys:          listKeys,
-		progress:      progress.New(progress.WithGradient("#FFA336", "#02BF87")),
-		selectedItems: selectedItems,
+		keys:             listKeys,
+		spinner:          sp,
+		spinning:         false,
+		waitingAfterDone: false,
+		selectedItems:    selectedItems,
 	}
 
 	itemList := list.New(
@@ -293,7 +298,6 @@ func InitialProjectListModel() ProjectListModel {
 // for the project list model.
 func (m ProjectListModel) Init() tea.Cmd {
 	return tea.Batch(
-		tickCmd(),
 		vcs.InitCmd(),
 	)
 }
@@ -304,30 +308,24 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case tickMsg:
-		if m.progress.Percent() >= 1.0 && !m.waitingAfterDone {
-			m.progressDone = true
-			m.waitingAfterDone = true
+	case spinner.TickMsg:
+		if m.spinning {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
 
-			// Return a timer command to keep displaying 100% progress
-			// for half a second.
+		if !m.waitingAfterDone {
+			// Return a timer command to keep displaying spinner for half a second.
 			return m, tea.Tick(time.Millisecond*500, func(_ time.Time) tea.Msg {
 				return doneWaitingMsg{}
 			})
 		}
 
-		return m, tickCmd()
-
-	// FrameMsg is sent when the progress bar wants to animate itself
-	case progress.FrameMsg:
-		progressModel, cmd := m.progress.Update(msg)
-		m.progress = progressModel.(progress.Model)
-		return m, cmd
-
 	case doneWaitingMsg:
-		m.progressDone, m.waitingAfterDone = false, false
-		// Reset the progress bar.
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		m.waitingAfterDone = false
+		return m, nil
 
 	case vcs.InitDoneMsg:
 		return m, nil
@@ -343,62 +341,68 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			delete(m.selectedItems, k)
 		}
 		m.status = "🗘  Changes committed"
-		m.progressDone = true
-		return m, m.progress.SetPercent(1.0)
+
+		m.waitingAfterDone = true
+
+		// Wait 1 second before fully stopping spinner
+		return m, tea.Tick(time.Second, func(time.Time) tea.Msg {
+			return doneWaitingMsg{}
+		})
 
 	case vcs.CommitErrorMsg:
-		m.mode = 2
+		m.mode = modeBackendError
 		m.cmdOutput = msg.CmdOutput
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		return m, nil
 
 	case vcs.PullErrorMsg:
-		m.mode = 2
+		m.mode = modeBackendError
 		m.cmdOutput = msg.CmdOutput
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		return m, nil
 
 	case vcs.PushErrorMsg:
-		m.mode = 2
+		m.mode = modeBackendError
 		m.cmdOutput = msg.CmdOutput
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		return m, nil
 
 	case items.WriteProjectJSONDoneMsg:
 		switch msg.Kind {
 		case "create":
 			m.list.InsertItem(0, &msg.Project)
-			m.status = "🗸  Project created"
-			return m, m.progress.SetPercent(0.5)
+			m.status = "🗸  Project created ― committing changes"
+			return m, nil
 
 		case "update":
-			m.status = "🗸  Project updated"
-			return m, m.progress.SetPercent(0.5)
-
-		default:
+			m.status = "🗸  Project updated ― committing changes"
 			return m, nil
 		}
+		return m, nil
 
 	case items.WriteProjectJSONErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		return m, nil
 
 	case items.ProjectDeleteDoneMsg:
 		for i, project := range m.selectedItems {
 			if idx := project.FindListIndexByID(m.list.Items()); idx >= 0 {
 				m.list.RemoveItem(idx)
 				delete(m.selectedItems, i)
-				m.status = "🗑  Project(s) deleted"
-
-				return m, m.progress.SetPercent(0.5)
 			}
 		}
+		m.status = "🗑  Project(s) deleted"
+		return m, nil
 
 	case items.ProjectDeleteErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
-		return m, m.progress.SetPercent(0.0)
+		m.spinning = false
+		return m, nil
 
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
@@ -441,7 +445,10 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				message := fmt.Sprintf("delete: %d project(s)\n\n- %s", len(projectNames), strings.Join(projectNames, "\n- "))
-				cmds = append(cmds, m.progress.SetPercent(0.10), tickCmd())
+
+				m.spinning = true
+
+				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, deleteCmds...)
 				cmds = append(cmds, vcs.CommitCmd(message, projectPaths...))
 
@@ -542,18 +549,10 @@ func (m ProjectListModel) View() string {
 		Align(lipgloss.Center).
 		AlignVertical(lipgloss.Center)
 
-	// Display progress bar at 100%
-	if m.progressDone && m.waitingAfterDone {
-		return centeredStyle.Bold(true).
-			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
-				"\n\n" + m.progress.ViewAs(1.0))
-	}
-
-	// Display progress bar if not at 0%
-	if m.progress.Percent() != 0.0 {
-		return centeredStyle.Bold(true).
-			Render(lipgloss.NewStyle().Foreground(colors.Green()).Render(m.status) +
-				"\n\n" + m.progress.View())
+	// Spinner active view
+	if m.spinning {
+		return centeredStyle.
+			Render(fmt.Sprintf("%s  %s", m.spinner.View(), m.status))
 	}
 
 	// Display deletion confirm view.

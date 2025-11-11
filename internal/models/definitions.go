@@ -37,7 +37,7 @@ type (
 	// mode defines the state of the TUI, used for contextual behavior (e.g., normal, confirm delete, error).
 	mode int
 
-	// doneWaitingMsg signals that the progress bar has finished its post-completion delay.
+	// doneWaitingMsg signals that the spinner has finished its post-completion delay.
 	doneWaitingMsg struct{}
 )
 
