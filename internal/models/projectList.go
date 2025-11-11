@@ -415,7 +415,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		if m.progress.Percent() != 0.0 {
+		if m.spinning {
 			break
 		}
 
