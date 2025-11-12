@@ -54,8 +54,8 @@ brew install yatto
 ### Scoop
 
 ```powershell
-scoop bucket add handlebargh https://github.com/handlebargh/scoop-bucket
-scoop install yatto
+scoop bucket add scoop-handlebargh https://github.com/handlebargh/scoop-handlebargh
+scoop install scoop-handlebargh/yatto
 ```
 
 ### Eget
