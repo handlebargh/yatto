@@ -1,5 +1,5 @@
 name: Question
-description: Have a question? Leave it here, and I’ll do my best to respond.
+description: Have a question?
 title: "[Question] "
 labels: ["question"]
 body:
