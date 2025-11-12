@@ -1,3 +1,10 @@
+## v0.21.6 (2025-11-12)
+
+### Fix
+
+- check if at least one supported VCS is installed
+- allow more characters in editor env var
+
 ## v0.21.5 (2025-11-12)
 
 ### Refactor
