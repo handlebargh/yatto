@@ -1,0 +1,42 @@
+name: Question
+description: Have a question? Leave it here, and I’ll do my best to respond.
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe your question and provide any relevant details.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Describe your question clearly.
+      placeholder: How do I...?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: Which OS are you using yatto on?
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+
+  - type: input
+    id: version
+    attributes:
+      label: yatto Version
+      description: Version of yatto (optional)
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any extra information, steps you’ve tried, or error messages.
+      placeholder: I'm trying to...
