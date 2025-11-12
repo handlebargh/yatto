@@ -59,3 +59,60 @@ release:
     name: yatto
   prerelease: auto
   make_latest: true
+
+homebrew_casks:
+  - name: yatto
+    repository:
+      owner: handlebargh
+      name: homebrew-yatto
+      branch: main
+    homepage: https://github.com/handlebargh/yatto
+    description: Interactive VCS-based todo-list for the command-line
+    license: MIT
+    url:
+      template: "https://github.com/handlebargh/yatto/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+      verified: github.com/handlebargh/yatto/releases/download
+    artifact: "yatto_Darwin_*.tar.gz"
+    binaries:
+      - yatto
+
+nfpms:
+  - file_name_template: "{{ .ConventionalFileName }}"
+    id: packages
+    homepage: https://github.com/handlebargh/yatto
+    description: |-
+      Interactive VCS-based todo-list for the command-line
+    maintainer: Benedikt Zumtobel <benedikt at zumtobel dot dev>
+    license: MIT
+    bindir: /usr/bin
+    section: utils
+    mtime: "{{ .CommitDate }}"
+    contents:
+      - src: ./LICENSE
+        dst: /usr/share/doc/yatto/copyright
+        file_info:
+          mode: 0644
+          mtime: "{{ .CommitDate }}"
+    recommends:
+      - git
+    formats:
+      - apk
+      - deb
+      - rpm
+    rpm:
+      signature:
+        key_file: "{{ .Env.GPG_KEY_PATH }}"
+    deb:
+      signature:
+        key_file: "{{ .Env.GPG_KEY_PATH }}"
+        type: origin
+
+scoop:
+  - name: yatto
+    repository:
+      owner: handlebargh
+      name: scoop-bucket
+      branch: main
+    homepage: https://github.com/handlebargh/yatto
+    description: Interactive VCS-based todo-list for the command-line
+    license: MIT
