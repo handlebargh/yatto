@@ -1,3 +1,15 @@
+## v0.21.5 (2025-11-12)
+
+### Refactor
+
+- replace progress bar with spinner (#62)
+- replace progress bar with spinner
+refactor: block key commands while spinner is active
+refactor: remove unused type
+refactor: improve task filtering with custom FilterFunc
+refactor: adjust status messages
+docs: update gif
+
 ## v0.21.4 (2025-11-06)
 
 ### Fix
