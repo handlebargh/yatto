@@ -31,8 +31,8 @@ var (
 	// ErrInvalidEditorSet is returned when the EDITOR environment variable contains illegal characters.
 	ErrInvalidEditorSet = fmt.Errorf("environment variable EDITOR contains illegal characters")
 
-	// editorRegexp validates the EDITOR environement variable.
-	editorRegexp = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+	// editorRegexp validates the executable part of EDITOR.
+	editorRegexp = regexp.MustCompile(`^[a-zA-Z0-9 _/\\.\-:]+$`)
 )
 
 // configEditCmd represents the config edit command
