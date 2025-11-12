@@ -14,40 +14,47 @@ Sleep 3s
 Down
 Sleep 500ms
 Down
-Sleep 500ms
-Down
-Sleep 500ms
+Sleep 1s
 Enter
 Sleep 3s
 Type "a"
+Sleep 1s
 Down 2
 Enter
-Sleep 500ms
+Sleep 1s
 Type "Record demo tape"
 Enter
 Sleep 1s
 Type "Create a GIF to show visitors what the application looks like"
-Sleep 500ms
+Sleep 1s
 Enter
-Sleep 500ms
+Sleep 1s
 Enter
-Sleep 500ms
-Down
+Sleep 1s
+Down 2
 Type " "
-Down
+Down 2
 Type " "
-Sleep 500ms
-Enter 2
-Sleep 500ms
+Sleep 1s
 Enter
-Sleep 500ms
+Sleep 1s
+Type "gif"
+Sleep 1s
+Enter
+Sleep 1s
+Enter
+Sleep 1s
 Down
-Sleep 500ms
+Sleep 1s
 Enter
-Sleep 500ms
+Sleep 1s
 Enter
-Sleep 500ms
+Sleep 1s
 Enter
-Sleep 6s
+Sleep 8s
+Type "/"
+Type "gif"
 Enter
-Sleep 2.5s
+Sleep 1s
+Enter
+Sleep 3s
