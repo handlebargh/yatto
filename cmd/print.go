@@ -23,6 +23,7 @@ package cmd
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -47,6 +48,15 @@ var (
 var printCmd = &cobra.Command{
 	Use:   "print",
 	Short: "Print tasks to stdout",
+	PreRunE: func(_ *cobra.Command, _ []string) error {
+		_, gitErr := exec.LookPath("git")
+		_, jjErr := exec.LookPath("jj")
+		if gitErr != nil && jjErr != nil {
+			return errors.New("yatto requires either 'git' or 'jj' to be installed")
+		}
+
+		return nil
+	},
 	RunE: func(_ *cobra.Command, _ []string) error {
 		setCfg := config.Settings{
 			ConfigPath: configPath,

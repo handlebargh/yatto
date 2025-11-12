@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -46,6 +47,15 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "yatto",
 	Short: "Interactive VCS-based todo-list for the command-line",
+	PreRunE: func(_ *cobra.Command, _ []string) error {
+		_, gitErr := exec.LookPath("git")
+		_, jjErr := exec.LookPath("jj")
+		if gitErr != nil && jjErr != nil {
+			return errors.New("yatto requires either 'git' or 'jj' to be installed")
+		}
+
+		return nil
+	},
 	RunE: func(_ *cobra.Command, _ []string) error {
 		setCfg := config.Settings{
 			ConfigPath: configPath,
