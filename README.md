@@ -44,22 +44,29 @@ You need to have at least one of the supported version control systems installed
 go install github.com/handlebargh/yatto@latest
 ```
 
-### [Homebrew](https://brew.sh/)
+### Homebrew
 
 ```shell
 brew tap handlebargh/yatto
 brew install yatto
 ```
 
-### [Eget](https://github.com/zyedidia/eget)
+### Scoop
+
+```powershell
+scoop bucket add scoop-handlebargh https://github.com/handlebargh/scoop-handlebargh
+scoop install scoop-handlebargh/yatto
+```
+
+### Eget
 
 ```shell
 eget handlebargh/yatto
 ```
 
-### Binary
+### Binary and Linux packages
 
-Take a look at the [releases](https://github.com/handlebargh/yatto/releases/latest).
+Take a look at the [releases](https://github.com/handlebargh/yatto/releases/latest) for prebuilt binaries and packages.
 
 ### Verifying Release Binaries
 

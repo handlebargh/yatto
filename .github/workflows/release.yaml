@@ -28,6 +28,12 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.0.0
 
+      - name: Place GPG key
+        run: |
+          echo "$GPG_PRIVATE_KEY" > /tmp/privkey.asc
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -36,3 +42,6 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_UPDATE_TOKEN: ${{ secrets.PACKAGE_UPDATE_TOKEN }}
+          NFPM_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
+          GPG_KEY_PATH: /tmp/privkey.asc

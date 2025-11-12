@@ -5,7 +5,9 @@ version: 2
 project_name: yatto
 
 builds:
-  - ldflags:
+  - id: yatto
+    binary: yatto
+    ldflags:
       - "-s -w"
       - "-extldflags=-zrelro"
       - "-extldflags=-znow"
@@ -20,19 +22,18 @@ builds:
     goarch:
       - amd64
       - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
-  - formats: [tar.gz]
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+  - id: yatto
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
-        formats: [zip]
+        formats: [ zip ]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
 
 changelog:
   sort: asc
@@ -59,3 +60,64 @@ release:
     name: yatto
   prerelease: auto
   make_latest: true
+
+brews:
+  - name: yatto
+    repository:
+      owner: handlebargh
+      name: homebrew-yatto
+      branch: main
+      token: "{{ .Env.PACKAGE_UPDATE_TOKEN }}"
+    homepage: https://github.com/handlebargh/yatto
+    description: Interactive VCS-based todo-list for the command-line
+    license: MIT
+    caveats: |
+      yatto requires either Git or Jujutsu (jj) to be installed and available in your PATH.
+      You can install them with:
+        brew install git
+      or
+        brew install jj
+    test: |
+      system "#{bin}/yatto", "version"
+
+nfpms:
+  - file_name_template: "{{ .ConventionalFileName }}"
+    id: packages
+    homepage: https://github.com/handlebargh/yatto
+    description: |-
+      Interactive VCS-based todo-list for the command-line
+    maintainer: Benedikt Zumtobel <benedikt at zumtobel dot dev>
+    license: MIT
+    bindir: /usr/bin
+    section: utils
+    mtime: "{{ .CommitDate }}"
+    contents:
+      - src: ./LICENSE
+        dst: /usr/share/doc/yatto/copyright
+        file_info:
+          mode: 0644
+          mtime: "{{ .CommitDate }}"
+    recommends:
+      - git
+    formats:
+      - apk
+      - deb
+      - rpm
+    rpm:
+      signature:
+        key_file: "{{ .Env.GPG_KEY_PATH }}"
+    deb:
+      signature:
+        key_file: "{{ .Env.GPG_KEY_PATH }}"
+        type: origin
+
+scoops:
+  - name: yatto
+    repository:
+      owner: handlebargh
+      name: scoop-bucket
+      branch: main
+      token: "{{ .Env.PACKAGE_UPDATE_TOKEN }}"
+    homepage: https://github.com/handlebargh/yatto
+    description: Interactive VCS-based todo-list for the command-line
+    license: MIT
