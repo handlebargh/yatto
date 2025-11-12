@@ -5,7 +5,9 @@ version: 2
 project_name: yatto
 
 builds:
-  - ldflags:
+  - id: yatto
+    binary: yatto
+    ldflags:
       - "-s -w"
       - "-extldflags=-zrelro"
       - "-extldflags=-znow"
@@ -20,19 +22,18 @@ builds:
     goarch:
       - amd64
       - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
-  - formats: [tar.gz]
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+  - id: yatto
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
-        formats: [zip]
+        formats: [ zip ]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
 
 changelog:
   sort: asc
@@ -60,7 +61,7 @@ release:
   prerelease: auto
   make_latest: true
 
-homebrew_casks:
+brews:
   - name: yatto
     repository:
       owner: handlebargh
@@ -69,12 +70,14 @@ homebrew_casks:
     homepage: https://github.com/handlebargh/yatto
     description: Interactive VCS-based todo-list for the command-line
     license: MIT
-    url:
-      template: "https://github.com/handlebargh/yatto/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-      verified: github.com/handlebargh/yatto/releases/download
-    artifact: "yatto_Darwin_*.tar.gz"
-    binaries:
-      - yatto
+    caveats: |
+      yatto requires either Git or Jujutsu (jj) to be installed and available in your PATH.
+      You can install them with:
+        brew install git
+      or
+        brew install jj
+    test: |
+      system "#{bin}/yatto", "version"
 
 nfpms:
   - file_name_template: "{{ .ConventionalFileName }}"
@@ -107,7 +110,7 @@ nfpms:
         key_file: "{{ .Env.GPG_KEY_PATH }}"
         type: origin
 
-scoop:
+scoops:
   - name: yatto
     repository:
       owner: handlebargh
