@@ -544,7 +544,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				delete(m.selectedItems, i)
 			}
 		}
-		m.status = "🗑  Task(s) deleted"
+		m.status = "✘ Task(s) deleted ― committing changes"
 		return m, nil
 
 	case items.TaskDeleteErrorMsg:

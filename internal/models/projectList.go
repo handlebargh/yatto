@@ -395,7 +395,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				delete(m.selectedItems, i)
 			}
 		}
-		m.status = "🗑  Project(s) deleted"
+		m.status = "✘ Project(s) deleted ― committing changes"
 		return m, nil
 
 	case items.ProjectDeleteErrorMsg:
