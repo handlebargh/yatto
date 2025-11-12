@@ -20,12 +20,6 @@
 
 package models
 
-import (
-	"time"
-
-	tea "github.com/charmbracelet/bubbletea"
-)
-
 // completedString returns a string representation of the task completion state.
 // It returns "completed" if completed is true, otherwise "open".
 func completedString(completed bool) string {
@@ -34,12 +28,4 @@ func completedString(completed bool) string {
 	}
 
 	return "open"
-}
-
-// tickCmd returns a Bubble Tea command that sends a tickMsg every second.
-// Used to drive periodic updates in the TUI, such as progress animations.
-func tickCmd() tea.Cmd {
-	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
-		return tickMsg(t)
-	})
 }
