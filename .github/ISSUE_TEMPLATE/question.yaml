@@ -33,7 +33,6 @@ body:
     attributes:
       label: yatto Version
       description: Version of yatto (optional)
-      placeholder: 0.21.5
 
   - type: textarea
     id: context
