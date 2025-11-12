@@ -67,6 +67,7 @@ brews:
       owner: handlebargh
       name: homebrew-yatto
       branch: main
+      token: "{{ .Env.PACKAGE_UPDATE_TOKEN }}"
     homepage: https://github.com/handlebargh/yatto
     description: Interactive VCS-based todo-list for the command-line
     license: MIT
@@ -116,6 +117,7 @@ scoops:
       owner: handlebargh
       name: scoop-bucket
       branch: main
+      token: "{{ .Env.PACKAGE_UPDATE_TOKEN }}"
     homepage: https://github.com/handlebargh/yatto
     description: Interactive VCS-based todo-list for the command-line
     license: MIT
