@@ -22,7 +22,10 @@ package items
 
 import (
 	"regexp"
+	"strings"
 	"time"
+
+	"github.com/charmbracelet/bubbles/list"
 )
 
 // UUIDRegex is a regular expression used to match task json files.
@@ -42,4 +45,50 @@ func IsToday(t *time.Time) bool {
 	y1, m1, d1 := t.Date()
 	y2, m2, d2 := now.Date()
 	return y1 == y2 && m1 == m2 && d1 == d2
+}
+
+// TaskFilterFunc filters tasks based on a search term using AND logic.
+// It returns a slice of list.Rank containing only items where ALL space-separated
+// tokens in the search term are found (case-insensitive substring match).
+// The MatchedIndexes field contains the character positions of matched tokens
+// for highlighting purposes. If the search term is empty, all items are returned.
+func TaskFilterFunc(term string, targets []string) []list.Rank {
+	searchTokens := strings.Fields(strings.ToLower(term))
+
+	if len(searchTokens) == 0 {
+		ranks := make([]list.Rank, len(targets))
+		for i := range targets {
+			ranks[i] = list.Rank{Index: i, MatchedIndexes: []int{}}
+		}
+		return ranks
+	}
+
+	var ranks []list.Rank
+
+	for idx, target := range targets {
+		targetLower := strings.ToLower(target)
+
+		allMatch := true
+		matchedIndexes := []int{}
+
+		for _, token := range searchTokens {
+			if pos := strings.Index(targetLower, token); pos != -1 {
+				for i := pos; i < pos+len(token); i++ {
+					matchedIndexes = append(matchedIndexes, i)
+				}
+			} else {
+				allMatch = false
+				break
+			}
+		}
+
+		if allMatch {
+			ranks = append(ranks, list.Rank{
+				Index:          idx,
+				MatchedIndexes: matchedIndexes,
+			})
+		}
+	}
+
+	return ranks
 }

@@ -405,6 +405,7 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 	itemList.SetShowTitle(true)
 	itemList.SetShowStatusBar(true)
 	itemList.SetStatusBarItemName("task", "tasks")
+	itemList.Filter = items.TaskFilterFunc
 	itemList.StatusMessageLifetime = 3 * time.Second
 	itemList.Title = project.Title
 	itemList.Styles.Title = titleStyleTasks
