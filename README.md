@@ -68,6 +68,24 @@ eget handlebargh/yatto
 
 Take a look at the [releases](https://github.com/handlebargh/yatto/releases/latest) for prebuilt binaries and packages.
 
+### Verifying Release Packages
+
+1. Download and import the public key:
+
+    ```shell
+    sudo rpm --import yatto_signing_pubkey.gpg      # For RPM
+    gpg --import yatto_signing_pubkey.gpg           # For DEB
+    ```
+
+2. Verify the package:
+
+    ```shell
+    rpm --checksig yatto-0.xy.z.x86_64.rpm    # RPM
+    dpkg-sig --verify yatto_0.xy.z_amd64.deb    # DEB
+    ```
+
+Install only after the signature is valid.
+
 ### Verifying Release Binaries
 
 All release binaries are accompanied by a SHA256 checksum file, which is signed with Cosign.

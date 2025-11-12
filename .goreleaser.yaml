@@ -60,6 +60,9 @@ release:
     name: yatto
   prerelease: auto
   make_latest: true
+  extra_files:
+    - glob: ./yatto_signing_pubkey.gpg
+
 
 brews:
   - name: yatto
