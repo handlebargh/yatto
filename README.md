@@ -44,6 +44,12 @@ You need to have at least one of the supported version control systems installed
 go install github.com/handlebargh/yatto@latest
 ```
 
+### AUR
+
+```shell
+yay -S yatto
+```
+
 ### Homebrew
 
 ```shell
