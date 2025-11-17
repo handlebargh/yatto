@@ -34,6 +34,12 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
+      - name: Place AUR key
+        run: |
+          echo "$AUR_KEY" > /tmp/aur_key
+        env:
+          AUR_KEY: ${{ secrets.AUR_KEY }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -43,5 +49,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PACKAGE_UPDATE_TOKEN: ${{ secrets.PACKAGE_UPDATE_TOKEN }}
+          AUR_KEY: /tmp/aur_key
           NFPM_PASSPHRASE: ${{ secrets.NFPM_PASSPHRASE }}
           GPG_KEY_PATH: /tmp/privkey.asc
