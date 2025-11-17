@@ -41,8 +41,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const ellipses = "..."
-
 type (
 	// WriteTaskJSONDoneMsg indicates successful write of a Task JSON file.
 	WriteTaskJSONDoneMsg struct {

@@ -30,6 +30,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-runewidth"
 	"github.com/spf13/viper"
 )
 
@@ -68,6 +69,20 @@ type Project struct {
 
 // FilterValue returns a string used for filtering/search, based on project title.
 func (p *Project) FilterValue() string { return p.Title }
+
+// CropDescription returns the project's description cropped to fit
+// length with a concatenated ellipses.
+func (p *Project) CropDescription(length int) string {
+	ellipsesWidth := runewidth.StringWidth(ellipses)
+	titleWidth := runewidth.StringWidth(p.Description)
+
+	if titleWidth > length {
+		truncated := runewidth.Truncate(p.Description, length-ellipsesWidth, "")
+		return truncated + ellipses
+	}
+
+	return p.Description
+}
 
 // ReadTasksFromFS reads all task files from the project's directory
 // and returns them as a slice of Task. It panics if the directory

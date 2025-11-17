@@ -39,6 +39,8 @@ import (
 	"github.com/handlebargh/yatto/internal/vcs"
 )
 
+const projectDescLength = 100
+
 // projectListKeyMap defines the key bindings
 // used in the project list UI model.
 type projectListKeyMap struct {
@@ -103,6 +105,10 @@ type customProjectDelegate struct {
 	parent *ProjectListModel
 }
 
+func (d customProjectDelegate) Height() int {
+	return 3
+}
+
 // Render renders a custom project item in the list,
 // including its task summary and status indicators.
 func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
@@ -119,21 +125,32 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	color := helpers.GetColorCode(projectItem.Color)
 
 	// Base styles.
-	listItemStyle := lipgloss.NewStyle().
+	listTitleStyle := lipgloss.NewStyle().
 		Foreground(color).
 		Padding(0, 1).
 		Width(60)
+
+	listDescStyle := lipgloss.NewStyle().
+		Padding(0, 1).
+		Width(60).
+		Height(2)
 
 	listItemInfoStyle := lipgloss.NewStyle().
 		Align(lipgloss.Right)
 
 	if index == m.GlobalIndex() {
-		listItemStyle = listItemStyle.
+		listTitleStyle = listTitleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(color).
 			MarginLeft(0)
+		listDescStyle = listDescStyle.
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			BorderForeground(color).
+			MarginLeft(0)
+
 	} else {
-		listItemStyle = listItemStyle.MarginLeft(1)
+		listTitleStyle = listTitleStyle.MarginLeft(1)
+		listDescStyle = listDescStyle.MarginLeft(1)
 	}
 
 	// Check if item is selected
@@ -151,10 +168,10 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	var left strings.Builder
 
 	left.WriteString(marker)
-	left.WriteString(listItemStyle.Render(projectItem.Title))
+	left.WriteString(listTitleStyle.Render(projectItem.Title))
 	left.WriteString("\n")
 	left.WriteString(indentation)
-	left.WriteString(listItemStyle.Render(projectItem.Description))
+	left.WriteString(listDescStyle.Render(projectItem.CropDescription(projectDescLength)))
 
 	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
 	if err != nil {
