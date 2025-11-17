@@ -140,20 +140,17 @@ aur_sources:
     depends:
       - git
     prepare: |-
-      cd "${pkgname}-${pkgver}"
       go mod download
     build: |-
-      cd "${pkgname}-${pkgver}"
       export CGO_ENABLED=0
       export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
       go build \
         -ldflags "-s -w -extldflags=-zrelro -extldflags=-znow" \
         -o "${pkgname}"
-      for shell in bash fish zsh; do \
-        ./yatto completion "$shell" > "$shell-completion" \
+      for shell in bash fish zsh; do
+        ./yatto completion "$shell" > "$shell-completion"
       done
     package: |-
-      cd "${pkgname}-${pkgver}"
       install -Dm755 yatto "${pkgdir}/usr/bin/yatto"
       install -Dm644 bash-completion "${pkgdir}/usr/share/bash-completion/completions/yatto"
       install -Dm644 fish-completion "${pkgdir}/usr/share/fish/vendor_completions.d/yatto.fish"
