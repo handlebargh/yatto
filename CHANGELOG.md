@@ -1,3 +1,9 @@
+## v0.21.7 (2025-11-17)
+
+### Fix
+
+- allow project description on two rows only and truncate text if necessary
+
 ## v0.21.6 (2025-11-12)
 
 ### Fix
