@@ -38,37 +38,65 @@ You need to have at least one of the supported version control systems installed
 
 ## Installation
 
-### Go
+<details>
+  <summary>Go</summary>
+
+To install, run the following [Go](https://go.dev/) command.
 
 ```shell
 go install github.com/handlebargh/yatto@latest
 ```
 
-### AUR
+</details>
+
+<details>
+  <summary>AUR</summary>
+
+To install, run the following [yay](https://github.com/Jguer/yay) command.
 
 ```shell
 yay -S yatto
 ```
 
-### Homebrew
+</details>
+
+<details>
+  <summary>Homebrew</summary>
+
+To install, run the following [brew](https://brew.sh/) commands.
 
 ```shell
 brew tap handlebargh/yatto
 brew install yatto
 ```
 
-### Scoop
+</details>
+
+<details>
+  <summary>Eget</summary>
+
+To install, run the following [eget](https://github.com/zyedidia/eget) commands.
+
+```shell
+eget handlebargh/yatto
+```
+
+</details>
+
+<details>
+  <summary>Scoop</summary>
+
+To install, run the following [scoop](https://scoop.sh/) commands.
 
 ```powershell
 scoop bucket add scoop-handlebargh https://github.com/handlebargh/scoop-handlebargh
 scoop install scoop-handlebargh/yatto
 ```
 
-### Eget
+</details>
 
-```shell
-eget handlebargh/yatto
-```
+<details>
+  <summary>Binaries and Linux packages</summary>
 
 ### Binary and Linux packages
 
@@ -86,8 +114,8 @@ Take a look at the [releases](https://github.com/handlebargh/yatto/releases/late
 2. Verify the package:
 
     ```shell
-    rpm --checksig yatto-0.xy.z.x86_64.rpm    # RPM
-    dpkg-sig --verify yatto_0.xy.z_amd64.deb    # DEB
+    rpm --checksig /path/to/yatto.rpm       # RPM
+    dpkg-sig --verify /path/to/yatto.deb    # DEB
     ```
 
 Install only after the signature is valid.
@@ -97,7 +125,7 @@ Install only after the signature is valid.
 All release binaries are accompanied by a SHA256 checksum file, which is signed with Cosign.
 This allows you to verify the integrity and authenticity of the binaries.
 
-#### How to verify
+#### How to verify binaries
 
 1. Install [cosign](https://github.com/sigstore/cosign)
 2. Verify the signed checksum file
@@ -115,6 +143,8 @@ This allows you to verify the integrity and authenticity of the binaries.
     ```shell
     sha256sum --check --ignore-missing path/to/checksums.txt
     ```
+
+</details>
 
 ## Configuration
 
