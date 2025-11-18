@@ -104,34 +104,9 @@ scoop install scoop-handlebargh/yatto
 <details>
   <summary>Binaries and Linux packages</summary>
 
-### Binary and Linux packages
-
 Take a look at the [releases](https://github.com/handlebargh/yatto/releases/latest) for prebuilt binaries and packages.
 
-### Verifying Release Packages
-
-1. Download and import the public key:
-
-    ```shell
-    sudo rpm --import yatto_signing_pubkey.gpg      # For RPM
-    gpg --import yatto_signing_pubkey.gpg           # For DEB
-    ```
-
-2. Verify the package:
-
-    ```shell
-    rpm --checksig /path/to/yatto.rpm       # RPM
-    dpkg-sig --verify /path/to/yatto.deb    # DEB
-    ```
-
-Install only after the signature is valid.
-
-### Verifying Release Binaries
-
-All release binaries are accompanied by a SHA256 checksum file, which is signed with Cosign.
-This allows you to verify the integrity and authenticity of the binaries.
-
-#### How to verify binaries
+**Verifying release binaries**
 
 1. Install [cosign](https://github.com/sigstore/cosign)
 2. Verify the signed checksum file
@@ -148,6 +123,32 @@ This allows you to verify the integrity and authenticity of the binaries.
 
     ```shell
     sha256sum --check --ignore-missing path/to/checksums.txt
+    ```
+
+**Verifying release packages**
+
+1. Download and import the public key:
+
+    ```shell
+    sudo rpm --import yatto_signing_pubkey.gpg      # For RPM
+    gpg --import yatto_signing_pubkey.gpg           # For DEB
+    ```
+
+2. Verify the package:
+
+    ```shell
+    rpm --checksig /path/to/yatto.rpm       # RPM
+    dpkg-sig --verify /path/to/yatto.deb    # DEB
+    ```
+
+3. Install only after the signature is valid:
+
+    ```shell
+    sudo rpm -i /path/to/yatto.rpm       # RPM
+
+    sudo dpkg -i /path/to/yatto.deb      # Deb
+    or
+    sudo apt install /path/to/yatto.deb  # DEB
     ```
 
 </details>
