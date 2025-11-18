@@ -61,7 +61,7 @@ release:
   github:
     owner: handlebargh
     name: yatto
-  prerelease: auto
+  draft: true
   make_latest: true
   extra_files:
     - glob: ./yatto_signing_pubkey.gpg
