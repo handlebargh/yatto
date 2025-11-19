@@ -21,9 +21,14 @@
 package items
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/spf13/viper"
 )
 
 func TestTask_CropTaskTitle(t *testing.T) {
@@ -110,5 +115,51 @@ func TestTask_TaskToMarkdown(t *testing.T) {
 	}
 	if !strings.Contains(markdown, "|NO|YES|HIGH") {
 		t.Errorf("Expected markdown to contain the task metadata, but it didn't")
+	}
+}
+
+func TestTask_WriteTaskJSON(t *testing.T) {
+	tempDir := t.TempDir()
+	viper.Set("storage.path", tempDir)
+
+	project := Project{ID: "test-project"}
+	projectDir := filepath.Join(tempDir, project.ID)
+	_ = os.Mkdir(projectDir, 0o755)
+
+	task := &Task{ID: uuid.NewString(), Title: "Test Task"}
+	cmd := task.WriteTaskJSON(task.MarshalTask(), project, "create")
+	msg := cmd()
+
+	if _, ok := msg.(WriteTaskJSONDoneMsg); !ok {
+		t.Errorf("Expected WriteTaskJSONDoneMsg, but got %T", msg)
+	}
+
+	taskFile := filepath.Join(projectDir, task.ID+".json")
+	if _, err := os.Stat(taskFile); os.IsNotExist(err) {
+		t.Errorf("Expected task file to be created, but it wasn't")
+	}
+}
+
+func TestTask_DeleteTaskFromFS(t *testing.T) {
+	tempDir := t.TempDir()
+	viper.Set("storage.path", tempDir)
+
+	project := Project{ID: "test-project"}
+	projectDir := filepath.Join(tempDir, project.ID)
+	_ = os.Mkdir(projectDir, 0o755)
+
+	task := &Task{ID: uuid.NewString(), Title: "Test Task"}
+	taskFile := filepath.Join(projectDir, task.ID+".json")
+	_ = os.WriteFile(taskFile, task.MarshalTask(), 0o644)
+
+	cmd := task.DeleteTaskFromFS(project)
+	msg := cmd()
+
+	if _, ok := msg.(TaskDeleteDoneMsg); !ok {
+		t.Errorf("Expected TaskDeleteDoneMsg, but got %T", msg)
+	}
+
+	if _, err := os.Stat(taskFile); !os.IsNotExist(err) {
+		t.Errorf("Expected task file to be deleted, but it wasn't")
 	}
 }
