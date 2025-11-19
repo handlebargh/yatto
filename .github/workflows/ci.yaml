@@ -88,7 +88,9 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.txt ./...
+        run: |
+          brew install jj
+          go test -v -race -coverprofile=coverage.txt ./...
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
