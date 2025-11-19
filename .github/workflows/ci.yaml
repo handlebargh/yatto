@@ -84,6 +84,13 @@ jobs:
         with:
           go-version: stable
 
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+
+      - name: Install jj
+        run: brew install jj
+
       - name: Download dependencies
         run: go mod download
 
