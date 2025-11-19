@@ -30,10 +30,12 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/spf13/viper"
 )
+
+// foregroundColor is used in the init dialog to highlight options for instance.
+const foregroundColor = lipgloss.Color("#c71585")
 
 // ErrUserAborted is returned when a user cancels storage directory creation.
 var ErrUserAborted = errors.New("user aborted config creation")
@@ -66,7 +68,7 @@ func CreateStorageDir(set Settings) error {
 		}
 
 		hexagon := lipgloss.NewStyle().
-			Foreground(colors.Yellow()).
+			Foreground(foregroundColor).
 			Render("⬢")
 
 		// Prompt for storage directory creation
@@ -76,7 +78,7 @@ func CreateStorageDir(set Settings) error {
 			fmt.Sprintf("\n%s Create storage directory at %s ? %s: ",
 				hexagon,
 				lipgloss.NewStyle().Bold(true).Render(storageDir),
-				lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("[y|N]"),
+				lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("[y|N]"),
 			),
 			"yes", "y", "no", "n",
 		)

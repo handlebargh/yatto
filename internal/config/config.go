@@ -35,6 +35,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+// foregroundColor is used in the init dialog to highlight options for instance.
+const foregroundColor = lipgloss.Color("#c71585")
+
 var (
 	// ErrUserAborted is returned when a user cancels config file creation.
 	ErrUserAborted = errors.New("user aborted config creation")
@@ -168,7 +171,7 @@ func CreateConfigFile(set Settings) error {
 		}
 
 		hexagon := lipgloss.NewStyle().
-			Foreground(colors.Yellow()).
+			Foreground(foregroundColor).
 			Render("⬢")
 
 		// Prompt for config file path
@@ -178,7 +181,7 @@ func CreateConfigFile(set Settings) error {
 			fmt.Sprintf("\n%s Create config file at %s ? %s: ",
 				hexagon,
 				lipgloss.NewStyle().Bold(true).Render(path),
-				lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("[y|N]"),
+				lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("[y|N]"),
 			),
 			"yes", "y", "no", "n",
 		)
@@ -199,7 +202,7 @@ func CreateConfigFile(set Settings) error {
 				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("version control system"),
 				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("Git"),
 				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("Jujutsu"),
-				lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("[1|2]"),
+				lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("[1|2]"),
 			),
 			"1",
 			"2",
@@ -223,7 +226,7 @@ func CreateConfigFile(set Settings) error {
 				fmt.Sprintf("\n%s Do you want to %s the jj repository? %s: ",
 					hexagon,
 					lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("colocate"),
-					lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("[y|N]"),
+					lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("[y|N]"),
 				),
 				"yes", "y", "no", "n",
 			)
@@ -244,9 +247,10 @@ func CreateConfigFile(set Settings) error {
 		inputRemote, err := helpers.PromptUser(
 			set.Input,
 			set.Output,
-			fmt.Sprintf("\n%s Enter your remote repository URL (e.g. git@github:<username>/<repo>.git | leave %s): ",
+			fmt.Sprintf(
+				"\n%s Enter your remote repository URL (e.g. git@github.com:<username>/<repo>.git | leave %s): ",
 				hexagon,
-				lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("empty to skip"),
+				lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("empty to skip"),
 			),
 		)
 		if err != nil {
