@@ -23,10 +23,8 @@
 package helpers
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -173,62 +171,6 @@ func GetColorCode(color string) lipgloss.AdaptiveColor {
 		return colors.Indigo()
 	default:
 		return colors.Blue()
-	}
-}
-
-// PromptUser displays a prompt message, reads a single line of user input,
-// normalizes it (trimming whitespace and converting to lower case), and
-// validates it against an optional list of allowed values.
-//
-// If expectedInput contains one or more values, the function will continue
-// prompting the user until they enter one of the allowed values. An error
-// message is printed after each invalid attempt.
-//
-// If expectedInput is empty, any input (after trimming and normalization)
-// is accepted and returned immediately.
-//
-// The function only returns an error if writing the prompt or reading from the
-// input stream fails. Validation errors never cause the function to return;
-// instead, the user is re-prompted until valid input is received.
-//
-// Parameters:
-//   - input:  the reader from which user input is read.
-//   - output: the writer to which prompts and validation messages are written.
-//   - message: the prompt string shown to the user before reading input.
-//   - expectedInput: an optional list of allowed input values.
-//
-// Returns the validated input string, or an error if I/O fails.
-func PromptUser(input io.Reader, output io.Writer, message string, expectedInput ...string) (string, error) {
-	reader := bufio.NewReader(input)
-
-	for {
-		if _, err := fmt.Fprint(output, message); err != nil {
-			return "", err
-		}
-
-		userInput, err := reader.ReadString('\n')
-		if err != nil {
-			return "", err
-		}
-
-		userInput = strings.ToLower(strings.TrimSpace(userInput))
-
-		if len(expectedInput) == 0 {
-			return userInput, nil
-		}
-
-		for _, allowed := range expectedInput {
-			if userInput == allowed {
-				return userInput, nil
-			}
-		}
-
-		_, _ = fmt.Fprintf(
-			output,
-			"\nUnexpected input %q. Expected: %v. Please try again.\n",
-			userInput,
-			expectedInput,
-		)
 	}
 }
 

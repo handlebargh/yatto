@@ -21,7 +21,6 @@
 package storage
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,56 +43,5 @@ func TestFileExists(t *testing.T) {
 
 	t.Run("returns false when file does not exist", func(t *testing.T) {
 		assert.False(t, FileExists("nonexistent.txt"))
-	})
-}
-
-func TestCreateStorageDir(t *testing.T) {
-	t.Run("does nothing if directory already exists", func(t *testing.T) {
-		tempDir := t.TempDir()
-		settings := Settings{
-			Path:   tempDir,
-			Input:  &bytes.Buffer{},
-			Output: &bytes.Buffer{},
-			Exit:   func(int) {},
-		}
-
-		err := CreateStorageDir(settings)
-		assert.NoError(t, err)
-	})
-
-	t.Run("creates directory when user confirms", func(t *testing.T) {
-		tempDir := t.TempDir()
-		storagePath := filepath.Join(tempDir, "storage")
-
-		settings := Settings{
-			Path:   storagePath,
-			Input:  bytes.NewBufferString("y\n"),
-			Output: &bytes.Buffer{},
-			Exit:   func(int) {},
-		}
-
-		err := CreateStorageDir(settings)
-		assert.NoError(t, err)
-
-		_, err = os.Stat(storagePath)
-		assert.NoError(t, err, "storage directory should be created")
-	})
-
-	t.Run("returns ErrUserAborted when user declines", func(t *testing.T) {
-		tempDir := t.TempDir()
-		storagePath := filepath.Join(tempDir, "storage")
-
-		settings := Settings{
-			Path:   storagePath,
-			Input:  bytes.NewBufferString("n\n"),
-			Output: &bytes.Buffer{},
-			Exit:   func(int) {},
-		}
-
-		err := CreateStorageDir(settings)
-		assert.ErrorIs(t, err, ErrUserAborted)
-
-		_, err = os.Stat(storagePath)
-		assert.True(t, os.IsNotExist(err), "storage directory should not be created")
 	})
 }

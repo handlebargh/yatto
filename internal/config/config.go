@@ -29,14 +29,9 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/handlebargh/yatto/internal/colors"
-	"github.com/handlebargh/yatto/internal/helpers"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/viper"
 )
-
-// foregroundColor is used in the init dialog to highlight options for instance.
-const foregroundColor = lipgloss.Color("#c71585")
 
 var (
 	// ErrUserAborted is returned when a user cancels config file creation.
@@ -148,9 +143,8 @@ type Settings struct {
 // is found, the user is prompted to confirm creation of a new one at the default
 // location ($HOME/.config/config.toml) or at set.ConfigPath if specified.
 //
-// The function then asks the user to choose a version control system (VCS),
-// defaulting to "git" if none is provided. The selected VCS backend is stored
-// as a default value in the config.
+// The function then asks the user to choose some configuration values. These
+// values are stored in the config file.
 //
 // If necessary, the configuration directory ($HOME/.config/yatto) is created
 // with permissions 0750, and Viper writes the config file safely using
@@ -170,99 +164,90 @@ func CreateConfigFile(set Settings) error {
 			path = set.ConfigPath
 		}
 
-		hexagon := lipgloss.NewStyle().
-			Foreground(foregroundColor).
-			Render("⬢")
-
-		// Prompt for config file path
-		yesOrNo, err := helpers.PromptUser(
-			set.Input,
-			set.Output,
-			fmt.Sprintf("\n%s Create config file at %s ? %s: ",
-				hexagon,
-				lipgloss.NewStyle().Bold(true).Render(path),
-				lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("[y|N]"),
-			),
-			"yes", "y", "no", "n",
+		var (
+			createConfig bool
+			choiceVCS    string
+			colocateJJ   bool
+			remoteURL    string
 		)
-		if yesOrNo == "no" || yesOrNo == "n" {
+
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title("Create config file?").
+					Description(fmt.Sprintf("Location: %s", path)).
+					Affirmative("Yes").
+					Negative("No").
+					Value(&createConfig),
+			),
+		)
+
+		if err := form.Run(); err != nil {
+			return err
+		}
+
+		if !createConfig {
 			return ErrUserAborted
 		}
-		if err != nil {
-			return fmt.Errorf("error reading input: %w", err)
-		}
 
-		// Prompt for VCS
-		inputVCS, err := helpers.PromptUser(
-			set.Input,
-			set.Output,
-			fmt.Sprintf(
-				"\n%s Which %s would you like to use?\n\n  1) %s (default)\n  2) %s\n\nEnter choice %s: ",
-				hexagon,
-				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("version control system"),
-				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("Git"),
-				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("Jujutsu"),
-				lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("[1|2]"),
+		form = huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Choose your version control system").
+					Options(
+						huh.NewOption("Git", "git"),
+						huh.NewOption("Jujutsu", "jj"),
+					).
+					Value(&choiceVCS),
 			),
-			"1",
-			"2",
-			"",
 		)
-		if err != nil {
-			return fmt.Errorf("error reading input: %w", err)
+
+		if err := form.Run(); err != nil {
+			return err
 		}
 
-		if inputVCS == "1" || inputVCS == "" {
-			inputVCS = "git"
-		}
+		viper.Set("vcs.backend", choiceVCS)
 
-		if inputVCS == "2" {
-			inputVCS = "jj"
-
-			// Prompt for colocation
-			yesOrNo, err := helpers.PromptUser(
-				set.Input,
-				set.Output,
-				fmt.Sprintf("\n%s Do you want to %s the jj repository? %s: ",
-					hexagon,
-					lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("colocate"),
-					lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("[y|N]"),
+		if choiceVCS == "jj" {
+			form = huh.NewForm(
+				huh.NewGroup(
+					huh.NewConfirm().
+						Title("Colocate JJ repository?").
+						Affirmative("Yes").
+						Negative("No").
+						Value(&colocateJJ),
 				),
-				"yes", "y", "no", "n",
 			)
-			if yesOrNo == "no" || yesOrNo == "n" {
-				return ErrUserAborted
+
+			if err := form.Run(); err != nil {
+				return err
 			}
 
-			if err != nil {
-				return fmt.Errorf("error reading input: %w", err)
-			}
-
-			viper.Set("jj.colocate", true)
+			viper.Set("jj.colocate", colocateJJ)
 		}
 
-		viper.Set("vcs.backend", inputVCS)
-
-		// Prompt for remote URL
-		inputRemote, err := helpers.PromptUser(
-			set.Input,
-			set.Output,
-			fmt.Sprintf(
-				"\n%s Enter your remote repository URL (e.g. git@github.com:<username>/<repo>.git | leave %s): ",
-				hexagon,
-				lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("empty to skip"),
+		form = huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Remote repository URL").
+					Description("e.g. git@github.com:<username>/<repo>.git\nLeave empty to skip").
+					Value(&remoteURL),
 			),
 		)
-		if err != nil {
-			return fmt.Errorf("error reading input: %w", err)
+
+		if err := form.Run(); err != nil {
+			return err
 		}
 
-		if inputRemote != "" && inputVCS == "git" {
-			viper.Set("git.remote.enable", true)
-			viper.Set("git.remote.url", inputRemote)
-		} else if inputRemote != "" && inputVCS == "jj" {
-			viper.Set("jj.remote.enable", true)
-			viper.Set("jj.remote.url", inputRemote)
+		if remoteURL != "" {
+			switch choiceVCS {
+			case "git":
+				viper.Set("git.remote.enable", true)
+				viper.Set("git.remote.url", remoteURL)
+			case "jj":
+				viper.Set("jj.remote.enable", true)
+				viper.Set("jj.remote.url", remoteURL)
+			}
 		}
 
 		// Create config dir

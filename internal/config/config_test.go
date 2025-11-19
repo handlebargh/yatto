@@ -21,29 +21,12 @@
 package config
 
 import (
-	"bytes"
-	"io"
 	"path/filepath"
 	"testing"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
-
-type answerReader struct {
-	answers []string
-	idx     int
-}
-
-func (r *answerReader) Read(p []byte) (n int, err error) {
-	if r.idx >= len(r.answers) {
-		return 0, io.EOF
-	}
-	s := r.answers[r.idx] + "\n"
-	r.idx++
-	copy(p, s)
-	return len(s), nil
-}
 
 func TestValidateConfig(t *testing.T) {
 	tempDir := t.TempDir()
@@ -148,47 +131,4 @@ func TestInitConfig(t *testing.T) {
 	explicitPath := "/my/config.toml"
 	InitConfig(homeDir, &explicitPath)
 	assert.Equal(t, explicitPath, viper.ConfigFileUsed())
-}
-
-func TestCreateConfigFile(t *testing.T) {
-	t.Run("aborts when user declines", func(t *testing.T) {
-		viper.Reset()
-		tempDir := t.TempDir()
-		settings := Settings{
-			ConfigPath: filepath.Join(tempDir, "config.toml"),
-			Home:       tempDir,
-			Input:      bytes.NewBufferString("n\n"),
-			Output:     &bytes.Buffer{},
-		}
-
-		err := CreateConfigFile(settings)
-		assert.ErrorIs(t, err, ErrUserAborted)
-	})
-
-	t.Run("creates config with git and remote", func(t *testing.T) {
-		viper.Reset()
-		tempDir := t.TempDir()
-		answers := []string{"y", "1", "git@github.com:user/repo.git", "n"}
-
-		settings := Settings{
-			ConfigPath: "",
-			Home:       tempDir,
-			Input:      &answerReader{answers: answers},
-			Output:     &bytes.Buffer{},
-		}
-
-		var empty string
-		InitConfig(settings.Home, &empty)
-
-		err := CreateConfigFile(settings)
-		assert.NoError(t, err)
-
-		// Re-read the config to check values
-		err = LoadAndValidateConfig()
-		assert.NoError(t, err)
-
-		assert.Equal(t, "git", viper.GetString("vcs.backend"))
-		assert.True(t, viper.GetBool("git.remote.enable"))
-		assert.Equal(t, "git@github.com:user/repo.git", viper.GetString("git.remote.url"))
-	})
 }

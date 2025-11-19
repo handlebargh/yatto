@@ -29,13 +29,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/handlebargh/yatto/internal/helpers"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/viper"
 )
-
-// foregroundColor is used in the init dialog to highlight options for instance.
-const foregroundColor = lipgloss.Color("#c71585")
 
 // ErrUserAborted is returned when a user cancels storage directory creation.
 var ErrUserAborted = errors.New("user aborted config creation")
@@ -67,27 +63,25 @@ func CreateStorageDir(set Settings) error {
 			return err
 		}
 
-		hexagon := lipgloss.NewStyle().
-			Foreground(foregroundColor).
-			Render("⬢")
+		var createStorage bool
 
-		// Prompt for storage directory creation
-		yesOrNo, err := helpers.PromptUser(
-			set.Input,
-			set.Output,
-			fmt.Sprintf("\n%s Create storage directory at %s ? %s: ",
-				hexagon,
-				lipgloss.NewStyle().Bold(true).Render(storageDir),
-				lipgloss.NewStyle().Bold(true).Foreground(foregroundColor).Render("[y|N]"),
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title("Create storage directory?").
+					Description(fmt.Sprintf("Location: %s", storageDir)).
+					Affirmative("Yes").
+					Negative("No").
+					Value(&createStorage),
 			),
-			"yes", "y", "no", "n",
 		)
-		if yesOrNo == "no" || yesOrNo == "n" {
-			return ErrUserAborted
+
+		if err := form.Run(); err != nil {
+			return err
 		}
 
-		if err != nil {
-			return fmt.Errorf("error reading input: %w", err)
+		if !createStorage {
+			return ErrUserAborted
 		}
 
 		backend := viper.GetString("vcs.backend")
