@@ -96,19 +96,4 @@ func TestCreateStorageDir(t *testing.T) {
 		_, err = os.Stat(storagePath)
 		assert.True(t, os.IsNotExist(err), "storage directory should not be created")
 	})
-
-	t.Run("returns ErrUserAborted on unexpected input", func(t *testing.T) {
-		tempDir := t.TempDir()
-		storagePath := filepath.Join(tempDir, "storage")
-
-		settings := Settings{
-			Path:   storagePath,
-			Input:  bytes.NewBufferString("maybe\n"),
-			Output: &bytes.Buffer{},
-			Exit:   func(int) {},
-		}
-
-		err := CreateStorageDir(settings)
-		assert.ErrorIs(t, err, ErrUserAborted)
-	})
 }

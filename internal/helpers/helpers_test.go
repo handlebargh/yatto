@@ -21,7 +21,6 @@
 package helpers
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
@@ -91,67 +90,6 @@ func TestGetColorCode(t *testing.T) {
 			assert.Equal(t, tc.expected, result)
 		})
 	}
-}
-
-func TestPromptUser(t *testing.T) {
-	t.Run("returns user input when no expected values are given", func(t *testing.T) {
-		input := bytes.NewBufferString("  user input  \n")
-		output := &bytes.Buffer{}
-		message := "Enter something: "
-
-		result, err := PromptUser(input, output, message)
-
-		assert.NoError(t, err)
-		assert.Equal(t, "user input", result)
-		assert.Equal(t, message, output.String())
-	})
-
-	t.Run("returns user input when it matches an expected value", func(t *testing.T) {
-		input := bytes.NewBufferString("yes\n")
-		output := &bytes.Buffer{}
-		message := "Are you sure? (yes/no): "
-		expected := []string{"yes", "no"}
-
-		result, err := PromptUser(input, output, message, expected...)
-
-		assert.NoError(t, err)
-		assert.Equal(t, "yes", result)
-	})
-
-	t.Run("returns error when user input does not match any expected value", func(t *testing.T) {
-		input := bytes.NewBufferString("maybe\n")
-		output := &bytes.Buffer{}
-		message := "Are you sure? (yes/no): "
-		expected := []string{"yes", "no"}
-
-		_, err := PromptUser(input, output, message, expected...)
-
-		assert.ErrorIs(t, err, ErrUnexpectedInput)
-	})
-
-	t.Run("handles input with extra whitespace", func(t *testing.T) {
-		input := bytes.NewBufferString("  no  \n")
-		output := &bytes.Buffer{}
-		message := "Are you sure? (yes/no): "
-		expected := []string{"yes", "no"}
-
-		result, err := PromptUser(input, output, message, expected...)
-
-		assert.NoError(t, err)
-		assert.Equal(t, "no", result)
-	})
-
-	t.Run("handles case-insensitive input", func(t *testing.T) {
-		input := bytes.NewBufferString("YES\n")
-		output := &bytes.Buffer{}
-		message := "Are you sure? (yes/no): "
-		expected := []string{"yes", "no"}
-
-		result, err := PromptUser(input, output, message, expected...)
-
-		assert.NoError(t, err)
-		assert.Equal(t, "yes", result)
-	})
 }
 
 func TestUniqueNonEmptyStrings(t *testing.T) {

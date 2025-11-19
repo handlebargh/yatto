@@ -25,7 +25,6 @@ package helpers
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -38,9 +37,6 @@ import (
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/spf13/viper"
 )
-
-// ErrUnexpectedInput is returned when a user's input is unexpected.
-var ErrUnexpectedInput = errors.New("unexpected input")
 
 // ReadProjectsFromFS reads all project directories from the configured storage path.
 // It deserializes each project's `project.json` file into an items.Project object.
@@ -180,57 +176,60 @@ func GetColorCode(color string) lipgloss.AdaptiveColor {
 	}
 }
 
-// PromptUser writes the given message to the provided output stream and reads a
-// single line of input from the provided input stream. The input is trimmed of
-// surrounding whitespace and transformed to lower case before being validated.
+// PromptUser displays a prompt message, reads a single line of user input,
+// normalizes it (trimming whitespace and converting to lower case), and
+// validates it against an optional list of allowed values.
 //
-// If no expectedInput values are provided, the trimmed input is returned as-is.
-// If one or more expectedInput values are provided, the function only accepts
-// input that matches one of them. If the input does not match any allowed
-// value, ErrUnexpectedInput is returned.
+// If expectedInput contains one or more values, the function will continue
+// prompting the user until they enter one of the allowed values. An error
+// message is printed after each invalid attempt.
 //
-// If writing to the output stream or reading from the input stream fails, an
-// error is returned.
+// If expectedInput is empty, any input (after trimming and normalization)
+// is accepted and returned immediately.
+//
+// The function only returns an error if writing the prompt or reading from the
+// input stream fails. Validation errors never cause the function to return;
+// instead, the user is re-prompted until valid input is received.
 //
 // Parameters:
-//   - input: the reader from which user input is read.
-//   - output: the writer to which the prompt message and error messages are written.
-//   - message: the prompt message displayed to the user.
+//   - input:  the reader from which user input is read.
+//   - output: the writer to which prompts and validation messages are written.
+//   - message: the prompt string shown to the user before reading input.
 //   - expectedInput: an optional list of allowed input values.
 //
-// Returns the user’s validated input string and an error, if any occurred.
+// Returns the validated input string, or an error if I/O fails.
 func PromptUser(input io.Reader, output io.Writer, message string, expectedInput ...string) (string, error) {
 	reader := bufio.NewReader(input)
 
-	_, err := fmt.Fprint(output, message)
-	if err != nil {
-		return "", err
-	}
+	for {
+		if _, err := fmt.Fprint(output, message); err != nil {
+			return "", err
+		}
 
-	userInput, err := reader.ReadString('\n')
-	if err != nil {
-		_, err := fmt.Fprintln(output, "An error occurred while reading input. Please try again", err)
+		userInput, err := reader.ReadString('\n')
 		if err != nil {
 			return "", err
 		}
 
-		return "", err
-	}
+		userInput = strings.ToLower(strings.TrimSpace(userInput))
 
-	userInput = strings.ToLower(strings.TrimSpace(userInput))
-
-	if len(expectedInput) == 0 {
-		return userInput, nil
-	}
-
-	for _, allowed := range expectedInput {
-		userInput = strings.TrimSpace(userInput)
-		if userInput == allowed {
+		if len(expectedInput) == 0 {
 			return userInput, nil
 		}
-	}
 
-	return "", ErrUnexpectedInput
+		for _, allowed := range expectedInput {
+			if userInput == allowed {
+				return userInput, nil
+			}
+		}
+
+		_, _ = fmt.Fprintf(
+			output,
+			"\nUnexpected input %q. Expected: %v. Please try again.\n",
+			userInput,
+			expectedInput,
+		)
+	}
 }
 
 // UniqueNonEmptyStrings splits the input string by newlines, trims whitespace from each line,

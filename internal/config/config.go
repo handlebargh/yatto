@@ -29,6 +29,8 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/spf13/viper"
 )
@@ -151,9 +153,8 @@ type Settings struct {
 // with permissions 0750, and Viper writes the config file safely using
 // viper.SafeWriteConfig.
 //
-// Returns ErrUserAborted if the user declines to create a config file, or an
-// error if something goes wrong. A nil error means the config file was created
-// successfully.
+// Returns an error if something goes wrong. A nil error means the config file
+// was created successfully.
 func CreateConfigFile(set Settings) error {
 	if err := viper.ReadInConfig(); err != nil {
 		var notFound viper.ConfigFileNotFoundError
@@ -166,14 +167,22 @@ func CreateConfigFile(set Settings) error {
 			path = set.ConfigPath
 		}
 
+		hexagon := lipgloss.NewStyle().
+			Foreground(colors.Yellow()).
+			Render("⬢")
+
 		// Prompt for config file path
-		_, err := helpers.PromptUser(
+		yesOrNo, err := helpers.PromptUser(
 			set.Input,
 			set.Output,
-			fmt.Sprintf("Create config file as %s? [y|N]: ", path),
-			"yes", "y",
+			fmt.Sprintf("\n%s Create config file at %s ? %s: ",
+				hexagon,
+				lipgloss.NewStyle().Bold(true).Render(path),
+				lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("[y|N]"),
+			),
+			"yes", "y", "no", "n",
 		)
-		if errors.Is(err, helpers.ErrUnexpectedInput) {
+		if yesOrNo == "no" || yesOrNo == "n" {
 			return ErrUserAborted
 		}
 		if err != nil {
@@ -184,33 +193,49 @@ func CreateConfigFile(set Settings) error {
 		inputVCS, err := helpers.PromptUser(
 			set.Input,
 			set.Output,
-			"Which version control system would you like to use? [git(default)|jj]: ",
-			"git", "jj", "",
+			fmt.Sprintf(
+				"\n%s Which %s would you like to use?\n\n  1) %s (default)\n  2) %s\n\nEnter choice %s: ",
+				hexagon,
+				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("version control system"),
+				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("Git"),
+				lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("Jujutsu"),
+				lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("[1|2]"),
+			),
+			"1",
+			"2",
+			"",
 		)
-		if errors.Is(err, helpers.ErrUnexpectedInput) {
-			return ErrUserAborted
-		}
 		if err != nil {
 			return fmt.Errorf("error reading input: %w", err)
 		}
 
-		if inputVCS == "" {
+		if inputVCS == "1" || inputVCS == "" {
 			inputVCS = "git"
 		}
 
-		if inputVCS == "jj" {
+		if inputVCS == "2" {
+			inputVCS = "jj"
+
 			// Prompt for colocation
-			_, err := helpers.PromptUser(
+			yesOrNo, err := helpers.PromptUser(
 				set.Input,
 				set.Output,
-				"Do you want to colocate the jj repository? [y|N]: ",
-				"yes", "y",
+				fmt.Sprintf("\n%s Do you want to %s the jj repository? %s: ",
+					hexagon,
+					lipgloss.NewStyle().Bold(true).Foreground(colors.Green()).Render("colocate"),
+					lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("[y|N]"),
+				),
+				"yes", "y", "no", "n",
 			)
-			if err == nil {
-				viper.Set("jj.colocate", true)
-			} else if !errors.Is(err, helpers.ErrUnexpectedInput) {
+			if yesOrNo == "no" || yesOrNo == "n" {
+				return ErrUserAborted
+			}
+
+			if err != nil {
 				return fmt.Errorf("error reading input: %w", err)
 			}
+
+			viper.Set("jj.colocate", true)
 		}
 
 		viper.Set("vcs.backend", inputVCS)
@@ -219,11 +244,11 @@ func CreateConfigFile(set Settings) error {
 		inputRemote, err := helpers.PromptUser(
 			set.Input,
 			set.Output,
-			"Enter your remote repository URL (empty for none): ",
+			fmt.Sprintf("\n%s Enter your remote repository URL (e.g. git@github:<username>/<repo>.git | leave %s): ",
+				hexagon,
+				lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("empty to skip"),
+			),
 		)
-		if errors.Is(err, helpers.ErrUnexpectedInput) {
-			return ErrUserAborted
-		}
 		if err != nil {
 			return fmt.Errorf("error reading input: %w", err)
 		}

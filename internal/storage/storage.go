@@ -29,6 +29,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/spf13/viper"
 )
@@ -63,16 +65,25 @@ func CreateStorageDir(set Settings) error {
 			return err
 		}
 
+		hexagon := lipgloss.NewStyle().
+			Foreground(colors.Yellow()).
+			Render("⬢")
+
 		// Prompt for storage directory creation
-		_, err := helpers.PromptUser(
+		yesOrNo, err := helpers.PromptUser(
 			set.Input,
 			set.Output,
-			fmt.Sprintf("Create storage directory at %s? [y|N]: ", storageDir),
-			"yes", "y",
+			fmt.Sprintf("\n%s Create storage directory at %s ? %s: ",
+				hexagon,
+				lipgloss.NewStyle().Bold(true).Render(storageDir),
+				lipgloss.NewStyle().Bold(true).Foreground(colors.Blue()).Render("[y|N]"),
+			),
+			"yes", "y", "no", "n",
 		)
-		if errors.Is(err, helpers.ErrUnexpectedInput) {
+		if yesOrNo == "no" || yesOrNo == "n" {
 			return ErrUserAborted
 		}
+
 		if err != nil {
 			return fmt.Errorf("error reading input: %w", err)
 		}

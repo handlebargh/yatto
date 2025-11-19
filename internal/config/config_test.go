@@ -168,7 +168,7 @@ func TestCreateConfigFile(t *testing.T) {
 	t.Run("creates config with git and remote", func(t *testing.T) {
 		viper.Reset()
 		tempDir := t.TempDir()
-		answers := []string{"y", "git", "git@github.com/user/repo.git", "n"}
+		answers := []string{"y", "1", "git@github.com:user/repo.git", "n"}
 
 		settings := Settings{
 			ConfigPath: "",
@@ -189,6 +189,6 @@ func TestCreateConfigFile(t *testing.T) {
 
 		assert.Equal(t, "git", viper.GetString("vcs.backend"))
 		assert.True(t, viper.GetBool("git.remote.enable"))
-		assert.Equal(t, "git@github.com/user/repo.git", viper.GetString("git.remote.url"))
+		assert.Equal(t, "git@github.com:user/repo.git", viper.GetString("git.remote.url"))
 	})
 }
