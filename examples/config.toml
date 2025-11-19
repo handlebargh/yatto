@@ -63,7 +63,7 @@ enable = false
 name = "origin"
 
 ## URL of the git remote
-url = "git@github:<username>/<repo>.git"
+url = "git@github.com:<username>/<repo>.git"
 
 [jj]
 ## Name of the jj bookmark tracked by yatto
@@ -81,7 +81,7 @@ colocate = false
 name = "origin"
 
 ## URL of the jj/git remote
-url = "git@github:<username>/<repo>.git"
+url = "git@github.com:<username>/<repo>.git"
 
 [storage]
 ## Where to locate the storage directory.
