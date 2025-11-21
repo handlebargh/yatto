@@ -58,10 +58,16 @@ go install github.com/handlebargh/yatto@latest
 <details>
   <summary>AUR</summary>
 
-To install, run the following [yay](https://github.com/Jguer/yay) command.
+If using [yay](https://github.com/Jguer/yay), run the following command.
 
 ```shell
 yay -S yatto
+```
+
+Or if using [paru](https://github.com/Morganamilo/paru), run this command:
+
+```shell
+paru -S yatto
 ```
 
 </details>
