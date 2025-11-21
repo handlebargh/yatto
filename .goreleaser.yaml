@@ -137,6 +137,8 @@ aur_sources:
     license: "MIT"
     private_key: "{{ .Env.AUR_KEY }}"
     git_url: "ssh://aur@aur.archlinux.org/yatto.git"
+    provides: []
+    conflicts: []
     depends:
       - git
     prepare: |-
