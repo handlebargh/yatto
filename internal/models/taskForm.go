@@ -219,7 +219,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 				Negative("No").
 				Value(&m.vars.confirm),
 		)).
-		WithWidth(60).
+		WithWidth(80).
 		WithShowHelp(false).
 		WithShowErrors(false).
 		WithTheme(colors.FormTheme())

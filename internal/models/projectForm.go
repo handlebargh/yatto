@@ -123,14 +123,10 @@ func newProjectFormModel(
 				Negative("No").
 				Value(&m.vars.confirm),
 		)).
-		WithWidth(45).
+		WithWidth(80).
 		WithShowHelp(false).
 		WithShowErrors(false).
 		WithTheme(colors.FormTheme())
-
-	// Workaround for a problem that prevents the form
-	// from being initially completely rendered.
-	m.form.PrevField()
 
 	return m
 }
