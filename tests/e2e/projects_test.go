@@ -32,7 +32,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestE2E_AddProjectGit(t *testing.T) {
+func TestE2E_AddAndEditProjectGit(t *testing.T) {
 	storageDir := setGitAppConfig(t)
 	viper.Set("storage.path", storageDir)
 
@@ -40,12 +40,25 @@ func TestE2E_AddProjectGit(t *testing.T) {
 		teatest.WithInitialTermSize(400, 400),
 	)
 
+	// Add a project
 	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Test Project")})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("This is a test project.")})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter, Runes: []rune("y")}) // Save
+
+	time.Sleep(2 * time.Second)
+
+	// Edit the project
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" edited")})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter, Runes: []rune("y")}) // Save
 
@@ -60,12 +73,12 @@ func TestE2E_AddProjectGit(t *testing.T) {
 		t.Fatalf("failed to get final view: %v", err)
 	}
 
-	if !strings.Contains(string(finalBytes), "Test Project") {
-		t.Errorf("expected to find 'Test Project' in the final view, but didn't")
+	if !strings.Contains(string(finalBytes), "Test Project edited") {
+		t.Errorf("expected to find 'Test Project edited' in the final view, but didn't")
 	}
 }
 
-func TestE2E_AddProjectJJ(t *testing.T) {
+func TestE2E_AddAndEditProjectJJ(t *testing.T) {
 	storageDir := setJJAppConfig(t)
 	viper.Set("storage.path", storageDir)
 
@@ -73,12 +86,25 @@ func TestE2E_AddProjectJJ(t *testing.T) {
 		teatest.WithInitialTermSize(400, 400),
 	)
 
+	// Add a project
 	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Test Project")})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("This is a test project.")})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter, Runes: []rune("y")}) // Save
+
+	time.Sleep(2 * time.Second)
+
+	// Edit the project
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" edited")})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter, Runes: []rune("y")}) // Save
 
@@ -93,7 +119,7 @@ func TestE2E_AddProjectJJ(t *testing.T) {
 		t.Fatalf("failed to get final view: %v", err)
 	}
 
-	if !strings.Contains(string(finalBytes), "Test Project") {
-		t.Errorf("expected to find 'Test Project' in the final view, but didn't")
+	if !strings.Contains(string(finalBytes), "Test Project edited") {
+		t.Errorf("expected to find 'Test Project edited' in the final view, but didn't")
 	}
 }
