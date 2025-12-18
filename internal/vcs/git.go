@@ -21,6 +21,7 @@
 package vcs
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -37,12 +38,16 @@ import (
 // Returns a InitDoneMsg or InitErrorMsg.
 func gitInitCmd() tea.Cmd {
 	return func() tea.Msg {
-		if storage.FileExists("INIT") {
-			return InitDoneMsg{}
-		}
+		storagePath := viper.GetString("storage.path")
 
-		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+		root, err := os.OpenRoot(storagePath)
+		if err != nil {
 			return InitErrorMsg{"cannot change dir to configured storage path", err}
+		}
+		defer root.Close()
+
+		if _, err := root.Stat("INIT"); err == nil {
+			return InitDoneMsg{}
 		}
 
 		initCmd := exec.Command("git", // #nosec G204 Command uses validated config value
@@ -50,14 +55,17 @@ func gitInitCmd() tea.Cmd {
 			"--initial-branch",
 			viper.GetString("git.default_branch"),
 		)
-		output, err := initCmd.CombinedOutput()
-		if err != nil {
+		initCmd.Dir = storagePath
+
+		if output, err := initCmd.CombinedOutput(); err != nil {
 			return InitErrorMsg{string(output), err}
 		}
 
-		if err := os.WriteFile("INIT", nil, 0o600); err != nil {
-			return InitErrorMsg{"cannot write INIT file", err}
+		f, err := root.Create("INIT")
+		if err != nil {
+			return InitErrorMsg{"cannot create INIT file via root", err}
 		}
+		f.Close()
 
 		if output, err := gitCommit("Initial commit", "INIT"); err != nil {
 			return InitErrorMsg{string(output), err}
@@ -133,10 +141,17 @@ func gitPull() ([]byte, error) {
 // it pushes the commit to the configured remote and branch.
 // Returns an error if any Git command fails.
 func gitCommit(message string, files ...string) ([]byte, error) {
-	args := append([]string{"add"}, files...)
+	storagePath := viper.GetString("storage.path")
 
+	root, err := os.OpenRoot(storagePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open storage root: %w", err)
+	}
+	defer root.Close()
+
+	args := append([]string{"add"}, files...)
 	addCmd := exec.Command("git", args...) // #nosec G204 Command uses only UUIDs as filenames
-	addCmd.Dir = viper.GetString("storage.path")
+	addCmd.Dir = storagePath
 	output, err := addCmd.CombinedOutput()
 	if err != nil {
 		return output, err
@@ -146,7 +161,7 @@ func gitCommit(message string, files ...string) ([]byte, error) {
 		"diff",
 		"--cached",
 	)
-	diffCmd.Dir = viper.GetString("storage.path")
+	diffCmd.Dir = storagePath
 	output, _ = diffCmd.CombinedOutput()
 	if len(output) == 0 {
 		return output, nil
@@ -157,7 +172,7 @@ func gitCommit(message string, files ...string) ([]byte, error) {
 		"--message",
 		message,
 	)
-	commitCmd.Dir = viper.GetString("storage.path")
+	commitCmd.Dir = storagePath
 	output, err = commitCmd.CombinedOutput()
 	if err != nil {
 		return output, err
@@ -189,15 +204,17 @@ func gitPush() ([]byte, error) {
 // gitUser returns the name and email address that is returned by the
 // git config command.
 func gitUser() (string, error) {
+	storagePath := viper.GetString("storage.path")
+
 	nameCmd := exec.Command("git", "config", "user.name")
-	nameCmd.Dir = viper.GetString("storage.path")
+	nameCmd.Dir = storagePath
 	nameOut, err := nameCmd.CombinedOutput()
 	if err != nil {
 		return "", err
 	}
 
 	emailCmd := exec.Command("git", "config", "user.email")
-	emailCmd.Dir = viper.GetString("storage.path")
+	emailCmd.Dir = storagePath
 
 	emailOut, err := emailCmd.CombinedOutput()
 	if err != nil {

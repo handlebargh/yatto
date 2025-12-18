@@ -38,12 +38,16 @@ import (
 // Returns a InitDoneMsg or InitErrorMsg.
 func jjInitCmd() tea.Cmd {
 	return func() tea.Msg {
-		if storage.FileExists("INIT") {
-			return InitDoneMsg{}
-		}
+		storagePath := viper.GetString("storage.path")
 
-		if err := os.Chdir(viper.GetString("storage.path")); err != nil {
+		root, err := os.OpenRoot(storagePath)
+		if err != nil {
 			return InitErrorMsg{"cannot change dir to configured storage path", err}
+		}
+		defer root.Close()
+
+		if _, err := root.Stat("INIT"); err == nil {
+			return InitDoneMsg{}
 		}
 
 		if !viper.GetBool("jj.remote.enable") {
@@ -54,15 +58,18 @@ func jjInitCmd() tea.Cmd {
 				cmd = exec.Command("jj", "git", "init")
 			}
 
-			output, err := cmd.CombinedOutput()
-			if err != nil {
+			cmd.Dir = storagePath
+
+			if output, err := cmd.CombinedOutput(); err != nil {
 				return InitErrorMsg{string(output), err}
 			}
 		}
 
-		if err := os.WriteFile("INIT", nil, 0o600); err != nil {
-			return InitErrorMsg{"cannot write INIT file", err}
+		f, err := root.Create("INIT")
+		if err != nil {
+			return InitErrorMsg{"cannot create INIT file via root", err}
 		}
+		f.Close()
 
 		if output, err := jjCommit("Initial commit"); err != nil {
 			return InitErrorMsg{string(output), err}
@@ -168,6 +175,8 @@ func jjRebase() ([]byte, error) {
 // If remote is enabled, it pushes the commit to the configured remote and branch.
 // Returns an error if any command fails.
 func jjCommit(message string) ([]byte, error) {
+	storagePath := viper.GetString("storage.path")
+
 	cmd := exec.Command("jj",
 		"diff",
 		"--stat",
@@ -177,7 +186,7 @@ func jjCommit(message string) ([]byte, error) {
 		"@",
 	)
 
-	cmd.Dir = viper.GetString("storage.path")
+	cmd.Dir = storagePath
 	output, err := cmd.Output()
 	if err != nil {
 		return output, err
@@ -191,7 +200,7 @@ func jjCommit(message string) ([]byte, error) {
 		"--message", message,
 	)
 
-	commitCmd.Dir = viper.GetString("storage.path")
+	commitCmd.Dir = storagePath
 	output, err = commitCmd.CombinedOutput()
 	if err != nil {
 		return output, err
@@ -210,6 +219,7 @@ func jjCommit(message string) ([]byte, error) {
 //  3. Pushes that bookmark to the Git remote specified in
 //     "jj.remote.name".
 func jjPush() ([]byte, error) {
+	storagePath := viper.GetString("storage.path")
 	branch := viper.GetString("jj.default_branch")
 	remote := viper.GetString("jj.remote.name")
 
@@ -218,7 +228,7 @@ func jjPush() ([]byte, error) {
 		"--revision", "@-",
 	)
 
-	bookmarkCmd.Dir = viper.GetString("storage.path")
+	bookmarkCmd.Dir = storagePath
 	output, err := bookmarkCmd.CombinedOutput()
 	if err != nil {
 		return output, err
@@ -230,7 +240,7 @@ func jjPush() ([]byte, error) {
 		"--bookmark", branch,
 	)
 
-	pushCmd.Dir = viper.GetString("storage.path")
+	pushCmd.Dir = storagePath
 	output, err = pushCmd.CombinedOutput()
 	if err != nil {
 		return output, err
@@ -242,15 +252,17 @@ func jjPush() ([]byte, error) {
 // jjUser returns the name and email address that is returned by the
 // jj config get command.
 func jjUser() (string, error) {
+	storagePath := viper.GetString("storage.path")
+
 	nameCmd := exec.Command("jj", "config", "get", "user.name")
-	nameCmd.Dir = viper.GetString("storage.path")
+	nameCmd.Dir = storagePath
 	nameOut, err := nameCmd.CombinedOutput()
 	if err != nil {
 		return "", err
 	}
 
 	emailCmd := exec.Command("jj", "config", "get", "user.email")
-	emailCmd.Dir = viper.GetString("storage.path")
+	emailCmd.Dir = storagePath
 
 	emailOut, err := emailCmd.CombinedOutput()
 	if err != nil {
