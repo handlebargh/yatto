@@ -52,7 +52,7 @@ Closes #73
 
 #### About scopes
 
-This project is monolithic, so you don’t usually need to use a scope in your commit messages.
+You don’t usually need to use a scope in your commit messages.
 However, if you feel a scope adds clarity, you may include one in parentheses right after the commit type:
 
 ## Development Workflow
