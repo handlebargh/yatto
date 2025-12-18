@@ -25,6 +25,7 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -217,4 +218,13 @@ func AddAngleBracketsToEmail(s string) string {
 	}
 
 	return s[:start] + "<" + email + ">"
+}
+
+// CloseWithErr is a helper utility reduce boilerplate code
+// on closing resources.
+func CloseWithErr(c io.Closer, err *error) {
+	cErr := c.Close()
+	if *err == nil {
+		*err = cErr
+	}
 }

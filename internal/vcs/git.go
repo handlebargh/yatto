@@ -44,7 +44,7 @@ func gitInitCmd() tea.Cmd {
 		if err != nil {
 			return InitErrorMsg{"cannot change dir to configured storage path", err}
 		}
-		defer root.Close()
+		defer helpers.CloseWithErr(root, &err)
 
 		if _, err := root.Stat("INIT"); err == nil {
 			return InitDoneMsg{}
@@ -65,7 +65,7 @@ func gitInitCmd() tea.Cmd {
 		if err != nil {
 			return InitErrorMsg{"cannot create INIT file via root", err}
 		}
-		f.Close()
+		defer helpers.CloseWithErr(f, &err)
 
 		if output, err := gitCommit("Initial commit", "INIT"); err != nil {
 			return InitErrorMsg{string(output), err}
@@ -147,7 +147,7 @@ func gitCommit(message string, files ...string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open storage root: %w", err)
 	}
-	defer root.Close()
+	defer helpers.CloseWithErr(root, &err)
 
 	args := append([]string{"add"}, files...)
 	addCmd := exec.Command("git", args...) // #nosec G204 Command uses only UUIDs as filenames

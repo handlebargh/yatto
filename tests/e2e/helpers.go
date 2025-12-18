@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package e2e contains all end to end tests.
 package e2e
 
 import (
@@ -75,7 +76,9 @@ func setupGitRepo(t *testing.T) string {
 	runCmd(t, tmpDir, "git", "config", "commit.gpgSign", "false")
 
 	testFile := filepath.Join(tmpDir, "INIT")
-	os.WriteFile(testFile, []byte(""), 0644)
+	if err := os.WriteFile(testFile, []byte(""), 0o600); err != nil {
+		t.Fatal("error writing INIT file")
+	}
 
 	runCmd(t, tmpDir, "git", "add", "INIT")
 	runCmd(t, tmpDir, "git", "commit", "-m", "Initial commit")
@@ -95,7 +98,9 @@ func setupJJRepo(t *testing.T) string {
 	runCmd(t, tmpDir, "jj", "config", "set", "--repo", "user.email", "test@example.com")
 
 	testFile := filepath.Join(tmpDir, "INIT")
-	os.WriteFile(testFile, []byte(""), 0644)
+	if err := os.WriteFile(testFile, []byte(""), 0o600); err != nil {
+		t.Fatal("error writing INIT file")
+	}
 
 	runCmd(t, tmpDir, "jj", "commit", "--message", "Initial commit")
 
@@ -103,7 +108,7 @@ func setupJJRepo(t *testing.T) string {
 }
 
 // runCmd is a helper to run commands inside the temp directory.
-func runCmd(t *testing.T, dir string, name string, args ...string) {
+func runCmd(t *testing.T, dir, name string, args ...string) {
 	t.Helper()
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir

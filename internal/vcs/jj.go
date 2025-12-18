@@ -44,7 +44,7 @@ func jjInitCmd() tea.Cmd {
 		if err != nil {
 			return InitErrorMsg{"cannot change dir to configured storage path", err}
 		}
-		defer root.Close()
+		defer helpers.CloseWithErr(root, &err)
 
 		if _, err := root.Stat("INIT"); err == nil {
 			return InitDoneMsg{}
@@ -69,7 +69,7 @@ func jjInitCmd() tea.Cmd {
 		if err != nil {
 			return InitErrorMsg{"cannot create INIT file via root", err}
 		}
-		f.Close()
+		defer helpers.CloseWithErr(f, &err)
 
 		if output, err := jjCommit("Initial commit"); err != nil {
 			return InitErrorMsg{string(output), err}
