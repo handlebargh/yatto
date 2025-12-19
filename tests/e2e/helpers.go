@@ -22,13 +22,119 @@
 package e2e
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
+	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/exp/teatest"
+	"github.com/handlebargh/yatto/internal/models"
 	"github.com/spf13/viper"
 )
+
+var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func normalizeOutput(bts []byte) string {
+	s := ansi.ReplaceAllString(string(bts), "")
+	return strings.Join(strings.Fields(s), " ")
+}
+
+type e2e struct {
+	t  *testing.T
+	tm *teatest.TestModel
+}
+
+func newE2E(t *testing.T, v *viper.Viper) *e2e {
+	t.Helper()
+
+	tm := teatest.NewTestModel(
+		t,
+		models.InitialProjectListModel(v),
+		teatest.WithInitialTermSize(400, 400),
+	)
+
+	e := &e2e{t: t, tm: tm}
+
+	e.waitForProjectsScreen()
+	return e
+}
+
+func (e *e2e) waitForProjectsScreen() {
+	e.t.Helper()
+
+	teatest.WaitFor(e.t, e.tm.Output(), func(bts []byte) bool {
+		return bytes.Contains(bts, []byte("No projects"))
+	}, teatest.WithDuration(2*time.Second))
+}
+
+func (e *e2e) waitForProject(name string) {
+	e.t.Helper()
+
+	teatest.WaitFor(e.t, e.tm.Output(), func(bts []byte) bool {
+		return bytes.Contains(bts, []byte("1 project")) &&
+			bytes.Contains(bts, []byte(name))
+	}, teatest.WithDuration(2*time.Second))
+}
+
+func (e *e2e) waitForProjectGone(name string) {
+	e.t.Helper()
+
+	teatest.WaitFor(e.t, e.tm.Output(), func(bts []byte) bool {
+		return bytes.Contains(bts, []byte("No projects")) &&
+			!bytes.Contains(bts, []byte(name))
+	}, teatest.WithDuration(2*time.Second))
+}
+
+func (e *e2e) addProject(name, desc string) {
+	e.t.Helper()
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(name)})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(desc)})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+
+	e.waitForProject(name)
+}
+
+func (e *e2e) editProject(name, appendText string) {
+	e.t.Helper()
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(appendText)})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+
+	e.waitForProject(name + appendText)
+}
+
+func (e *e2e) deleteProject(name string) {
+	e.t.Helper()
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/" + name)})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+
+	e.waitForProjectGone(name)
+}
 
 // setGitAppConfig initializes a fresh git repo for testing and sets the viper
 // config accordingly.

@@ -21,194 +21,68 @@
 package e2e
 
 import (
-	"io"
-	"strings"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"
-	"github.com/handlebargh/yatto/internal/models"
+	"github.com/spf13/viper"
 )
 
-func TestE2E_AddAndEditProjectGit(t *testing.T) {
-	t.Parallel()
-
-	v := setGitAppConfig(t)
-
-	tm := teatest.NewTestModel(t, models.InitialProjectListModel(v),
-		teatest.WithInitialTermSize(400, 400),
-	)
-
-	// Add a project
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Test Project")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("This is a test project.")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	time.Sleep(2 * time.Second)
-
-	// Edit the project
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" edited")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	time.Sleep(2 * time.Second)
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-
-	tm.WaitFinished(t)
-	finalOutput := tm.FinalOutput(t)
-
-	finalBytes, err := io.ReadAll(finalOutput)
-	if err != nil {
-		t.Fatalf("failed to get final view: %v", err)
+func TestE2E_AddAndEditProject(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  func(*testing.T) *viper.Viper
+	}{
+		{"git", setGitAppConfig},
+		{"jj", setJJAppConfig},
 	}
 
-	if !strings.Contains(string(finalBytes), "Test Project edited") {
-		t.Errorf("expected to find 'Test Project edited' in the final view, but didn't")
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newE2E(t, tc.cfg(t))
+
+			e.addProject("Test Project", "This is a test project")
+			e.editProject("Test Project", " edited")
+
+			e.tm.Send(tea.KeyMsg{
+				Type:  tea.KeyRunes,
+				Runes: []rune("q"),
+			})
+
+			out := e.tm.FinalModel(t).View()
+			teatest.RequireEqualOutput(t, []byte(out))
+
+			e.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
+		})
 	}
 }
 
-func TestE2E_AddAndEditProjectJJ(t *testing.T) {
-	t.Parallel()
-
-	v := setJJAppConfig(t)
-
-	tm := teatest.NewTestModel(t, models.InitialProjectListModel(v),
-		teatest.WithInitialTermSize(400, 400),
-	)
-
-	// Add a project
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Test Project")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("This is a test project.")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	time.Sleep(2 * time.Second)
-
-	// Edit the project
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" edited")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	time.Sleep(2 * time.Second)
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-
-	tm.WaitFinished(t)
-	finalOutput := tm.FinalOutput(t)
-
-	finalBytes, err := io.ReadAll(finalOutput)
-	if err != nil {
-		t.Fatalf("failed to get final view: %v", err)
+func TestE2E_AddAndDeleteProject(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  func(*testing.T) *viper.Viper
+	}{
+		{"git", setGitAppConfig},
+		{"jj", setJJAppConfig},
 	}
 
-	if !strings.Contains(string(finalBytes), "Test Project edited") {
-		t.Errorf("expected to find 'Test Project edited' in the final view, but didn't")
-	}
-}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newE2E(t, tc.cfg(t))
 
-func TestE2E_AddAndDeleteProjectGit(t *testing.T) {
-	t.Parallel()
+			e.addProject("Test Project", "This is a test project")
+			e.deleteProject("Test Project")
 
-	v := setGitAppConfig(t)
+			e.tm.Send(tea.KeyMsg{
+				Type:  tea.KeyRunes,
+				Runes: []rune("q"),
+			})
 
-	tm := teatest.NewTestModel(t, models.InitialProjectListModel(v),
-		teatest.WithInitialTermSize(400, 400),
-	)
+			out := e.tm.FinalModel(t).View()
+			teatest.RequireEqualOutput(t, []byte(out))
 
-	// Add a project
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Test Project")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("This is a test project.")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	time.Sleep(2 * time.Second)
-
-	// Delete the project
-	tm.Send(tea.KeyMsg{Type: tea.KeySpace})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	time.Sleep(2 * time.Second)
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-
-	tm.WaitFinished(t)
-	finalOutput := tm.FinalOutput(t)
-
-	finalBytes, err := io.ReadAll(finalOutput)
-	if err != nil {
-		t.Fatalf("failed to get final view: %v", err)
-	}
-
-	if !strings.Contains(string(finalBytes), "No projects") {
-		t.Errorf("expected to find 'No projects' in the final view, but didn't")
-	}
-}
-
-func TestE2E_AddAndDeleteProjectJJ(t *testing.T) {
-	t.Parallel()
-
-	v := setJJAppConfig(t)
-
-	tm := teatest.NewTestModel(t, models.InitialProjectListModel(v),
-		teatest.WithInitialTermSize(400, 400),
-	)
-
-	// Add a project
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Test Project")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("This is a test project.")})
-	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	time.Sleep(2 * time.Second)
-
-	// Delete the project
-	tm.Send(tea.KeyMsg{Type: tea.KeySpace})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	time.Sleep(2 * time.Second)
-
-	tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-
-	tm.WaitFinished(t)
-	finalOutput := tm.FinalOutput(t)
-
-	finalBytes, err := io.ReadAll(finalOutput)
-	if err != nil {
-		t.Fatalf("failed to get final view: %v", err)
-	}
-
-	if !strings.Contains(string(finalBytes), "No projects") {
-		t.Errorf("expected to find 'No projects' in the final view, but didn't")
+			e.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
+		})
 	}
 }
