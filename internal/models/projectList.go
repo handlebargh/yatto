@@ -221,19 +221,18 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 // ProjectListModel defines the TUI model used to
 // manage and interact with projects.
 type ProjectListModel struct {
-	config           *viper.Viper
-	list             list.Model
-	selected         bool
-	keys             *projectListKeyMap
-	mode             mode
-	cmdOutput        string
-	err              error
-	spinner          spinner.Model
-	spinning         bool
-	waitingAfterDone bool
-	status           string
-	width, height    int
-	selectedItems    map[int]*items.Project
+	config        *viper.Viper
+	list          list.Model
+	selected      bool
+	keys          *projectListKeyMap
+	mode          mode
+	cmdOutput     string
+	err           error
+	spinner       spinner.Model
+	spinning      bool
+	status        string
+	width, height int
+	selectedItems map[int]*items.Project
 
 	renderer *glamour.TermRenderer
 }
@@ -257,12 +256,11 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 	sp.Style = lipgloss.NewStyle().Foreground(colors.Orange())
 
 	m := ProjectListModel{
-		config:           v,
-		keys:             listKeys,
-		spinner:          sp,
-		spinning:         false,
-		waitingAfterDone: false,
-		selectedItems:    selectedItems,
+		config:        v,
+		keys:          listKeys,
+		spinner:       sp,
+		spinning:      false,
+		selectedItems: selectedItems,
 	}
 
 	itemList := list.New(
@@ -335,16 +333,8 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
-		if !m.waitingAfterDone {
-			// Return a timer command to keep displaying spinner for half a second.
-			return m, tea.Tick(time.Millisecond*500, func(_ time.Time) tea.Msg {
-				return doneWaitingMsg{}
-			})
-		}
-
 	case doneWaitingMsg:
 		m.spinning = false
-		m.waitingAfterDone = false
 		return m, nil
 
 	case vcs.InitDoneMsg:
@@ -361,8 +351,6 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			delete(m.selectedItems, k)
 		}
 		m.status = "🗘  Changes committed"
-
-		m.waitingAfterDone = true
 
 		// Wait 1 second before fully stopping spinner
 		return m, tea.Tick(time.Second, func(time.Time) tea.Msg {
