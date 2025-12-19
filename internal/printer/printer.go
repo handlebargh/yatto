@@ -53,8 +53,8 @@ type projectTask struct {
 // It returns two values:
 //   - A slice of projectTask, each containing a task and its corresponding project.
 //   - A slice of strings representing project IDs that were requested but not found.
-func getProjectTasks(projectsIDs ...string) ([]projectTask, []string) {
-	projects := helpers.ReadProjectsFromFS()
+func getProjectTasks(v *viper.Viper, projectsIDs ...string) ([]projectTask, []string) {
+	projects := helpers.ReadProjectsFromFS(v)
 
 	foundIDs := make(map[string]bool)
 	var result []projectTask
@@ -63,7 +63,7 @@ func getProjectTasks(projectsIDs ...string) ([]projectTask, []string) {
 		id := project.ID
 		if len(projectsIDs) == 0 || slices.Contains(projectsIDs, id) {
 			foundIDs[id] = true
-			for _, task := range project.ReadTasksFromFS() {
+			for _, task := range project.ReadTasksFromFS(v) {
 				result = append(result, projectTask{
 					project: project,
 					task:    task,
@@ -94,8 +94,8 @@ func getProjectTasks(projectsIDs ...string) ([]projectTask, []string) {
 //  3. Priority: Tasks with higher numeric priority values are ranked higher.
 //
 // The sort is stable, preserving the relative order of equal elements across criteria.
-func sortTasks(tasks []projectTask) {
-	me, _ := vcs.User()
+func sortTasks(v *viper.Viper, tasks []projectTask) {
+	me, _ := vcs.User(v)
 
 	slices.SortStableFunc(tasks, func(x, y projectTask) int {
 		for _, key := range []string{"state", "assignee", "dueDate", "priority"} {
@@ -163,8 +163,8 @@ func sortTasks(tasks []projectTask) {
 //   - Priority, styled by level (low, medium, high)
 //   - Badges indicating task state, including:
 //   - "due today", "overdue", "in progress", or "due in N day(s)"
-func PrintTasks(labelRegex string, author, assignee bool, projectsIDs ...string) {
-	projTask, missing := getProjectTasks(projectsIDs...)
+func PrintTasks(v *viper.Viper, labelRegex string, author, assignee bool, projectsIDs ...string) {
+	projTask, missing := getProjectTasks(v, projectsIDs...)
 
 	if len(missing) > 0 {
 		for _, projectID := range missing {
@@ -176,7 +176,7 @@ func PrintTasks(labelRegex string, author, assignee bool, projectsIDs ...string)
 		}
 	}
 
-	me, _ := vcs.User()
+	me, _ := vcs.User(v)
 	regex := regexp.MustCompile(labelRegex)
 
 	var pendingTasks []projectTask
@@ -195,7 +195,7 @@ func PrintTasks(labelRegex string, author, assignee bool, projectsIDs ...string)
 		}
 	}
 
-	sortTasks(pendingTasks)
+	sortTasks(v, pendingTasks)
 
 	if len(pendingTasks) == 0 {
 		fmt.Println(
@@ -221,14 +221,14 @@ func PrintTasks(labelRegex string, author, assignee bool, projectsIDs ...string)
 		left.WriteString("\n")
 		left.WriteString(lipgloss.NewStyle().Width(50).Foreground(colors.Blue()).Render(pt.task.CropTaskLabels(40)))
 
-		if viper.GetBool("author.show_printer") {
+		if v.GetBool("author.show_printer") {
 			left.WriteString("\n")
 			left.WriteString(lipgloss.NewStyle().Foreground(colors.Green()).Render("Author: "))
 			left.WriteString(pt.task.Author)
 		}
 
-		me, _ := vcs.User()
-		if viper.GetBool("assignee.show_printer") {
+		me, _ := vcs.User(v)
+		if v.GetBool("assignee.show_printer") {
 			left.WriteString("\n")
 			left.WriteString(lipgloss.NewStyle().Foreground(colors.Orange()).Render("Assignee: "))
 			if pt.task.Assignee == me {

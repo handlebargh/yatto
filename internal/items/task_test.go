@@ -120,14 +120,15 @@ func TestTask_TaskToMarkdown(t *testing.T) {
 
 func TestTask_WriteTaskJSON(t *testing.T) {
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
 
 	project := Project{ID: "test-project"}
 	projectDir := filepath.Join(tempDir, project.ID)
 	_ = os.Mkdir(projectDir, 0o755)
 
 	task := &Task{ID: uuid.NewString(), Title: "Test Task"}
-	cmd := task.WriteTaskJSON(task.MarshalTask(), project, "create")
+	cmd := task.WriteTaskJSON(v, task.MarshalTask(), project, "create")
 	msg := cmd()
 
 	if _, ok := msg.(WriteTaskJSONDoneMsg); !ok {
@@ -142,7 +143,8 @@ func TestTask_WriteTaskJSON(t *testing.T) {
 
 func TestTask_DeleteTaskFromFS(t *testing.T) {
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
 
 	project := Project{ID: "test-project"}
 	projectDir := filepath.Join(tempDir, project.ID)
@@ -152,7 +154,7 @@ func TestTask_DeleteTaskFromFS(t *testing.T) {
 	taskFile := filepath.Join(projectDir, task.ID+".json")
 	_ = os.WriteFile(taskFile, task.MarshalTask(), 0o644)
 
-	cmd := task.DeleteTaskFromFS(project)
+	cmd := task.DeleteTaskFromFS(v, project)
 	msg := cmd()
 
 	if _, ok := msg.(TaskDeleteDoneMsg); !ok {

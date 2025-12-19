@@ -29,14 +29,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/handlebargh/yatto/internal/models"
-	"github.com/spf13/viper"
 )
 
 func TestE2E_AddAndEditProjectGit(t *testing.T) {
-	storageDir := setGitAppConfig(t)
-	viper.Set("storage.path", storageDir)
+	v := setGitAppConfig(t)
 
-	tm := teatest.NewTestModel(t, models.InitialProjectListModel(),
+	tm := teatest.NewTestModel(t, models.InitialProjectListModel(v),
 		teatest.WithInitialTermSize(400, 400),
 	)
 
@@ -79,10 +77,9 @@ func TestE2E_AddAndEditProjectGit(t *testing.T) {
 }
 
 func TestE2E_AddAndEditProjectJJ(t *testing.T) {
-	storageDir := setJJAppConfig(t)
-	viper.Set("storage.path", storageDir)
+	v := setJJAppConfig(t)
 
-	tm := teatest.NewTestModel(t, models.InitialProjectListModel(),
+	tm := teatest.NewTestModel(t, models.InitialProjectListModel(v),
 		teatest.WithInitialTermSize(400, 400),
 	)
 

@@ -39,12 +39,13 @@ var ErrUserAborted = errors.New("user aborted config creation")
 // Settings defines settings used by CreateStorageDir.
 //
 // Fields:
+//   - Viper:  The viper instance to use for configuration.
 //   - Path:   Filesystem path to the storage directory.
 //   - Input:  Input stream used to read user responses (e.g., os.Stdin).
 //   - Output: Output stream used to print prompts and messages (e.g., os.Stdout).
 //   - Exit:   Function invoked to terminate the process (e.g., os.Exit).
 type Settings struct {
-	Path   string
+	Viper  *viper.Viper
 	Input  io.Reader
 	Output io.Writer
 	Exit   func(int)
@@ -54,8 +55,8 @@ type Settings struct {
 // and prompts the user to create it if it does not. If the user confirms,
 // the directory is created with 0700 permissions. Exits the program if the
 // user declines or an error occurs during input.
-func CreateStorageDir(set Settings) error {
-	storageDir := set.Path
+func CreateStorageDir(settings Settings) error {
+	storageDir := settings.Viper.GetString("storage.path")
 
 	_, err := os.Stat(storageDir)
 	if err != nil {
@@ -84,25 +85,25 @@ func CreateStorageDir(set Settings) error {
 			return ErrUserAborted
 		}
 
-		backend := viper.GetString("vcs.backend")
-		if viper.GetBool(backend + ".remote.enable") {
+		backend := settings.Viper.GetString("vcs.backend")
+		if settings.Viper.GetBool(backend + ".remote.enable") {
 
 			jjCmd := []string{
 				"jj",
 				"git",
 				"clone",
 				"--remote",
-				viper.GetString("jj.remote.name"),
-				viper.GetString("jj.remote.url"),
+				settings.Viper.GetString("jj.remote.name"),
+				settings.Viper.GetString("jj.remote.url"),
 				storageDir,
 			}
 
-			if viper.GetBool("jj.remote.colocate") {
+			if settings.Viper.GetBool("jj.remote.colocate") {
 				jjCmd = append(jjCmd, "--colocate")
 			}
 
 			cmds := map[string][]string{
-				"git": {"git", "clone", viper.GetString("git.remote.url"), storageDir},
+				"git": {"git", "clone", settings.Viper.GetString("git.remote.url"), storageDir},
 				"jj":  jjCmd,
 			}
 
@@ -110,8 +111,8 @@ func CreateStorageDir(set Settings) error {
 			if ok {
 				cmd := exec.Command(args[0], args[1:]...) // #nosec G204 Command uses validated config values
 
-				cmd.Stdout = set.Output
-				cmd.Stderr = set.Output
+				cmd.Stdout = settings.Output
+				cmd.Stderr = settings.Output
 
 				if err := cmd.Run(); err != nil {
 					return err
@@ -122,7 +123,7 @@ func CreateStorageDir(set Settings) error {
 			if backend == "git" {
 				moveCmd := exec.Command("git", // #nosec G204 Command uses validated config value
 					"branch",
-					"--move", viper.GetString("git.default_branch"),
+					"--move", settings.Viper.GetString("git.default_branch"),
 				)
 				moveCmd.Dir = storageDir
 				if err := moveCmd.Run(); err != nil {
@@ -141,8 +142,8 @@ func CreateStorageDir(set Settings) error {
 
 // FileExists returns true if the specified file exists within the configured
 // storage directory. It uses os.Stat to check for existence and ignores other errors.
-func FileExists(file string) bool {
-	fullPath := filepath.Join(viper.GetString("storage.path"), file)
+func FileExists(v *viper.Viper, file string) bool {
+	fullPath := filepath.Join(v.GetString("storage.path"), file)
 	_, err := os.Stat(fullPath)
 	return !os.IsNotExist(err)
 }

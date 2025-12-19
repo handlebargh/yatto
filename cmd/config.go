@@ -26,6 +26,7 @@ import (
 
 	"github.com/handlebargh/yatto/internal/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // configCmd represents the config command
@@ -33,7 +34,10 @@ var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage configuration settings",
 	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+		appCtx := &AppContext{viper.GetViper()}
+
 		setCfg := config.Settings{
+			Viper:      appCtx.Viper,
 			ConfigPath: configPath,
 			Home:       homePath,
 			Input:      os.Stdin,

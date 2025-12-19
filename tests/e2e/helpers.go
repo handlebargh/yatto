@@ -33,34 +33,29 @@ import (
 // setGitAppConfig initializes a fresh git repo for testing and sets the viper
 // config accordingly.
 // Return the path to the testing storage directory.
-func setGitAppConfig(t *testing.T) string {
+func setGitAppConfig(t *testing.T) *viper.Viper {
 	t.Helper()
 	storagePath := setupGitRepo(t)
+	v := viper.New()
 
-	viper.Set("storage.path", storagePath)
-	viper.Set("vcs.backend", "git")
-	viper.Set("git.default_branch", "main")
-	viper.Set("git.remote.enable", false)
-	viper.Set("git.remote.name", "origin")
+	v.Set("storage.path", storagePath)
+	v.Set("vcs.backend", "git")
 
-	return storagePath
+	return v
 }
 
 // setJJAppConfig initializes a fresh jj repo for testing and sets the viper
 // config accordingly.
 // Return the path to the testing storage directory.
-func setJJAppConfig(t *testing.T) string {
+func setJJAppConfig(t *testing.T) *viper.Viper {
 	t.Helper()
 	storagePath := setupJJRepo(t)
+	v := viper.New()
 
-	viper.Set("storage.path", storagePath)
-	viper.Set("vcs.backend", "jj")
-	viper.Set("jj.default_branch", "main")
-	viper.Set("jj.remote.enable", false)
-	viper.Set("jj.remote.name", "origin")
-	viper.Set("jj.remote.colocate", false)
+	v.Set("storage.path", storagePath)
+	v.Set("vcs.backend", "jj")
 
-	return storagePath
+	return v
 }
 
 // setupGitRepo creates a temporary directory and initializes a fresh git repo.

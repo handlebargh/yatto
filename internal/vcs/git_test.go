@@ -30,13 +30,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// setupTestRepo creates a new temporary directory, initializes a git repository,
-// and sets the storage.path for viper.
-func setupTestRepo(t *testing.T) string {
+// setupTestRepo creates a new temporary directory and initializes a git repository.
+func setupTestRepo(t *testing.T) *viper.Viper {
 	t.Helper()
 
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
 
 	cmd := exec.Command("git", "init")
 	cmd.Dir = tempDir
@@ -58,51 +58,53 @@ func setupTestRepo(t *testing.T) string {
 	err = cmd.Run()
 	assert.NoError(t, err)
 
-	return tempDir
+	return v
 }
 
 func TestGitUser(t *testing.T) {
-	setupTestRepo(t)
+	v := setupTestRepo(t)
 
-	user, err := gitUser()
+	user, err := gitUser(v)
 	assert.NoError(t, err)
 	assert.Equal(t, "Test User <test@example.com>", user)
 }
 
 func TestGitContributors(t *testing.T) {
-	tempDir := setupTestRepo(t)
+	v := setupTestRepo(t)
+	storagePath := v.GetString("storage.path")
 
 	// Create a commit to have an author
-	err := os.WriteFile(filepath.Join(tempDir, "file.txt"), []byte("content"), 0o600)
+	err := os.WriteFile(filepath.Join(storagePath, "file.txt"), []byte("content"), 0o600)
 	assert.NoError(t, err)
 	cmd := exec.Command("git", "add", "file.txt")
-	cmd.Dir = tempDir
+	cmd.Dir = storagePath
 	err = cmd.Run()
 	assert.NoError(t, err)
 	cmd = exec.Command("git", "commit", "-m", "Initial commit")
-	cmd.Dir = tempDir
+	cmd.Dir = storagePath
 	err = cmd.Run()
 	assert.NoError(t, err)
 
-	contributors, err := gitContributors()
+	contributors, err := gitContributors(v)
 	assert.NoError(t, err)
 	assert.Contains(t, contributors, "Test User <test@example.com>")
 }
 
 func TestGitCommit(t *testing.T) {
-	tempDir := setupTestRepo(t)
+	v := setupTestRepo(t)
+	storagePath := v.GetString("storage.path")
 
-	filePath := filepath.Join(tempDir, "test.txt")
+	filePath := filepath.Join(storagePath, "test.txt")
 	err := os.WriteFile(filePath, []byte("hello"), 0o600)
 	assert.NoError(t, err)
 
-	output, err := gitCommit("feat: add test file", "test.txt")
+	output, err := gitCommit(v, "feat: add test file", "test.txt")
 	assert.NoError(t, err)
 	assert.Contains(t, string(output), "feat: add test file")
 
 	// Check that the commit was actually made
 	cmd := exec.Command("git", "log", "-1", "--pretty=%B")
-	cmd.Dir = tempDir
+	cmd.Dir = storagePath
 	logOutput, err := cmd.CombinedOutput()
 	assert.NoError(t, err)
 	assert.Contains(t, string(logOutput), "feat: add test file")
@@ -119,11 +121,12 @@ func TestGitInitCmd(t *testing.T) {
 	t.Setenv("GIT_COMMITTER_EMAIL", "test@example.com")
 
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
-	viper.Set("git.default_branch", "main")
-	viper.Set("git.remote.enable", false)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
+	v.Set("git.default_branch", "main")
+	v.Set("git.remote.enable", false)
 
-	msg := gitInitCmd()()
+	msg := gitInitCmd(v)()
 
 	assert.IsType(t, InitDoneMsg{}, msg)
 

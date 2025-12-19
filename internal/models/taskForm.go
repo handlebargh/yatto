@@ -112,19 +112,19 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	m.vars = &v
 	m.task = t
 	m.listModel = listModel
-	m.taskLabels = helpers.AllLabels()
+	m.taskLabels = helpers.AllLabels(m.listModel.projectModel.config)
 	m.lg = lipgloss.DefaultRenderer()
 	m.styles = NewStyles(m.lg)
 
 	var confirmQuestion string
 	if edit {
 		if m.vars.taskAuthor == "" {
-			m.vars.taskAuthor, _ = vcs.User()
+			m.vars.taskAuthor, _ = vcs.User(m.listModel.projectModel.config)
 		}
 		confirmQuestion = "Edit task?"
 	} else {
 		// Ignore error for now
-		m.vars.taskAuthor, _ = vcs.User()
+		m.vars.taskAuthor, _ = vcs.User(m.listModel.projectModel.config)
 		confirmQuestion = "Create task?"
 	}
 
@@ -313,7 +313,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			taskPath := filepath.Join(m.listModel.project.ID, m.task.ID+".json")
 
 			action := "create"
-			if storage.FileExists(taskPath) {
+			if storage.FileExists(m.listModel.projectModel.config, taskPath) {
 				action = "update"
 			}
 
@@ -321,8 +321,9 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(
 				cmds,
 				m.listModel.spinner.Tick,
-				m.task.WriteTaskJSON(json, *m.listModel.project, action),
+				m.task.WriteTaskJSON(m.listModel.projectModel.config, json, *m.listModel.project, action),
 				vcs.CommitCmd(
+					m.listModel.projectModel.config,
 					fmt.Sprintf("%s: %s", action, m.task.Title),
 					taskPath,
 				),
@@ -608,7 +609,7 @@ func (m taskFormModel) sortLabelsOptions() []huh.Option[string] {
 }
 
 func (m taskFormModel) sortEmailAddressesOptions() []huh.Option[string] {
-	emails, _ := vcs.AllContributors()
+	emails, _ := vcs.AllContributors(m.listModel.projectModel.config)
 
 	// Sort: selected first, then author's address, then alphabetical
 	slices.SortFunc(emails, func(a, b string) int {

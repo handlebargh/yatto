@@ -59,6 +59,7 @@ var printCmd = &cobra.Command{
 	},
 	RunE: func(_ *cobra.Command, _ []string) error {
 		setCfg := config.Settings{
+			Viper:      appConfig.Viper,
 			ConfigPath: configPath,
 			Home:       homePath,
 			Input:      os.Stdin,
@@ -73,13 +74,13 @@ var printCmd = &cobra.Command{
 			return err
 		}
 
-		err := config.LoadAndValidateConfig()
+		err := config.LoadAndValidateConfig(setCfg.Viper)
 		if err != nil {
 			return err
 		}
 
 		setStorage := storage.Settings{
-			Path:   viper.GetString("storage.path"),
+			Viper:  appConfig.Viper,
 			Input:  os.Stdin,
 			Output: os.Stdout,
 			Exit:   os.Exit,
@@ -93,8 +94,8 @@ var printCmd = &cobra.Command{
 		}
 
 		if pullFlag &&
-			((viper.GetString("vcs.backend") == "git" && viper.GetBool("git.remote.enable")) ||
-				(viper.GetString("vcs.backend") == "jj" && viper.GetBool("jj.remote.enable"))) {
+			((appConfig.Viper.GetString("vcs.backend") == "git" && appConfig.Viper.GetBool("git.remote.enable")) ||
+				(appConfig.Viper.GetString("vcs.backend") == "jj" && appConfig.Viper.GetBool("jj.remote.enable"))) {
 			s := spinner.New()
 			s.Spinner = spinner.Dot
 			s.Style = s.Style.
@@ -110,7 +111,7 @@ var printCmd = &cobra.Command{
 			}
 		}
 
-		printTaskList(printProjects, printRegex)
+		printTaskList(appConfig.Viper, printProjects, printRegex)
 
 		return nil
 	},
@@ -119,17 +120,18 @@ var printCmd = &cobra.Command{
 // printTaskList prints a list of tasks based on the provided project names
 // and a regular expression filter.
 //
-// The function takes two strings as input:
+// The function takes three arguments as input:
+// - v: a viper instance for configuration.
 // - printProjects: a space-separated string of project names.
 // - printRegex: a regular expression used to filter tasks.
 //
 // It splits the printProjects string into individual project names, then calls
 // printer.PrintTasks with the regex and the list of projects.
-func printTaskList(printProjects, printRegex string) {
+func printTaskList(v *viper.Viper, printProjects, printRegex string) {
 	// Get a slice of strings from user input.
 	projects := strings.Fields(printProjects)
 
-	printer.PrintTasks(printRegex, authorFlag, assigneeFlag, projects...)
+	printer.PrintTasks(v, printRegex, authorFlag, assigneeFlag, projects...)
 }
 
 func init() {

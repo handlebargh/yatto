@@ -29,10 +29,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/vcs"
+	"github.com/spf13/viper"
 )
 
 // FetchModel defines the model used for displaying a spinner while syncing with a remote Git repository.
 type FetchModel struct {
+	Config    *viper.Viper
 	Spinner   spinner.Model
 	CmdOutput string
 	Err       error
@@ -40,11 +42,27 @@ type FetchModel struct {
 	Height    int
 }
 
+// NewFetchModel initializes and returns a new FetchModel instance,
+func NewFetchModel(v *viper.Viper) FetchModel {
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = s.Style.
+		Foreground(lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}).
+		Bold(true)
+
+	m := FetchModel{
+		Config:  v,
+		Spinner: s,
+	}
+
+	return m
+}
+
 // Init initializes the spinner model and starts the init command.
 func (m FetchModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.Spinner.Tick,
-		vcs.InitCmd(),
+		vcs.InitCmd(m.Config),
 	)
 }
 
@@ -63,7 +81,7 @@ func (m FetchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case vcs.InitDoneMsg:
-		return m, vcs.PullCmd()
+		return m, vcs.PullCmd(m.Config)
 
 	case vcs.InitErrorMsg:
 		m.CmdOutput = msg.CmdOutput

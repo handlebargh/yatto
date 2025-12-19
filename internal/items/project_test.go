@@ -41,10 +41,11 @@ func TestProject_CropDescription(t *testing.T) {
 
 func TestProject_WriteProjectJSON(t *testing.T) {
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
-	cmd := project.WriteProjectJSON(project.MarshalProject(), "create")
+	cmd := project.WriteProjectJSON(v, project.MarshalProject(), "create")
 	msg := cmd()
 
 	if _, ok := msg.(WriteProjectJSONDoneMsg); !ok {
@@ -64,13 +65,14 @@ func TestProject_WriteProjectJSON(t *testing.T) {
 
 func TestProject_DeleteProjectFromFS(t *testing.T) {
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
 	projectDir := filepath.Join(tempDir, project.ID)
 	_ = os.Mkdir(projectDir, 0o755)
 
-	cmd := project.DeleteProjectFromFS()
+	cmd := project.DeleteProjectFromFS(v)
 	msg := cmd()
 
 	if _, ok := msg.(ProjectDeleteDoneMsg); !ok {
@@ -84,7 +86,8 @@ func TestProject_DeleteProjectFromFS(t *testing.T) {
 
 func TestProject_ReadTasksFromFS(t *testing.T) {
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
 	projectDir := filepath.Join(tempDir, project.ID)
@@ -96,7 +99,7 @@ func TestProject_ReadTasksFromFS(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o644)
 	_ = os.WriteFile(filepath.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o644)
 
-	tasks := project.ReadTasksFromFS()
+	tasks := project.ReadTasksFromFS(v)
 
 	if len(tasks) != 2 {
 		t.Errorf("Expected to read 2 tasks, but got %d", len(tasks))
@@ -105,7 +108,8 @@ func TestProject_ReadTasksFromFS(t *testing.T) {
 
 func TestProject_NumOfTasks(t *testing.T) {
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
 	projectDir := filepath.Join(tempDir, project.ID)
@@ -120,7 +124,7 @@ func TestProject_NumOfTasks(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o644)
 	_ = os.WriteFile(filepath.Join(projectDir, task3.ID+".json"), task3.MarshalTask(), 0o644)
 
-	total, completed, due, err := project.NumOfTasks()
+	total, completed, due, err := project.NumOfTasks(v)
 	if err != nil {
 		t.Fatalf("NumOfTasks returned an error: %v", err)
 	}

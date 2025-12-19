@@ -69,58 +69,58 @@ type config struct {
 
 // InitConfig sets default values for application configuration and
 // attempts to load configuration from a file.
-func InitConfig(home string, configPath *string) {
-	viper.SetDefault("storage.path", filepath.Join(home, ".yatto"))
+func InitConfig(v *viper.Viper, home string, configPath *string) {
+	v.SetDefault("storage.path", filepath.Join(home, ".yatto"))
 
 	// assignee
-	viper.SetDefault("assignee.show", false)
-	viper.SetDefault("assignee.show_printer", false)
+	v.SetDefault("assignee.show", false)
+	v.SetDefault("assignee.show_printer", false)
 
 	// author
-	viper.SetDefault("author.show", false)
-	viper.SetDefault("author.show_printer", false)
+	v.SetDefault("author.show", false)
+	v.SetDefault("author.show_printer", false)
 
 	// vcs
-	viper.SetDefault("vcs.backend", "git")
+	v.SetDefault("vcs.backend", "git")
 
 	// Git
-	viper.SetDefault("git.default_branch", "main")
-	viper.SetDefault("git.remote.enable", false)
-	viper.SetDefault("git.remote.name", "origin")
+	v.SetDefault("git.default_branch", "main")
+	v.SetDefault("git.remote.enable", false)
+	v.SetDefault("git.remote.name", "origin")
 
 	// jj
-	viper.SetDefault("jj.default_branch", "main")
-	viper.SetDefault("jj.remote.enable", false)
-	viper.SetDefault("jj.remote.name", "origin")
-	viper.SetDefault("jj.remote.colocate", false)
+	v.SetDefault("jj.default_branch", "main")
+	v.SetDefault("jj.remote.enable", false)
+	v.SetDefault("jj.remote.name", "origin")
+	v.SetDefault("jj.remote.colocate", false)
 
 	// colors
-	viper.SetDefault("colors.red_light", "#FE5F86")
-	viper.SetDefault("colors.red_dark", "#FE5F86")
-	viper.SetDefault("colors.vividred_light", "#FE134D")
-	viper.SetDefault("colors.vividred_dark", "#FE134D")
-	viper.SetDefault("colors.indigo_light", "#5A56E0")
-	viper.SetDefault("colors.indigo_dark", "#7571F9")
-	viper.SetDefault("colors.green_light", "#02BA84")
-	viper.SetDefault("colors.green_dark", "#02BF87")
-	viper.SetDefault("colors.orange_light", "#FFB733")
-	viper.SetDefault("colors.orange_dark", "#FFA336")
-	viper.SetDefault("colors.blue_light", "#1E90FF")
-	viper.SetDefault("colors.blue_dark", "#1E90FF")
-	viper.SetDefault("colors.yellow_light", "#CCCC00")
-	viper.SetDefault("colors.yellow_dark", "#CCCC00")
-	viper.SetDefault("colors.badge_text_light", "#000000")
-	viper.SetDefault("colors.badge_text_dark", "#000000")
+	v.SetDefault("colors.red_light", "#FE5F86")
+	v.SetDefault("colors.red_dark", "#FE5F86")
+	v.SetDefault("colors.vividred_light", "#FE134D")
+	v.SetDefault("colors.vividred_dark", "#FE134D")
+	v.SetDefault("colors.indigo_light", "#5A56E0")
+	v.SetDefault("colors.indigo_dark", "#7571F9")
+	v.SetDefault("colors.green_light", "#02BA84")
+	v.SetDefault("colors.green_dark", "#02BF87")
+	v.SetDefault("colors.orange_light", "#FFB733")
+	v.SetDefault("colors.orange_dark", "#FFA336")
+	v.SetDefault("colors.blue_light", "#1E90FF")
+	v.SetDefault("colors.blue_dark", "#1E90FF")
+	v.SetDefault("colors.yellow_light", "#CCCC00")
+	v.SetDefault("colors.yellow_dark", "#CCCC00")
+	v.SetDefault("colors.badge_text_light", "#000000")
+	v.SetDefault("colors.badge_text_dark", "#000000")
 
 	// Form themes
-	viper.SetDefault("colors.form.theme", "Base16")
+	v.SetDefault("colors.form.theme", "Base16")
 
 	if *configPath != "" {
-		viper.SetConfigFile(*configPath)
+		v.SetConfigFile(*configPath)
 	} else {
-		viper.SetConfigName("config")
-		viper.SetConfigType("toml")
-		viper.AddConfigPath(filepath.Join(home, ".config", "yatto"))
+		v.SetConfigName("config")
+		v.SetConfigType("toml")
+		v.AddConfigPath(filepath.Join(home, ".config", "yatto"))
 		*configPath = filepath.Join(home, ".config", "yatto", "config.toml")
 	}
 }
@@ -128,9 +128,11 @@ func InitConfig(home string, configPath *string) {
 // Settings defines the runtime settings used by CreateConfigFile.
 //
 // Fields:
-//   - Input:  Input stream used to read user responses (e.g., os.Stdin).
-//   - Output: Output stream used to print prompts and messages (e.g., os.Stdout).
+//   - Viper:  The viper instance to use for configuration.
+//   - Input:  Input stream to read user responses (e.g., os.Stdin).
+//   - Output: Output stream to print prompts and messages (e.g., os.Stdout).
 type Settings struct {
+	Viper      *viper.Viper
 	ConfigPath string
 	Home       string
 	Input      io.Reader
@@ -152,16 +154,16 @@ type Settings struct {
 //
 // Returns an error if something goes wrong. A nil error means the config file
 // was created successfully.
-func CreateConfigFile(set Settings) error {
-	if err := viper.ReadInConfig(); err != nil {
+func CreateConfigFile(settings Settings) error {
+	if err := settings.Viper.ReadInConfig(); err != nil {
 		var notFound viper.ConfigFileNotFoundError
 		if !errors.As(err, &notFound) {
 			return fmt.Errorf("fatal error getting config: %w", err)
 		}
 
-		path := filepath.Join(set.Home, ".config", "yatto", "config.toml")
-		if set.ConfigPath != "" {
-			path = set.ConfigPath
+		path := filepath.Join(settings.Home, ".config", "yatto", "config.toml")
+		if settings.ConfigPath != "" {
+			path = settings.ConfigPath
 		}
 
 		var (
@@ -206,7 +208,7 @@ func CreateConfigFile(set Settings) error {
 			return err
 		}
 
-		viper.Set("vcs.backend", choiceVCS)
+		settings.Viper.Set("vcs.backend", choiceVCS)
 
 		if choiceVCS == "jj" {
 			form = huh.NewForm(
@@ -223,7 +225,7 @@ func CreateConfigFile(set Settings) error {
 				return err
 			}
 
-			viper.Set("jj.colocate", colocateJJ)
+			settings.Viper.Set("jj.colocate", colocateJJ)
 		}
 
 		form = huh.NewForm(
@@ -242,21 +244,21 @@ func CreateConfigFile(set Settings) error {
 		if remoteURL != "" {
 			switch choiceVCS {
 			case "git":
-				viper.Set("git.remote.enable", true)
-				viper.Set("git.remote.url", remoteURL)
+				settings.Viper.Set("git.remote.enable", true)
+				settings.Viper.Set("git.remote.url", remoteURL)
 			case "jj":
-				viper.Set("jj.remote.enable", true)
-				viper.Set("jj.remote.url", remoteURL)
+				settings.Viper.Set("jj.remote.enable", true)
+				settings.Viper.Set("jj.remote.url", remoteURL)
 			}
 		}
 
 		// Create config dir
-		if err := os.MkdirAll(filepath.Join(set.Home, ".config", "yatto"), 0o750); err != nil {
+		if err := os.MkdirAll(filepath.Join(settings.Home, ".config", "yatto"), 0o750); err != nil {
 			return fmt.Errorf("error creating config directory: %w", err)
 		}
 
 		// Write config file
-		if err := viper.SafeWriteConfig(); err != nil {
+		if err := settings.Viper.SafeWriteConfig(); err != nil {
 			return fmt.Errorf("error writing config file: %w", err)
 		}
 	}
@@ -267,39 +269,39 @@ func CreateConfigFile(set Settings) error {
 // LoadAndValidateConfig loads configuration values from viper and validates them.
 // It returns an error if any configuration value is invalid or missing required fields.
 // This function should be called at application startup after viper has been initialized.
-func LoadAndValidateConfig() error {
+func LoadAndValidateConfig(v *viper.Viper) error {
 	cfg := &config{
-		assigneeShow:        viper.GetBool("assignee.show"),
-		assigneeShowPrinter: viper.GetBool("assignee.show_printer"),
-		authorShow:          viper.GetBool("author.show"),
-		authorShowPrinter:   viper.GetBool("author.show_printer"),
-		gitRemoteEnable:     viper.GetBool("git.remote.enable"),
-		jjRemoteEnable:      viper.GetBool("jj.remote.enable"),
-		jjRemoteColocate:    viper.GetBool("jj.remote.colocate"),
-		storagePath:         viper.GetString("storage.path"),
-		vcsBackend:          viper.GetString("vcs.backend"),
-		gitDefaultBranch:    viper.GetString("git.default_branch"),
-		gitRemoteName:       viper.GetString("git.remote.name"),
-		jjDefaultBranch:     viper.GetString("jj.default_branch"),
-		jjRemoteName:        viper.GetString("jj.remote.name"),
-		colorsFormTheme:     viper.GetString("colors.form.theme"),
+		assigneeShow:        v.GetBool("assignee.show"),
+		assigneeShowPrinter: v.GetBool("assignee.show_printer"),
+		authorShow:          v.GetBool("author.show"),
+		authorShowPrinter:   v.GetBool("author.show_printer"),
+		gitRemoteEnable:     v.GetBool("git.remote.enable"),
+		jjRemoteEnable:      v.GetBool("jj.remote.enable"),
+		jjRemoteColocate:    v.GetBool("jj.remote.colocate"),
+		storagePath:         v.GetString("storage.path"),
+		vcsBackend:          v.GetString("vcs.backend"),
+		gitDefaultBranch:    v.GetString("git.default_branch"),
+		gitRemoteName:       v.GetString("git.remote.name"),
+		jjDefaultBranch:     v.GetString("jj.default_branch"),
+		jjRemoteName:        v.GetString("jj.remote.name"),
+		colorsFormTheme:     v.GetString("colors.form.theme"),
 		colorValues: map[string]string{
-			"colors.red_light":        viper.GetString("colors.red_light"),
-			"colors.red_dark":         viper.GetString("colors.red_dark"),
-			"colors.vividred_light":   viper.GetString("colors.vividred_light"),
-			"colors.vividred_dark":    viper.GetString("colors.vividred_dark"),
-			"colors.indigo_light":     viper.GetString("colors.indigo_light"),
-			"colors.indigo_dark":      viper.GetString("colors.indigo_dark"),
-			"colors.green_light":      viper.GetString("colors.green_light"),
-			"colors.green_dark":       viper.GetString("colors.green_dark"),
-			"colors.orange_light":     viper.GetString("colors.orange_light"),
-			"colors.orange_dark":      viper.GetString("colors.orange_dark"),
-			"colors.blue_light":       viper.GetString("colors.blue_light"),
-			"colors.blue_dark":        viper.GetString("colors.blue_dark"),
-			"colors.yellow_light":     viper.GetString("colors.yellow_light"),
-			"colors.yellow_dark":      viper.GetString("colors.yellow_dark"),
-			"colors.badge_text_light": viper.GetString("colors.badge_text_light"),
-			"colors.badge_text_dark":  viper.GetString("colors.badge_text_dark"),
+			"colors.red_light":        v.GetString("colors.red_light"),
+			"colors.red_dark":         v.GetString("colors.red_dark"),
+			"colors.vividred_light":   v.GetString("colors.vividred_light"),
+			"colors.vividred_dark":    v.GetString("colors.vividred_dark"),
+			"colors.indigo_light":     v.GetString("colors.indigo_light"),
+			"colors.indigo_dark":      v.GetString("colors.indigo_dark"),
+			"colors.green_light":      v.GetString("colors.green_light"),
+			"colors.green_dark":       v.GetString("colors.green_dark"),
+			"colors.orange_light":     v.GetString("colors.orange_light"),
+			"colors.orange_dark":      v.GetString("colors.orange_dark"),
+			"colors.blue_light":       v.GetString("colors.blue_light"),
+			"colors.blue_dark":        v.GetString("colors.blue_dark"),
+			"colors.yellow_light":     v.GetString("colors.yellow_light"),
+			"colors.yellow_dark":      v.GetString("colors.yellow_dark"),
+			"colors.badge_text_light": v.GetString("colors.badge_text_light"),
+			"colors.badge_text_dark":  v.GetString("colors.badge_text_dark"),
 		},
 	}
 

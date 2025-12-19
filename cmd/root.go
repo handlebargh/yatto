@@ -27,9 +27,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/config"
 	"github.com/handlebargh/yatto/internal/fetchmodel"
 	"github.com/handlebargh/yatto/internal/models"
@@ -42,6 +40,13 @@ var (
 	configPath string
 	homePath   string
 )
+
+// AppContext holds shared application dependencies.
+type AppContext struct {
+	Viper *viper.Viper
+}
+
+var appConfig = &AppContext{viper.GetViper()}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -58,6 +63,7 @@ var rootCmd = &cobra.Command{
 	},
 	RunE: func(_ *cobra.Command, _ []string) error {
 		setCfg := config.Settings{
+			Viper:      appConfig.Viper,
 			ConfigPath: configPath,
 			Home:       homePath,
 			Input:      os.Stdin,
@@ -72,13 +78,13 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		err := config.LoadAndValidateConfig()
+		err := config.LoadAndValidateConfig(setCfg.Viper)
 		if err != nil {
 			return err
 		}
 
 		setStorage := storage.Settings{
-			Path:   viper.GetString("storage.path"),
+			Viper:  appConfig.Viper,
 			Input:  os.Stdin,
 			Output: os.Stdout,
 			Exit:   os.Exit,
@@ -91,24 +97,15 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		if (viper.GetString("vcs.backend") == "git" && viper.GetBool("git.remote.enable")) ||
-			(viper.GetString("vcs.backend") == "jj" && viper.GetBool("jj.remote.enable")) {
-			s := spinner.New()
-			s.Spinner = spinner.Dot
-			s.Style = s.Style.
-				Foreground(lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}).
-				Bold(true)
+		if (appConfig.Viper.GetString("vcs.backend") == "git" && appConfig.Viper.GetBool("git.remote.enable")) ||
+			(appConfig.Viper.GetString("vcs.backend") == "jj" && appConfig.Viper.GetBool("jj.remote.enable")) {
 
-			fetchModel := fetchmodel.FetchModel{
-				Spinner: s,
-			}
-
-			if _, err := tea.NewProgram(fetchModel, tea.WithAltScreen()).Run(); err != nil {
+			if _, err := tea.NewProgram(fetchmodel.NewFetchModel(appConfig.Viper), tea.WithAltScreen()).Run(); err != nil {
 				return err
 			}
 		}
 
-		if _, err := tea.NewProgram(models.InitialProjectListModel(), tea.WithAltScreen()).Run(); err != nil {
+		if _, err := tea.NewProgram(models.InitialProjectListModel(appConfig.Viper), tea.WithAltScreen()).Run(); err != nil {
 			return err
 		}
 
@@ -125,7 +122,7 @@ func Execute() {
 		os.Exit(1)
 	}
 
-	config.InitConfig(homePath, &configPath)
+	config.InitConfig(appConfig.Viper, homePath, &configPath)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
