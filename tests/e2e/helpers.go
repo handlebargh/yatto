@@ -26,8 +26,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -36,13 +34,6 @@ import (
 	"github.com/handlebargh/yatto/internal/models"
 	"github.com/spf13/viper"
 )
-
-var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
-
-func normalizeOutput(bts []byte) string {
-	s := ansi.ReplaceAllString(string(bts), "")
-	return strings.Join(strings.Fields(s), " ")
-}
 
 type e2e struct {
 	t  *testing.T
