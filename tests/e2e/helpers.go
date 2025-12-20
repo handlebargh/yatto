@@ -23,7 +23,6 @@ package e2e
 
 import (
 	"bytes"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -84,7 +83,7 @@ func (e *e2e) waitForMessagesPresent(present []string) {
 
 // waitForMessageGone waits until all `present` messages appear in output
 // and none of the `gone` messages appear. Empty slices impose no constraint.
-func (e *e2e) waitForMessageGone(gone []string, present []string) {
+func (e *e2e) waitForMessageGone(gone, present []string) {
 	e.t.Helper()
 
 	teatest.WaitFor(e.t, e.tm.Output(), func(bts []byte) bool {
@@ -104,7 +103,7 @@ func (e *e2e) waitForMessageGone(gone []string, present []string) {
 	}, teatest.WithDuration(defaultWait))
 }
 
-func (e *e2e) confirmField(label string, value string) {
+func (e *e2e) confirmField(label, value string) {
 	e.waitForMessagesPresent([]string{label})
 	if value != "" {
 		e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(value)})
@@ -177,10 +176,9 @@ func (e *e2e) addTask(title, desc string) {
 	e.confirmField("Create task?", "y")
 
 	e.waitForMessagesPresent([]string{"1 task", title})
-
 }
 
-func (e *e2e) editTask(title, appendTitle, desc, appendDesc string) {
+func (e *e2e) editTask(appendTitle, appendDesc string) {
 	e.t.Helper()
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}}) // Open task editing form
@@ -279,15 +277,4 @@ func runCmd(t *testing.T, dir, name string, args ...string) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("failed to run %s %v: %v", name, args, err)
 	}
-}
-
-func (e *e2e) dumpState(label string) {
-	e.t.Helper()
-
-	m, _ := io.ReadAll(e.tm.Output())
-	e.t.Logf("\n--- %s ---\nmodel=%T\n%+v\n",
-		label,
-		string(m),
-		string(m),
-	)
 }

@@ -43,7 +43,7 @@ func TestE2E_AddAndEditTask(t *testing.T) {
 			e := newE2E(t, tc.cfg(t))
 
 			e.addTask("Test Task 1", "Test task 1 description")
-			e.editTask("Test Task 1", " appended", "Test task 1 description", " appended")
+			e.editTask(" appended", " appended")
 
 			e.tm.Send(tea.KeyMsg{
 				Type:  tea.KeyRunes,
