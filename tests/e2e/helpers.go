@@ -148,9 +148,12 @@ func (e *e2e) deleteProject(title string) {
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
 	e.confirmField("Filter", title)
+	e.waitForMessagesPresent([]string{title})
 	e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
 
+	e.waitForMessagesPresent([]string{"⟹"})
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
+	e.waitForMessagesPresent([]string{"Delete 1 project"})
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 
 	e.waitForMessageGone([]string{title}, []string{"No projects"})
