@@ -29,7 +29,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestE2E_AddAndEditProject(t *testing.T) {
+func TestE2E_AddAndEditTask(t *testing.T) {
 	cases := []struct {
 		name string
 		cfg  func(*testing.T) *viper.Viper
@@ -42,37 +42,13 @@ func TestE2E_AddAndEditProject(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newE2E(t, tc.cfg(t))
 
-			e.addProject("Test Project", "This is a test project")
-			e.editProject("Test Project", " edited")
+			e.addTask("Test Task 1", "Test task 1 description")
+			e.editTask("Test Task 1", " appended", "Test task 1 description", " appended")
 
 			e.tm.Send(tea.KeyMsg{
 				Type:  tea.KeyRunes,
 				Runes: []rune{'q'},
 			})
-
-			e.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
-			out := e.tm.FinalModel(t).View()
-			teatest.RequireEqualOutput(t, []byte(out))
-		})
-	}
-}
-
-func TestE2E_AddAndDeleteProject(t *testing.T) {
-	cases := []struct {
-		name string
-		cfg  func(*testing.T) *viper.Viper
-	}{
-		{"git", setGitAppConfig},
-		{"jj", setJJAppConfig},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			e := newE2E(t, tc.cfg(t))
-
-			e.addProject("Test Project", "This is a test project")
-			e.deleteProject("Test Project")
-
 			e.tm.Send(tea.KeyMsg{
 				Type:  tea.KeyRunes,
 				Runes: []rune{'q'},

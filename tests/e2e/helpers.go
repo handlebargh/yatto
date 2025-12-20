@@ -23,6 +23,7 @@ package e2e
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,6 +36,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const defaultWait = 2 * time.Second
+
 type e2e struct {
 	t  *testing.T
 	tm *teatest.TestModel
@@ -46,7 +49,7 @@ func newE2E(t *testing.T, v *viper.Viper) *e2e {
 	tm := teatest.NewTestModel(
 		t,
 		models.InitialProjectListModel(v),
-		teatest.WithInitialTermSize(400, 400),
+		teatest.WithInitialTermSize(300, 100),
 	)
 
 	e := &e2e{t: t, tm: tm}
@@ -60,71 +63,140 @@ func (e *e2e) waitForProjectsScreen() {
 
 	teatest.WaitFor(e.t, e.tm.Output(), func(bts []byte) bool {
 		return bytes.Contains(bts, []byte("No projects"))
-	}, teatest.WithDuration(2*time.Second))
+	}, teatest.WithDuration(defaultWait))
 }
 
-func (e *e2e) waitForProject(name string) {
+// waitForMessagesPresent waits until all `present` messages appear in output.
+// Empty slices impose no constraint.
+func (e *e2e) waitForMessagesPresent(present []string) {
 	e.t.Helper()
 
 	teatest.WaitFor(e.t, e.tm.Output(), func(bts []byte) bool {
-		return bytes.Contains(bts, []byte("1 project")) &&
-			bytes.Contains(bts, []byte(name))
-	}, teatest.WithDuration(2*time.Second))
+		for _, msg := range present {
+			if !bytes.Contains(bts, []byte(msg)) {
+				return false
+			}
+		}
+
+		return true
+	}, teatest.WithDuration(defaultWait))
 }
 
-func (e *e2e) waitForProjectGone(name string) {
+// waitForMessageGone waits until all `present` messages appear in output
+// and none of the `gone` messages appear. Empty slices impose no constraint.
+func (e *e2e) waitForMessageGone(gone []string, present []string) {
 	e.t.Helper()
 
 	teatest.WaitFor(e.t, e.tm.Output(), func(bts []byte) bool {
-		return bytes.Contains(bts, []byte("No projects")) &&
-			!bytes.Contains(bts, []byte(name))
-	}, teatest.WithDuration(2*time.Second))
+		for _, msg := range present {
+			if !bytes.Contains(bts, []byte(msg)) {
+				return false
+			}
+		}
+
+		for _, msg := range gone {
+			if bytes.Contains(bts, []byte(msg)) {
+				return false
+			}
+		}
+
+		return true
+	}, teatest.WithDuration(defaultWait))
 }
 
-func (e *e2e) addProject(name, desc string) {
+func (e *e2e) confirmField(label string, value string) {
+	e.waitForMessagesPresent([]string{label})
+	if value != "" {
+		e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(value)})
+	}
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+}
+
+func (e *e2e) enterProject(title string) {
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/" + title)})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+}
+
+func (e *e2e) addProject(title, desc string) {
 	e.t.Helper()
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(name)})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.confirmField("Select a color", "")
+	e.confirmField("Enter a title", title)
+	e.confirmField("Enter a description", desc)
+	e.confirmField("Create new project?", "y")
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(desc)})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	e.waitForProject(name)
+	e.waitForMessagesPresent([]string{"Projects", title})
 }
 
-func (e *e2e) editProject(name, appendText string) {
+func (e *e2e) editProject(title, appendText string) {
 	e.t.Helper()
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(appendText)})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.confirmField("Select a color", "")
+	e.confirmField("Enter a title", appendText)
+	e.confirmField("Enter a description", "")
+	e.confirmField("Edit project?", "y")
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	e.waitForProject(name + appendText)
+	e.waitForMessagesPresent([]string{"Projects", title + appendText})
 }
 
-func (e *e2e) deleteProject(name string) {
+func (e *e2e) deleteProject(title string) {
 	e.t.Helper()
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/" + name)})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	e.confirmField("Filter", title)
 	e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
+
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 
-	e.waitForProjectGone(name)
+	e.waitForMessageGone([]string{title}, []string{"No projects"})
+}
+
+func (e *e2e) addTask(title, desc string) {
+	e.t.Helper()
+
+	e.addProject("Test1", "Desc1")
+	e.enterProject("Test1")
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}}) // Open task creation form
+
+	e.confirmField("Select priority", "")
+	e.confirmField("Enter a title", title)
+	e.confirmField("Enter a description", desc)
+	e.confirmField("Due Date", "")
+	e.confirmField("Choose labels", "")
+	e.confirmField("Enter additional labels", "")
+	e.confirmField("Enter the task author", "")
+	e.confirmField("Choose an assignee", "")
+	e.confirmField("Enter a new email address", "")
+	e.confirmField("Create task?", "y")
+
+	e.waitForMessagesPresent([]string{"1 task", title})
+
+}
+
+func (e *e2e) editTask(title, appendTitle, desc, appendDesc string) {
+	e.t.Helper()
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}}) // Open task editing form
+
+	e.confirmField("Select priority", "")
+	e.confirmField("Enter a title", appendTitle)
+	e.confirmField("Enter a description", appendDesc)
+	e.confirmField("Due Date", "")
+	e.confirmField("Choose labels", "")
+	e.confirmField("Enter additional labels", "")
+	e.confirmField("Enter the task author", "")
+	e.confirmField("Choose an assignee", "")
+	e.confirmField("Enter a new email address", "")
+	e.confirmField("Edit task?", "y")
+
+	e.waitForMessagesPresent([]string{"1 task", appendTitle})
 }
 
 // setGitAppConfig initializes a fresh git repo for testing and sets the viper
@@ -207,4 +279,15 @@ func runCmd(t *testing.T, dir, name string, args ...string) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("failed to run %s %v: %v", name, args, err)
 	}
+}
+
+func (e *e2e) dumpState(label string) {
+	e.t.Helper()
+
+	m, _ := io.ReadAll(e.tm.Output())
+	e.t.Logf("\n--- %s ---\nmodel=%T\n%+v\n",
+		label,
+		string(m),
+		string(m),
+	)
 }
