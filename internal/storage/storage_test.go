@@ -31,17 +31,18 @@ import (
 
 func TestFileExists(t *testing.T) {
 	tempDir := t.TempDir()
-	viper.Set("storage.path", tempDir)
+	v := viper.New()
+	v.Set("storage.path", tempDir)
 
 	t.Run("returns true when file exists", func(t *testing.T) {
 		filePath := filepath.Join(tempDir, "exists.txt")
 		_, err := os.Create(filePath)
 		assert.NoError(t, err)
 
-		assert.True(t, FileExists("exists.txt"))
+		assert.True(t, FileExists(v, "exists.txt"))
 	})
 
 	t.Run("returns false when file does not exist", func(t *testing.T) {
-		assert.False(t, FileExists("nonexistent.txt"))
+		assert.False(t, FileExists(v, "nonexistent.txt"))
 	})
 }

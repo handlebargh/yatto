@@ -196,9 +196,9 @@ func (t *Task) MarshalTask() []byte {
 
 // WriteTaskJSON writes the given task JSON to disk under the project directory,
 // using the task's ID as the filename. Returns a Tea message on success or error.
-func (t *Task) WriteTaskJSON(json []byte, p Project, kind string) tea.Cmd {
+func (t *Task) WriteTaskJSON(v *viper.Viper, json []byte, p Project, kind string) tea.Cmd {
 	return func() tea.Msg {
-		root, err := os.OpenRoot(viper.GetString("storage.path"))
+		root, err := os.OpenRoot(v.GetString("storage.path"))
 		if err != nil {
 			panic(fmt.Errorf("could not open storage directory: %w", err))
 		}
@@ -216,9 +216,9 @@ func (t *Task) WriteTaskJSON(json []byte, p Project, kind string) tea.Cmd {
 
 // DeleteTaskFromFS deletes the task's JSON file from the given project directory.
 // Returns a Tea message on success or failure.
-func (t *Task) DeleteTaskFromFS(p Project) tea.Cmd {
+func (t *Task) DeleteTaskFromFS(v *viper.Viper, p Project) tea.Cmd {
 	return func() tea.Msg {
-		file := filepath.Join(viper.GetString("storage.path"), p.ID, t.ID+".json")
+		file := filepath.Join(v.GetString("storage.path"), p.ID, t.ID+".json")
 
 		err := os.Remove(file)
 		if err != nil {

@@ -87,8 +87,8 @@ func (p *Project) CropDescription(length int) string {
 // ReadTasksFromFS reads all task files from the project's directory
 // and returns them as a slice of Task. It panics if the directory
 // or any task file cannot be read or parsed.
-func (p *Project) ReadTasksFromFS() []Task {
-	root, err := os.OpenRoot(viper.GetString("storage.path"))
+func (p *Project) ReadTasksFromFS(v *viper.Viper) []Task {
+	root, err := os.OpenRoot(v.GetString("storage.path"))
 	if err != nil {
 		panic(fmt.Errorf("could not open storage directory: %w", err))
 	}
@@ -123,9 +123,9 @@ func (p *Project) ReadTasksFromFS() []Task {
 
 // DeleteProjectFromFS deletes the entire project directory and all its contents
 // from disk. Returns a Tea message indicating success or failure.
-func (p *Project) DeleteProjectFromFS() tea.Cmd {
+func (p *Project) DeleteProjectFromFS(v *viper.Viper) tea.Cmd {
 	return func() tea.Msg {
-		dir := filepath.Join(viper.GetString("storage.path"), p.ID)
+		dir := filepath.Join(v.GetString("storage.path"), p.ID)
 
 		err := os.RemoveAll(dir)
 		if err != nil {
@@ -150,9 +150,9 @@ func (p *Project) MarshalProject() []byte {
 // WriteProjectJSON writes the given project JSON to disk as project.json
 // inside the project's directory. Ensures the directory exists.
 // Returns a Tea message indicating success or error.
-func (p *Project) WriteProjectJSON(json []byte, kind string) tea.Cmd {
+func (p *Project) WriteProjectJSON(v *viper.Viper, json []byte, kind string) tea.Cmd {
 	return func() tea.Msg {
-		root, err := os.OpenRoot(viper.GetString("storage.path"))
+		root, err := os.OpenRoot(v.GetString("storage.path"))
 		if err != nil {
 			panic(fmt.Errorf("could not open storage directory: %w", err))
 		}
@@ -178,8 +178,8 @@ func (p *Project) WriteProjectJSON(json []byte, kind string) tea.Cmd {
 // - number of tasks due today
 //
 // Returns an error if the directory cannot be read or if a task cannot be parsed.
-func (p *Project) NumOfTasks() (int, int, int, error) {
-	root, err := os.OpenRoot(viper.GetString("storage.path"))
+func (p *Project) NumOfTasks(v *viper.Viper) (int, int, int, error) {
+	root, err := os.OpenRoot(v.GetString("storage.path"))
 	if err != nil {
 		panic(fmt.Errorf("could not open storage directory: %w", err))
 	}

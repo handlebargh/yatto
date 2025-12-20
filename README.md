@@ -18,16 +18,16 @@ task directory as a Git or Jujutsu repository for versioning, synchronization an
 - **TUI-based** interface powered by the Bubble Tea framework
 - **Local file storage**: Each task is stored as an individual JSON file for easy inspection and portability
 - **VCS integration**: Initializes a Git or Jujutsu repository in your task directory for:
-  - Full version history of all tasks
-  - Safe collaboration and backup
-  - Sync across machines
+    - Full version history of all tasks
+    - Safe collaboration and backup
+    - Sync across machines
 - Every change is immediately committed and - if a remote is configured - pushed.
 - Tasks are organized in **projects**
 - **Task attributes** include due dates and searchable labels.
 - Tasks can be:
-  - written in **markdown**
-  - **sorted** by author, assignee, due date and priority
-  - **marked** as in progress
+    - written in **markdown**
+    - **sorted** by author, assignee, due date and priority
+    - **marked** as in progress
 - **Non-interactive output**: Print all open tasks from any project
 - Supports **simple theme customization**
 
@@ -231,15 +231,17 @@ To set up a remote
 
 3. Enable remote in the config.
 
-   #### Git
+    #### Git
+
     ```toml
     [git.remote]
     enable = true
     url = <GIT_REMOTE_URL>
     ```
 
-   #### Jujutsu
-     ```toml
+    #### Jujutsu
+
+    ```toml
     [jj.remote]
     enable = true
     url = <GIT_REMOTE_URL>

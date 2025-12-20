@@ -30,12 +30,12 @@ import (
 
 // InitCmd returns the backend specific init command according
 // to configuration.
-func InitCmd() tea.Cmd {
-	switch viper.GetString("vcs.backend") {
+func InitCmd(v *viper.Viper) tea.Cmd {
+	switch v.GetString("vcs.backend") {
 	case "git":
-		return gitInitCmd()
+		return gitInitCmd(v)
 	case "jj":
-		return jjInitCmd()
+		return jjInitCmd(v)
 	default:
 		return nil
 	}
@@ -43,12 +43,12 @@ func InitCmd() tea.Cmd {
 
 // CommitCmd returns the backend specific commit command according
 // to configuration.
-func CommitCmd(message string, files ...string) tea.Cmd {
-	switch viper.GetString("vcs.backend") {
+func CommitCmd(v *viper.Viper, message string, files ...string) tea.Cmd {
+	switch v.GetString("vcs.backend") {
 	case "git":
-		return gitCommitCmd(message, files...)
+		return gitCommitCmd(v, message, files...)
 	case "jj":
-		return jjCommitCmd(message)
+		return jjCommitCmd(v, message)
 	default:
 		return nil
 	}
@@ -56,12 +56,12 @@ func CommitCmd(message string, files ...string) tea.Cmd {
 
 // PullCmd returns the backend specific pull/fetch command according
 // to configuration.
-func PullCmd() tea.Cmd {
-	switch viper.GetString("vcs.backend") {
+func PullCmd(v *viper.Viper) tea.Cmd {
+	switch v.GetString("vcs.backend") {
 	case "git":
-		return gitPullCmd()
+		return gitPullCmd(v)
 	case "jj":
-		return jjPullCmd()
+		return jjPullCmd(v)
 	default:
 		return nil
 	}
@@ -69,12 +69,12 @@ func PullCmd() tea.Cmd {
 
 // User returns the backend specific userEmail command according
 // to configuration.
-func User() (string, error) {
-	switch viper.GetString("vcs.backend") {
+func User(v *viper.Viper) (string, error) {
+	switch v.GetString("vcs.backend") {
 	case "git":
-		return gitUser()
+		return gitUser(v)
 	case "jj":
-		return jjUser()
+		return jjUser(v)
 	default:
 		return "", nil
 	}
@@ -82,12 +82,12 @@ func User() (string, error) {
 
 // AllContributors returns the backend specific
 // contributors command according to configuration.
-func AllContributors() ([]string, error) {
-	switch viper.GetString("vcs.backend") {
+func AllContributors(v *viper.Viper) ([]string, error) {
+	switch v.GetString("vcs.backend") {
 	case "git":
-		return gitContributors()
+		return gitContributors(v)
 	case "jj":
-		return jjContributors()
+		return jjContributors(v)
 	default:
 		return nil, nil
 	}

@@ -123,14 +123,10 @@ func newProjectFormModel(
 				Negative("No").
 				Value(&m.vars.confirm),
 		)).
-		WithWidth(45).
+		WithWidth(80).
 		WithShowHelp(false).
 		WithShowErrors(false).
 		WithTheme(colors.FormTheme())
-
-	// Workaround for a problem that prevents the form
-	// from being initially completely rendered.
-	m.form.PrevField()
 
 	return m
 }
@@ -187,7 +183,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		json := m.project.MarshalProject()
 		action := "create"
-		if storage.FileExists(m.project.ID) {
+		if storage.FileExists(m.listModel.config, m.project.ID) {
 			action = "update"
 		}
 
@@ -195,8 +191,9 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(
 			cmds,
 			m.listModel.spinner.Tick,
-			m.project.WriteProjectJSON(json, action),
+			m.project.WriteProjectJSON(m.listModel.config, json, action),
 			vcs.CommitCmd(
+				m.listModel.config,
 				fmt.Sprintf("%s: %s", action, m.project.Title),
 				filepath.Join(m.project.ID, "project.json"),
 			),

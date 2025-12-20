@@ -25,6 +25,7 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -40,12 +41,12 @@ import (
 // It deserializes each project's `project.json` file into an items.Project object.
 // Returns a slice of all successfully read projects.
 // Panics if the storage directory can't be read or if project files are invalid.
-func ReadProjectsFromFS() []items.Project {
-	root, err := os.OpenRoot(viper.GetString("storage.path"))
+func ReadProjectsFromFS(v *viper.Viper) []items.Project {
+	root, err := os.OpenRoot(v.GetString("storage.path"))
 	if err != nil {
 		panic(fmt.Errorf("could not open storage directory: %w", err))
 	}
-	defer root.Close() //nolint:errcheck
+	defer CloseWithErr(root, &err)
 
 	entries, err := fs.ReadDir(root.FS(), ".")
 	if err != nil {
@@ -89,12 +90,12 @@ func ReadProjectsFromFS() []items.Project {
 // If this invariant is violated (e.g., a file is unreadable or cannot be
 // parsed), the function will panic immediately rather than attempting to
 // recover.
-func AllLabels() map[string]int {
-	root, err := os.OpenRoot(viper.GetString("storage.path"))
+func AllLabels(v *viper.Viper) map[string]int {
+	root, err := os.OpenRoot(v.GetString("storage.path"))
 	if err != nil {
 		panic(fmt.Errorf("could not open storage directory: %w", err))
 	}
-	defer root.Close() //nolint:errcheck
+	defer CloseWithErr(root, &err)
 
 	// Store labels in a map and track their frequency.
 	labelCount := make(map[string]int)
@@ -127,7 +128,7 @@ func AllLabels() map[string]int {
 		return nil
 	})
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error walking storage dir %s: %v", viper.GetString("storage.path"), err))
+		panic(fmt.Sprintf("unexpected error walking storage dir %s: %v", v.GetString("storage.path"), err))
 	}
 
 	return labelCount
@@ -217,4 +218,13 @@ func AddAngleBracketsToEmail(s string) string {
 	}
 
 	return s[:start] + "<" + email + ">"
+}
+
+// CloseWithErr is a helper utility reduce boilerplate code
+// on closing resources.
+func CloseWithErr(c io.Closer, err *error) {
+	cErr := c.Close()
+	if *err == nil {
+		*err = cErr
+	}
 }

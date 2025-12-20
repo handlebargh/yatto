@@ -114,21 +114,21 @@ func TestValidateConfig(t *testing.T) {
 }
 
 func TestInitConfig(t *testing.T) {
-	viper.Reset()
+	v := viper.New()
 	homeDir := "/fake/home"
 	configPath := ""
 
-	InitConfig(homeDir, &configPath)
+	InitConfig(v, homeDir, &configPath)
 
-	assert.Equal(t, filepath.Join(homeDir, ".yatto"), viper.GetString("storage.path"))
-	assert.Equal(t, "git", viper.GetString("vcs.backend"))
-	assert.Equal(t, "main", viper.GetString("git.default_branch"))
-	assert.Equal(t, "Base16", viper.GetString("colors.form.theme"))
+	assert.Equal(t, filepath.Join(homeDir, ".yatto"), v.GetString("storage.path"))
+	assert.Equal(t, "git", v.GetString("vcs.backend"))
+	assert.Equal(t, "main", v.GetString("git.default_branch"))
+	assert.Equal(t, "Base16", v.GetString("colors.form.theme"))
 	assert.Equal(t, filepath.Join(homeDir, ".config", "yatto", "config.toml"), configPath)
 
 	// Test with explicit config path
-	viper.Reset()
+	v = viper.New()
 	explicitPath := "/my/config.toml"
-	InitConfig(homeDir, &explicitPath)
-	assert.Equal(t, explicitPath, viper.ConfigFileUsed())
+	InitConfig(v, homeDir, &explicitPath)
+	assert.Equal(t, explicitPath, v.ConfigFileUsed())
 }

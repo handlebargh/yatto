@@ -309,7 +309,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	}
 
 	// Assignee
-	me, _ := vcs.User()
+	me, _ := vcs.User(d.parent.projectModel.config)
 	if viper.GetBool("assignee.show") {
 		// Strip email address in list view.
 		assigneeSlice := strings.Split(taskItem.Assignee, " ")
@@ -348,26 +348,25 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 // taskListModel represents the Bubble Tea model for the task list view.
 type taskListModel struct {
-	list             list.Model
-	project          *items.Project
-	projectModel     *ProjectListModel
-	keys             *taskListKeyMap
-	mode             mode
-	cmdOutput        string
-	err              error
-	spinner          spinner.Model
-	spinning         bool
-	waitingAfterDone bool
-	status           string
-	width, height    int
-	selectedItems    map[int]*items.Task
+	list          list.Model
+	project       *items.Project
+	projectModel  *ProjectListModel
+	keys          *taskListKeyMap
+	mode          mode
+	cmdOutput     string
+	err           error
+	spinner       spinner.Model
+	spinning      bool
+	status        string
+	width, height int
+	selectedItems map[int]*items.Task
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
 func newTaskListModel(project *items.Project, projectModel *ProjectListModel) taskListModel {
 	listKeys := newTaskListKeyMap()
 
-	tasks := project.ReadTasksFromFS()
+	tasks := project.ReadTasksFromFS(projectModel.config)
 	var listItems []list.Item
 
 	for _, task := range tasks {
@@ -386,13 +385,12 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 	sp.Style = lipgloss.NewStyle().Foreground(colors.Orange())
 
 	m := taskListModel{
-		project:          project,
-		projectModel:     projectModel,
-		keys:             listKeys,
-		spinner:          sp,
-		spinning:         false,
-		waitingAfterDone: false,
-		selectedItems:    make(map[int]*items.Task),
+		project:       project,
+		projectModel:  projectModel,
+		keys:          listKeys,
+		spinner:       sp,
+		spinning:      false,
+		selectedItems: make(map[int]*items.Task),
 	}
 
 	itemList := list.New(
@@ -459,16 +457,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
-		if !m.waitingAfterDone {
-			// Return a timer command to keep displaying spinner for half a second.
-			return m, tea.Tick(time.Millisecond*500, func(_ time.Time) tea.Msg {
-				return doneWaitingMsg{}
-			})
-		}
-
 	case doneWaitingMsg:
 		m.spinning = false
-		m.waitingAfterDone = false
 		return m, nil
 
 	case vcs.CommitDoneMsg:
@@ -477,8 +467,6 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			delete(m.selectedItems, k)
 		}
 		m.status = "🗘  Changes committed"
-
-		m.waitingAfterDone = true
 
 		// Wait 1 second before fully stopping spinner
 		return m, tea.Tick(time.Second, func(time.Time) tea.Msg {
@@ -590,7 +578,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for _, item := range m.selectedItems {
 					taskNames = append(taskNames, item.Title)
 					taskPaths = append(taskPaths, filepath.Join(m.project.ID, item.ID+".json"))
-					deleteCmds = append(deleteCmds, item.DeleteTaskFromFS(*m.project))
+					deleteCmds = append(deleteCmds, item.DeleteTaskFromFS(m.projectModel.config, *m.project))
 				}
 
 				message := fmt.Sprintf("delete: %d task(s)\n\n- %s", len(taskNames), strings.Join(taskNames, "\n- "))
@@ -599,7 +587,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, deleteCmds...)
-				cmds = append(cmds, vcs.CommitCmd(message, taskPaths...))
+				cmds = append(cmds, vcs.CommitCmd(m.projectModel.config, message, taskPaths...))
 
 				m.status = ""
 				m.mode = modeNormal
@@ -628,19 +616,19 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.sortByPriority):
-				sortTasksByKeys(&m.list, []string{"state", "priority"})
+				m.sortTasksByKeys([]string{"state", "priority"})
 				return m, nil
 
 			case key.Matches(msg, m.keys.sortByDueDate):
-				sortTasksByKeys(&m.list, []string{"state", "dueDate"})
+				m.sortTasksByKeys([]string{"state", "dueDate"})
 				return m, nil
 
 			case key.Matches(msg, m.keys.sortByAuthor):
-				sortTasksByKeys(&m.list, []string{"state", "author", "dueDate", "priority"})
+				m.sortTasksByKeys([]string{"state", "author", "dueDate", "priority"})
 				return m, nil
 
 			case key.Matches(msg, m.keys.sortByAssignee):
-				sortTasksByKeys(&m.list, []string{"state", "assignee", "dueDate", "priority"})
+				m.sortTasksByKeys([]string{"state", "assignee", "dueDate", "priority"})
 				return m, nil
 
 			case key.Matches(msg, m.keys.chooseItem):
@@ -787,9 +775,9 @@ func (m taskListModel) View() string {
 
 // sortTasksByKey sorts the tasks in the list model by a specified keys.
 // Valid keys include "priority", "dueDate", and "state".
-func sortTasksByKeys(m *list.Model, keys []string) {
-	selected := m.SelectedItem()
-	listItems := m.Items()
+func (m *taskListModel) sortTasksByKeys(keys []string) {
+	selected := m.list.SelectedItem()
+	listItems := m.list.Items()
 
 	var tasks []*items.Task
 	for _, item := range listItems {
@@ -798,7 +786,7 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 		}
 	}
 
-	me, _ := vcs.User()
+	me, _ := vcs.User(m.projectModel.config)
 
 	slices.SortStableFunc(tasks, func(x, y *items.Task) int {
 		for _, k := range keys {
@@ -885,13 +873,13 @@ func sortTasksByKeys(m *list.Model, keys []string) {
 	for i, t := range tasks {
 		sortedItems[i] = t
 	}
-	m.SetItems(sortedItems)
+	m.list.SetItems(sortedItems)
 
 	// Reselect the previously selected task
 	if selectedTask, ok := selected.(*items.Task); ok {
 		for i, item := range sortedItems {
 			if task, ok := item.(*items.Task); ok && task.ID == selectedTask.ID {
-				m.Select(i)
+				m.list.Select(i)
 				break
 			}
 		}
@@ -942,7 +930,7 @@ func (m taskListModel) toggleTasks(
 
 		toggleFunc(t)
 		json := t.MarshalTask()
-		writeCmds = append(writeCmds, t.WriteTaskJSON(json, *m.project, commitKind(t)))
+		writeCmds = append(writeCmds, t.WriteTaskJSON(m.projectModel.config, json, *m.project, commitKind(t)))
 		taskPaths = append(taskPaths, filepath.Join(m.project.ID, t.ID+".json"))
 		taskNames = append(taskNames, t.Title)
 	}
@@ -954,7 +942,7 @@ func (m taskListModel) toggleTasks(
 
 	cmds = append(cmds, m.spinner.Tick)
 	cmds = append(cmds, writeCmds...)
-	cmds = append(cmds, vcs.CommitCmd(commitMsg, taskPaths...))
+	cmds = append(cmds, vcs.CommitCmd(m.projectModel.config, commitMsg, taskPaths...))
 
 	return m, cmds
 }

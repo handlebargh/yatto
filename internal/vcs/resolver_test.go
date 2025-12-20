@@ -32,56 +32,63 @@ import (
 
 func TestResolver(t *testing.T) {
 	t.Run("returns git commands when backend is git", func(t *testing.T) {
-		viper.Set("vcs.backend", "git")
-		assert.NotNil(t, InitCmd())
-		assert.NotNil(t, CommitCmd("test"))
-		assert.NotNil(t, PullCmd())
+		v := viper.New()
+		v.Set("vcs.backend", "git")
+		assert.NotNil(t, InitCmd(v))
+		assert.NotNil(t, CommitCmd(v, "test"))
+		assert.NotNil(t, PullCmd(v))
 	})
 
 	t.Run("returns jj commands when backend is jj", func(t *testing.T) {
-		viper.Set("vcs.backend", "jj")
-		assert.NotNil(t, InitCmd())
-		assert.NotNil(t, CommitCmd("test"))
-		assert.NotNil(t, PullCmd())
+		v := viper.New()
+		v.Set("vcs.backend", "jj")
+		assert.NotNil(t, InitCmd(v))
+		assert.NotNil(t, CommitCmd(v, "test"))
+		assert.NotNil(t, PullCmd(v))
 	})
 
 	t.Run("returns nil for unknown backend", func(t *testing.T) {
-		viper.Set("vcs.backend", "unknown")
-		assert.Nil(t, InitCmd())
-		assert.Nil(t, CommitCmd("test"))
-		assert.Nil(t, PullCmd())
+		v := viper.New()
+		v.Set("vcs.backend", "unknown")
+		assert.Nil(t, InitCmd(v))
+		assert.Nil(t, CommitCmd(v, "test"))
+		assert.Nil(t, PullCmd(v))
 	})
 
 	t.Run("User function resolves correctly", func(t *testing.T) {
 		// Git
-		viper.Set("vcs.backend", "git")
-		setupTestRepo(t)
-		user, err := User()
+		v := setupTestRepo(t)
+		v.Set("vcs.backend", "git")
+
+		user, err := User(v)
 		assert.NoError(t, err)
 		assert.Equal(t, "Test User <test@example.com>", user)
 
-		// Jj
-		viper.Set("vcs.backend", "jj")
-		setupJjTestRepo(t)
-		user, err = User()
+		// jj
+		v = setupJjTestRepo(t)
+		v.Set("vcs.backend", "jj")
+
+		user, err = User(v)
 		assert.NoError(t, err)
 		assert.Equal(t, "Test User <test@example.com>", user)
 	})
 
 	t.Run("AllContributors function resolves correctly", func(t *testing.T) {
 		// Git
-		viper.Set("vcs.backend", "git")
-		gitDir := setupTestRepo(t)
-		makeCommit(t, gitDir, "git", "Initial git commit")
-		contribs, err := AllContributors()
+		v := setupTestRepo(t)
+		v.Set("vcs.backend", "git")
+
+		makeCommit(t, v.GetString("storage.path"), "git", "Initial git commit")
+		contribs, err := AllContributors(v)
 		assert.NoError(t, err)
 		assert.Contains(t, contribs, "Test User <test@example.com>")
 
-		// Jj
-		viper.Set("vcs.backend", "jj")
-		jjDir := setupJjTestRepo(t)
-		makeCommit(t, jjDir, "jj", "Initial jj commit")
-		contribs, err = AllContributors()
+		// jj
+		v = setupJjTestRepo(t)
+		v.Set("vcs.backend", "jj")
+
+		makeCommit(t, v.GetString("storage.path"), "jj", "Initial jj commit")
+		contribs, err = AllContributors(v)
 		assert.NoError(t, err)
 		assert.Contains(t, contribs, "Test User <test@example.com>")
 	})

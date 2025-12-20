@@ -18,44 +18,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package cmd
+package e2e
 
 import (
-	"errors"
-	"os"
+	"testing"
+	"time"
 
-	"github.com/handlebargh/yatto/internal/config"
-	"github.com/spf13/cobra"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/spf13/viper"
 )
 
-// configCmd represents the config command
-var configCmd = &cobra.Command{
-	Use:   "config",
-	Short: "Manage configuration settings",
-	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
-		appCtx := &AppContext{viper.GetViper()}
+func TestE2E_AddAndEditTask(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  func(*testing.T) *viper.Viper
+	}{
+		{"git", setGitAppConfig},
+		{"jj", setJJAppConfig},
+	}
 
-		setCfg := config.Settings{
-			Viper:      appCtx.Viper,
-			ConfigPath: configPath,
-			Home:       homePath,
-			Input:      os.Stdin,
-			Output:     os.Stdout,
-			Exit:       os.Exit,
-		}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newE2E(t, tc.cfg(t))
 
-		if err := config.CreateConfigFile(setCfg); err != nil {
-			if errors.Is(err, config.ErrUserAborted) {
-				os.Exit(0)
-			}
-			return err
-		}
+			e.addTask("Test Task 1", "Test task 1 description")
+			e.editTask(" appended", " appended")
 
-		return nil
-	},
-}
+			e.tm.Send(tea.KeyMsg{
+				Type:  tea.KeyRunes,
+				Runes: []rune{'q'},
+			})
+			e.tm.Send(tea.KeyMsg{
+				Type:  tea.KeyRunes,
+				Runes: []rune{'q'},
+			})
 
-func init() {
-	rootCmd.AddCommand(configCmd)
+			e.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
+			out := e.tm.FinalModel(t).View()
+			teatest.RequireEqualOutput(t, []byte(out))
+		})
+	}
 }

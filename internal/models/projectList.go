@@ -37,6 +37,7 @@ import (
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/vcs"
+	"github.com/spf13/viper"
 )
 
 const projectDescLength = 100
@@ -173,7 +174,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	left.WriteString(indentation)
 	left.WriteString(listDescStyle.Render(projectItem.CropDescription(projectDescLength)))
 
-	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks()
+	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks(d.parent.config)
 	if err != nil {
 		m.NewStatusMessage(
 			lipgloss.NewStyle().Foreground(colors.Red()).Render(
@@ -220,29 +221,29 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 // ProjectListModel defines the TUI model used to
 // manage and interact with projects.
 type ProjectListModel struct {
-	list             list.Model
-	selected         bool
-	keys             *projectListKeyMap
-	mode             mode
-	cmdOutput        string
-	err              error
-	spinner          spinner.Model
-	spinning         bool
-	waitingAfterDone bool
-	status           string
-	width, height    int
-	selectedItems    map[int]*items.Project
+	config        *viper.Viper
+	list          list.Model
+	selected      bool
+	keys          *projectListKeyMap
+	mode          mode
+	cmdOutput     string
+	err           error
+	spinner       spinner.Model
+	spinning      bool
+	status        string
+	width, height int
+	selectedItems map[int]*items.Project
 
 	renderer *glamour.TermRenderer
 }
 
 // InitialProjectListModel returns an initialized projectListModel
 // with all necessary state and UI settings.
-func InitialProjectListModel() ProjectListModel {
+func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 	listKeys := newProjectListKeyMap()
 
 	// Read all projects from FS to populate project list.
-	projects := helpers.ReadProjectsFromFS()
+	projects := helpers.ReadProjectsFromFS(v)
 	var listItems []list.Item
 
 	for _, project := range projects {
@@ -255,11 +256,11 @@ func InitialProjectListModel() ProjectListModel {
 	sp.Style = lipgloss.NewStyle().Foreground(colors.Orange())
 
 	m := ProjectListModel{
-		keys:             listKeys,
-		spinner:          sp,
-		spinning:         false,
-		waitingAfterDone: false,
-		selectedItems:    selectedItems,
+		config:        v,
+		keys:          listKeys,
+		spinner:       sp,
+		spinning:      false,
+		selectedItems: selectedItems,
 	}
 
 	itemList := list.New(
@@ -315,7 +316,7 @@ func InitialProjectListModel() ProjectListModel {
 // for the project list model.
 func (m ProjectListModel) Init() tea.Cmd {
 	return tea.Batch(
-		vcs.InitCmd(),
+		vcs.InitCmd(m.config),
 	)
 }
 
@@ -332,16 +333,8 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
-		if !m.waitingAfterDone {
-			// Return a timer command to keep displaying spinner for half a second.
-			return m, tea.Tick(time.Millisecond*500, func(_ time.Time) tea.Msg {
-				return doneWaitingMsg{}
-			})
-		}
-
 	case doneWaitingMsg:
 		m.spinning = false
-		m.waitingAfterDone = false
 		return m, nil
 
 	case vcs.InitDoneMsg:
@@ -358,8 +351,6 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			delete(m.selectedItems, k)
 		}
 		m.status = "🗘  Changes committed"
-
-		m.waitingAfterDone = true
 
 		// Wait 1 second before fully stopping spinner
 		return m, tea.Tick(time.Second, func(time.Time) tea.Msg {
@@ -458,7 +449,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for _, item := range m.selectedItems {
 					projectNames = append(projectNames, item.Title)
 					projectPaths = append(projectPaths, item.ID)
-					deleteCmds = append(deleteCmds, item.DeleteProjectFromFS())
+					deleteCmds = append(deleteCmds, item.DeleteProjectFromFS(m.config))
 				}
 
 				message := fmt.Sprintf("delete: %d project(s)\n\n- %s", len(projectNames), strings.Join(projectNames, "\n- "))
@@ -467,7 +458,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				cmds = append(cmds, m.spinner.Tick)
 				cmds = append(cmds, deleteCmds...)
-				cmds = append(cmds, vcs.CommitCmd(message, projectPaths...))
+				cmds = append(cmds, vcs.CommitCmd(m.config, message, projectPaths...))
 
 				m.status = ""
 
