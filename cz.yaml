@@ -4,5 +4,5 @@ commitizen:
   name: cz_conventional_commits
   tag_format: v$version
   update_changelog_on_bump: true
-  version: 0.21.7
+  version: 0.21.8
   version_scheme: semver

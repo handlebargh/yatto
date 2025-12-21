@@ -1,3 +1,16 @@
+## v0.21.8 (2025-12-21)
+
+### Fix
+
+- use stable identifier for selected items
+- solve selection indentation issue and make UI scale with terminal width
+
+### Refactor
+
+- use a huh form for init dialog
+- change colors and add the TLD
+- improve initialization dialog
+
 ## v0.21.7 (2025-11-17)
 
 ### Fix
