@@ -195,7 +195,6 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		MarginLeft(indent)
 
 	authorStyle := lipgloss.NewStyle().
-		Width(leftWidth-indent).
 		Padding(0, 1).
 		MarginLeft(indent)
 
