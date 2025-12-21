@@ -40,7 +40,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const projectDescLength = 100
+const projectDescLength = 200
 
 // projectListKeyMap defines the key bindings
 // used in the project list UI model.
@@ -125,45 +125,47 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 
 	color := helpers.GetColorCode(projectItem.Color)
 
-	// Base styles.
-	listTitleStyle := lipgloss.NewStyle().
-		Foreground(color).
-		Padding(0, 1).
-		Width(60)
-
-	listDescStyle := lipgloss.NewStyle().
-		Padding(0, 1).
-		Width(60).
-		Height(2)
-
-	listItemInfoStyle := lipgloss.NewStyle().
-		Align(lipgloss.Right)
-
-	if index == m.GlobalIndex() {
-		listTitleStyle = listTitleStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(color).
-			MarginLeft(0)
-		listDescStyle = listDescStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(color).
-			MarginLeft(0)
-
-	} else {
-		listTitleStyle = listTitleStyle.MarginLeft(1)
-		listDescStyle = listDescStyle.MarginLeft(1)
-	}
+	availableWidth := max(m.Width(), 40)
+	leftWidth := max(availableWidth-40, 20)
 
 	// Check if item is selected
 	_, selected := d.parent.selectedItems[index]
 
 	marker := ""
-	indentation := ""
+	indent := 0
 	if selected {
 		marker = lipgloss.NewStyle().
 			Foreground(colors.Red()).
 			Render("⟹  ")
-		indentation = "   "
+		indent = 3
+	}
+
+	// Base styles.
+	listTitleStyle := lipgloss.NewStyle().
+		Foreground(color).
+		Padding(0, 1).
+		Width(leftWidth - indent)
+
+	listDescStyle := lipgloss.NewStyle().
+		Padding(0, 1).
+		MarginLeft(indent).
+		Width(leftWidth - indent).
+		Height(2)
+
+	listItemInfoStyle := lipgloss.NewStyle().
+		Width(40)
+
+	if index == m.GlobalIndex() {
+		listTitleStyle = listTitleStyle.
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			BorderForeground(color)
+		listDescStyle = listDescStyle.
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			BorderForeground(color)
+
+	} else if !selected {
+		listTitleStyle = listTitleStyle.MarginLeft(1)
+		listDescStyle = listDescStyle.MarginLeft(1)
 	}
 
 	var left strings.Builder
@@ -171,7 +173,6 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	left.WriteString(marker)
 	left.WriteString(listTitleStyle.Render(projectItem.Title))
 	left.WriteString("\n")
-	left.WriteString(indentation)
 	left.WriteString(listDescStyle.Render(projectItem.CropDescription(projectDescLength)))
 
 	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks(d.parent.config)
@@ -207,10 +208,15 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	right.WriteString("\n")
 	right.WriteString(taskDueMessage)
 
-	row := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Render(left.String()),
-		right.String(),
-	)
+	row := lipgloss.NewStyle().
+		Width(availableWidth).
+		Render(
+			lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				left.String(),
+				listItemInfoStyle.Render(right.String()),
+			),
+		)
 
 	_, err = fmt.Fprint(w, row)
 	if err != nil {

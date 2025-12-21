@@ -168,17 +168,36 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		return
 	}
 
+	availableWidth := max(m.Width(), 40)
+	leftWidth := max(availableWidth-40, 20)
+
+	// Check if item is selected
+	_, selected := d.parent.selectedItems[index]
+
+	marker := ""
+	indent := 0
+	if selected {
+		marker = lipgloss.NewStyle().
+			Foreground(colors.Red()).
+			Render("⟹  ")
+		indent = 3
+	}
+
 	// Base styles.
 	titleStyle := lipgloss.NewStyle().
-		Padding(0, 1).
-		Width(60)
+		Width(leftWidth-indent).
+		Padding(0, 1)
 
 	labelsStyle := lipgloss.NewStyle().
 		Foreground(colors.Blue()).
-		Padding(0, 1)
+		Width(leftWidth-indent).
+		Padding(0, 1).
+		MarginLeft(indent)
 
 	authorStyle := lipgloss.NewStyle().
-		Padding(0, 1)
+		Width(leftWidth-indent).
+		Padding(0, 1).
+		MarginLeft(indent)
 
 	priorityValueStyle := lipgloss.NewStyle().
 		Foreground(colors.BadgeText()).
@@ -207,30 +226,15 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	if index == m.Index() {
 		titleStyle = titleStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			MarginLeft(0)
+			Border(lipgloss.NormalBorder(), false, false, false, true)
 		labelsStyle = labelsStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			MarginLeft(0)
+			Border(lipgloss.NormalBorder(), false, false, false, true)
 		authorStyle = authorStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			MarginLeft(0)
-	} else {
+			Border(lipgloss.NormalBorder(), false, false, false, true)
+	} else if !selected {
 		titleStyle = titleStyle.MarginLeft(1)
 		labelsStyle = labelsStyle.MarginLeft(1)
 		authorStyle = authorStyle.MarginLeft(1)
-	}
-
-	// Check if item is selected
-	_, selected := d.parent.selectedItems[index]
-
-	marker := ""
-	indentation := ""
-	if selected {
-		marker = lipgloss.NewStyle().
-			Foreground(colors.Red()).
-			Render("⟹  ")
-		indentation = "   "
 	}
 
 	var left strings.Builder
@@ -246,14 +250,12 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		authorString := strings.Join(authorSlice[:len(authorSlice)-1], " ")
 
 		left.WriteString("\n")
-		left.WriteString(indentation)
 		left.WriteString(authorStyle.Render("Author: "))
 		left.WriteString(authorString)
 	}
 
 	// Labels
 	left.WriteString("\n")
-	left.WriteString(indentation)
 	left.WriteString(labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength)))
 
 	var right strings.Builder
