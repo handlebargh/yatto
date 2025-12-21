@@ -1,39 +1,47 @@
 # yatto
 
+**A Git-backed terminal task manager with full history, sync, and collaboration built in.**
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/handlebargh/yatto)](https://goreportcard.com/report/github.com/handlebargh/yatto)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/handlebargh/yatto)](https://github.com/handlebargh/yatto/blob/main/go.mod)
 [![Release](https://img.shields.io/github/v/release/handlebargh/yatto)](https://github.com/handlebargh/yatto/releases)
 [![CI](https://github.com/handlebargh/yatto/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
-[![codecov](https://codecov.io/gh/handlebargh/yatto/branch/main/graph/badge.svg?token=<TOKEN>&threshold=80&style=flat-square)](https://codecov.io/gh/handlebargh/yatto)
+[![codecov](https://codecov.io/gh/handlebargh/yatto/branch/main/graph/badge.svg?threshold=80&style=flat-square)](https://codecov.io/gh/handlebargh/yatto)
 
-**yatto** is a terminal-based to-do application built with
-[Bubble Tea](https://github.com/charmbracelet/bubbletea). It stores each task as
-a separate JSON file on your filesystem and manages the
-task directory as a Git or Jujutsu repository for versioning, synchronization and collaboration.
+**yatto** is a terminal-first to-do application that stores each task as a plain JSON file
+and manages your task directory as a Git or Jujutsu repository.
+
+Every change is versioned. Collaboration and sync come for free.
+Your tasks remain transparent, portable, and fully under your control.
 
 <img alt="yatto demo" src="docs/demo.gif" />
 
+## Why yatto?
+
+- **Versioned by default** — every change is committed automatically
+- **Uses standard VCS remotes** — GitHub, GitLab, self-hosted, etc.
+- **Plain files, no lock-in** — inspect, edit, or script tasks with standard tools
+- **Terminal-native** — fast, keyboard-driven, and scriptable
+- **Offline-first** — works anywhere your VCS does
+
 ## Features
 
-- **TUI-based** interface powered by the Bubble Tea framework
-- **Local file storage**: Each task is stored as an individual JSON file for easy inspection and portability
-- **VCS integration**: Initializes a Git or Jujutsu repository in your task directory for:
-    - Full version history of all tasks
-    - Safe collaboration and backup
-    - Sync across machines
-- Every change is immediately committed and - if a remote is configured - pushed.
-- Tasks are organized in **projects**
-- **Task attributes** include due dates and searchable labels.
-- Tasks can be:
-    - written in **markdown**
-    - **sorted** by author, assignee, due date and priority
-    - **marked** as in progress
-- **Non-interactive output**: Print all open tasks from any project
-- Supports **simple theme customization**
-
-## Roadmap
-
-- **Sub-tasks**: Create tasks associated with a parent task.
+- TUI interface powered by [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+- Local file storage (one JSON file per task)
+- Git or Jujutsu integration:
+    - full task history
+    - safe backup
+    - multi-machine sync
+- Automatic commit on every change (optional auto-push)
+- Project-based task organization
+- Task attributes:
+    - due dates
+    - labels (searchable)
+    - priority
+    - author / assignee
+- Markdown support for task descriptions
+- Non-interactive output (`yatto print`) for scripting and dashboards
+- Simple theme and color customization
 
 ## Requirements
 
