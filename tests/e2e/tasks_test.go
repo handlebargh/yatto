@@ -29,7 +29,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestE2E_AddAndEditTask(t *testing.T) {
+func TestE2E_AddEditDeleteTask(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name string
 		cfg  func(*testing.T) *viper.Viper
@@ -42,8 +44,9 @@ func TestE2E_AddAndEditTask(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newE2E(t, tc.cfg(t))
 
-			e.addTask("Test Task 1", "Test task 1 description")
-			e.editTask(" appended", " appended")
+			e.addTask("Test Task 1", "Test task 1 description", []string{"1 task", "Test Task 1"})
+			e.editTask(" edited", " edited", []string{"1 task", "Test Task 1 edited"})
+			e.deleteTask("Test Task 1 edited", []string{"Test Task 1 edited"}, []string{"No tasks"})
 
 			e.tm.Send(tea.KeyMsg{
 				Type:  tea.KeyRunes,

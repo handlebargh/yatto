@@ -117,7 +117,7 @@ func (e *e2e) enterProject(title string) {
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 }
 
-func (e *e2e) addProject(title, desc string) {
+func (e *e2e) addProject(title, desc string, present []string) {
 	e.t.Helper()
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
@@ -127,10 +127,10 @@ func (e *e2e) addProject(title, desc string) {
 	e.confirmField("Enter a description", desc)
 	e.confirmField("Create new project?", "y")
 
-	e.waitForMessagesPresent([]string{"Projects", title})
+	e.waitForMessagesPresent(present)
 }
 
-func (e *e2e) editProject(title, appendText string) {
+func (e *e2e) editProject(title, appendText string, present []string) {
 	e.t.Helper()
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
@@ -140,10 +140,10 @@ func (e *e2e) editProject(title, appendText string) {
 	e.confirmField("Enter a description", "")
 	e.confirmField("Edit project?", "y")
 
-	e.waitForMessagesPresent([]string{"Projects", title + appendText})
+	e.waitForMessagesPresent(present)
 }
 
-func (e *e2e) deleteProject(title string) {
+func (e *e2e) deleteProject(title string, gone, present []string) {
 	e.t.Helper()
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
@@ -156,13 +156,13 @@ func (e *e2e) deleteProject(title string) {
 	e.waitForMessagesPresent([]string{"Delete 1 project"})
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 
-	e.waitForMessageGone([]string{title}, []string{"No projects"})
+	e.waitForMessageGone(gone, present)
 }
 
-func (e *e2e) addTask(title, desc string) {
+func (e *e2e) addTask(title, desc string, present []string) {
 	e.t.Helper()
 
-	e.addProject("Test1", "Desc1")
+	e.addProject("Test1", "Desc1", []string{"Test1", "Projects"})
 	e.enterProject("Test1")
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}}) // Open task creation form
@@ -178,10 +178,10 @@ func (e *e2e) addTask(title, desc string) {
 	e.confirmField("Enter a new email address", "")
 	e.confirmField("Create task?", "y")
 
-	e.waitForMessagesPresent([]string{"1 task", title})
+	e.waitForMessagesPresent(present)
 }
 
-func (e *e2e) editTask(appendTitle, appendDesc string) {
+func (e *e2e) editTask(appendTitle, appendDesc string, present []string) {
 	e.t.Helper()
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}}) // Open task editing form
@@ -197,7 +197,23 @@ func (e *e2e) editTask(appendTitle, appendDesc string) {
 	e.confirmField("Enter a new email address", "")
 	e.confirmField("Edit task?", "y")
 
-	e.waitForMessagesPresent([]string{"1 task", appendTitle})
+	e.waitForMessagesPresent(present)
+}
+
+func (e *e2e) deleteTask(title string, gone, present []string) {
+	e.t.Helper()
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	e.confirmField("Filter", title)
+	e.waitForMessagesPresent([]string{title})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
+
+	e.waitForMessagesPresent([]string{"⟹"})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
+	e.waitForMessagesPresent([]string{"Delete 1 task"})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+
+	e.waitForMessageGone(gone, present)
 }
 
 // setGitAppConfig initializes a fresh git repo for testing and sets the viper
