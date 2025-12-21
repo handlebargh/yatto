@@ -30,8 +30,6 @@ import (
 )
 
 func TestE2E_AddEditDeleteProject(t *testing.T) {
-	t.Parallel()
-
 	cases := []struct {
 		name   string
 		title  string
@@ -57,8 +55,6 @@ func TestE2E_AddEditDeleteProject(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			e := newE2E(t, tc.cfg(t))
 
 			e.addProject(

@@ -36,7 +36,7 @@ test:
 test-cover:
     #!/usr/bin/env bash
     echo 'Generating coverage report...'
-    go test -covermode=count -coverprofile coverage.out ./...
+    go test -coverpkg=./internal/...,./cmd/... -covermode=count -coverprofile coverage.out ./...
     go tool cover -html coverage.out -o coverage.html
     if command -v open >/dev/null 2>&1; then
         open coverage.html

@@ -64,7 +64,7 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: '-no-fail -fmt sarif -out results.sarif ./...'
+          args: "-no-fail -fmt sarif -out results.sarif ./..."
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v4
@@ -95,7 +95,7 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.txt ./...
+        run: go test -v -race -coverprofile=coverage.txt -coverpkg=./internal/...,./cmd/... ./...
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5

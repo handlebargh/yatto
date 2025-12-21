@@ -30,8 +30,6 @@ import (
 )
 
 func TestE2E_AddEditDeleteTask(t *testing.T) {
-	t.Parallel()
-
 	cases := []struct {
 		name         string
 		projectTitle string
@@ -63,8 +61,6 @@ func TestE2E_AddEditDeleteTask(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			e := newE2E(t, tc.cfg(t))
 
 			// First create and enter a new project.
