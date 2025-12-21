@@ -41,20 +41,24 @@ func TestE2E_AddEditDeleteTask(t *testing.T) {
 		append       string
 		cfg          func(*testing.T) *viper.Viper
 	}{
-		{"git",
+		{
+			"git",
 			"TestProject",
 			"Test project description",
 			"TestTask",
 			"Test task description",
 			"-edited",
-			setGitAppConfig},
-		{"jj",
+			setGitAppConfig,
+		},
+		{
+			"jj",
 			"TestProject",
 			"Test project description",
 			"TestTask",
 			"Test task description",
 			"-edited",
-			setJJAppConfig},
+			setJJAppConfig,
+		},
 	}
 
 	for _, tc := range cases {

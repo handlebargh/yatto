@@ -125,7 +125,7 @@ func (e *e2e) chooseItem(title string, selectItem bool) {
 	}
 }
 
-func (e *e2e) deleteItems(kind string, title []string, gone, present []string) {
+func (e *e2e) deleteItems(kind string, title, gone, present []string) {
 	e.t.Helper()
 
 	for _, item := range title {

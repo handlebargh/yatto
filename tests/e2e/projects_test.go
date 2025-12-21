@@ -39,16 +39,20 @@ func TestE2E_AddEditDeleteProject(t *testing.T) {
 		append string
 		cfg    func(*testing.T) *viper.Viper
 	}{
-		{"git",
+		{
+			"git",
 			"TestProject",
 			"This is a test project",
 			"-edited",
-			setGitAppConfig},
-		{"jj",
+			setGitAppConfig,
+		},
+		{
+			"jj",
 			"TestProject",
 			"This is a test project",
 			"-edited",
-			setJJAppConfig},
+			setJJAppConfig,
+		},
 	}
 
 	for _, tc := range cases {
