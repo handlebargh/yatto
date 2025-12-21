@@ -114,8 +114,10 @@ func (e *e2e) confirmField(label, value string) {
 
 func (e *e2e) chooseItem(title string, selectItem bool) {
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
-	e.confirmField("Filter", title)
+	e.waitForMessagesPresent([]string{"Filter"})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(title)})
 	e.waitForMessagesPresent([]string{title})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 	if selectItem {
 		e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
@@ -131,7 +133,7 @@ func (e *e2e) deleteItems(kind string, title []string, gone, present []string) {
 	}
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
-	e.waitForMessagesPresent([]string{"Delete" + strconv.Itoa(len(title)) + kind})
+	e.waitForMessagesPresent([]string{"Delete " + strconv.Itoa(len(title)) + " " + kind})
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 
 	e.waitForMessageGone(gone, present)

@@ -40,24 +40,39 @@ func TestE2E_AddEditDeleteProject(t *testing.T) {
 		cfg    func(*testing.T) *viper.Viper
 	}{
 		{"git",
-			"Test Project",
+			"TestProject",
 			"This is a test project",
-			" edited",
+			"-edited",
 			setGitAppConfig},
 		{"jj",
-			"Test Project",
+			"TestProject",
 			"This is a test project",
-			" edited",
+			"-edited",
 			setJJAppConfig},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			e := newE2E(t, tc.cfg(t))
 
-			e.addProject(tc.title, tc.desc, []string{"Projects", tc.title})
-			e.editProject(tc.title, tc.append, []string{"Projects", tc.title + tc.append})
-			e.deleteItems("project", []string{tc.title + tc.append}, []string{tc.title + tc.append}, []string{"No projects"})
+			e.addProject(
+				tc.title,
+				tc.desc,
+				[]string{"1 project", tc.title},
+			)
+			e.editProject(
+				tc.title,
+				tc.append,
+				[]string{"1 project", tc.title + tc.append},
+			)
+			e.deleteItems(
+				"project",
+				[]string{tc.title + tc.append},
+				[]string{tc.title + tc.append},
+				[]string{"No projects"},
+			)
 
 			e.tm.Send(tea.KeyMsg{
 				Type:  tea.KeyRunes,
