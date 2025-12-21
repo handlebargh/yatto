@@ -172,7 +172,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	leftWidth := max(availableWidth-40, 20)
 
 	// Check if item is selected
-	_, selected := d.parent.selectedItems[index]
+	_, selected := d.parent.selectedItems[taskItem.ID]
 
 	marker := ""
 	indent := 0
@@ -361,7 +361,7 @@ type taskListModel struct {
 	spinning      bool
 	status        string
 	width, height int
-	selectedItems map[int]*items.Task
+	selectedItems map[string]*items.Task
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
@@ -392,7 +392,7 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 		keys:          listKeys,
 		spinner:       sp,
 		spinning:      false,
-		selectedItems: make(map[int]*items.Task),
+		selectedItems: make(map[string]*items.Task),
 	}
 
 	itemList := list.New(
@@ -709,12 +709,11 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.toggleSelect):
 				if m.list.SelectedItem() != nil {
 					t := m.list.SelectedItem().(*items.Task)
-					i := m.list.GlobalIndex()
 
-					if _, ok := m.selectedItems[i]; ok {
-						delete(m.selectedItems, i)
+					if _, ok := m.selectedItems[t.ID]; ok {
+						delete(m.selectedItems, t.ID)
 					} else {
-						m.selectedItems[i] = t
+						m.selectedItems[t.ID] = t
 					}
 					return m, nil
 				}

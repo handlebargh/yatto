@@ -129,7 +129,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	leftWidth := max(availableWidth-40, 20)
 
 	// Check if item is selected
-	_, selected := d.parent.selectedItems[index]
+	_, selected := d.parent.selectedItems[projectItem.ID]
 
 	marker := ""
 	indent := 0
@@ -238,7 +238,7 @@ type ProjectListModel struct {
 	spinning      bool
 	status        string
 	width, height int
-	selectedItems map[int]*items.Project
+	selectedItems map[string]*items.Project
 
 	renderer *glamour.TermRenderer
 }
@@ -256,7 +256,6 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 		listItems = append(listItems, &project)
 	}
 
-	selectedItems := make(map[int]*items.Project)
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
 	sp.Style = lipgloss.NewStyle().Foreground(colors.Orange())
@@ -266,7 +265,7 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 		keys:          listKeys,
 		spinner:       sp,
 		spinning:      false,
-		selectedItems: selectedItems,
+		selectedItems: make(map[string]*items.Project),
 	}
 
 	itemList := list.New(
@@ -532,12 +531,11 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.toggleSelect):
 				if m.list.SelectedItem() != nil {
 					p := m.list.SelectedItem().(*items.Project)
-					i := m.list.GlobalIndex()
 
-					if _, ok := m.selectedItems[i]; ok {
-						delete(m.selectedItems, i)
+					if _, ok := m.selectedItems[p.ID]; ok {
+						delete(m.selectedItems, p.ID)
 					} else {
-						m.selectedItems[i] = p
+						m.selectedItems[p.ID] = p
 					}
 					return m, nil
 				}

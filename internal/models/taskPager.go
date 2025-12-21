@@ -172,9 +172,8 @@ func (m taskPagerModel) toggleSelectedTask(
 
 	if selected := m.listModel.list.SelectedItem(); selected != nil {
 		t := selected.(*items.Task)
-		i := m.listModel.list.GlobalIndex()
 
-		m.listModel.selectedItems[i] = t
+		m.listModel.selectedItems[t.ID] = t
 
 		var toggleCmds []tea.Cmd
 		listModel, toggleCmds = m.listModel.toggleTasks(
@@ -184,7 +183,7 @@ func (m taskPagerModel) toggleSelectedTask(
 			actionName,
 		)
 
-		delete(m.listModel.selectedItems, i)
+		delete(m.listModel.selectedItems, t.ID)
 		cmds = append(cmds, toggleCmds...)
 	}
 
