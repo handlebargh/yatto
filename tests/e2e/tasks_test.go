@@ -33,20 +33,43 @@ func TestE2E_AddEditDeleteTask(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name string
-		cfg  func(*testing.T) *viper.Viper
+		name         string
+		projectTitle string
+		projectDesc  string
+		taskTitle    string
+		taskDesc     string
+		append       string
+		cfg          func(*testing.T) *viper.Viper
 	}{
-		{"git", setGitAppConfig},
-		{"jj", setJJAppConfig},
+		{"git",
+			"Test1",
+			"Desc1",
+			"Test task 1",
+			"Test task 1 description",
+			" edited",
+			setGitAppConfig},
+		{"jj",
+			"Test1",
+			"Desc1",
+			"Test task 1",
+			"Test task 1 description",
+			" edited",
+			setJJAppConfig},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newE2E(t, tc.cfg(t))
 
-			e.addTask("Test Task 1", "Test task 1 description", []string{"1 task", "Test Task 1"})
-			e.editTask(" edited", " edited", []string{"1 task", "Test Task 1 edited"})
-			e.deleteTask("Test Task 1 edited", []string{"Test Task 1 edited"}, []string{"No tasks"})
+			// First create and enter a new project.
+			e.addProject(tc.projectTitle, tc.projectDesc, []string{tc.projectTitle, "Projects"})
+			e.chooseItem(tc.projectTitle, false)
+			e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+			// Then run the actual test.
+			e.addTask(tc.taskTitle, tc.taskDesc, []string{"1 task", tc.taskTitle})
+			e.editTask(tc.taskTitle, tc.append, tc.append, []string{"1 task", tc.taskTitle + tc.append})
+			e.deleteItems("task", []string{tc.taskTitle + tc.append}, []string{tc.taskTitle + tc.append}, []string{"No tasks"})
 
 			e.tm.Send(tea.KeyMsg{
 				Type:  tea.KeyRunes,

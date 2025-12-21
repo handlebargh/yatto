@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -111,10 +112,29 @@ func (e *e2e) confirmField(label, value string) {
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 }
 
-func (e *e2e) enterProject(title string) {
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/" + title)})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+func (e *e2e) chooseItem(title string, selectItem bool) {
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	e.confirmField("Filter", title)
+	e.waitForMessagesPresent([]string{title})
+
+	if selectItem {
+		e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
+		e.waitForMessagesPresent([]string{"⟹"})
+	}
+}
+
+func (e *e2e) deleteItems(kind string, title []string, gone, present []string) {
+	e.t.Helper()
+
+	for _, item := range title {
+		e.chooseItem(item, true)
+	}
+
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
+	e.waitForMessagesPresent([]string{"Delete" + strconv.Itoa(len(title)) + kind})
+	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+
+	e.waitForMessageGone(gone, present)
 }
 
 func (e *e2e) addProject(title, desc string, present []string) {
@@ -133,6 +153,8 @@ func (e *e2e) addProject(title, desc string, present []string) {
 func (e *e2e) editProject(title, appendText string, present []string) {
 	e.t.Helper()
 
+	e.chooseItem(title, false)
+
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 
 	e.confirmField("Select a color", "")
@@ -143,27 +165,8 @@ func (e *e2e) editProject(title, appendText string, present []string) {
 	e.waitForMessagesPresent(present)
 }
 
-func (e *e2e) deleteProject(title string, gone, present []string) {
-	e.t.Helper()
-
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
-	e.confirmField("Filter", title)
-	e.waitForMessagesPresent([]string{title})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
-
-	e.waitForMessagesPresent([]string{"⟹"})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
-	e.waitForMessagesPresent([]string{"Delete 1 project"})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	e.waitForMessageGone(gone, present)
-}
-
 func (e *e2e) addTask(title, desc string, present []string) {
 	e.t.Helper()
-
-	e.addProject("Test1", "Desc1", []string{"Test1", "Projects"})
-	e.enterProject("Test1")
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}}) // Open task creation form
 
@@ -181,8 +184,10 @@ func (e *e2e) addTask(title, desc string, present []string) {
 	e.waitForMessagesPresent(present)
 }
 
-func (e *e2e) editTask(appendTitle, appendDesc string, present []string) {
+func (e *e2e) editTask(title, appendTitle, appendDesc string, present []string) {
 	e.t.Helper()
+
+	e.chooseItem(title, false)
 
 	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}}) // Open task editing form
 
@@ -198,22 +203,6 @@ func (e *e2e) editTask(appendTitle, appendDesc string, present []string) {
 	e.confirmField("Edit task?", "y")
 
 	e.waitForMessagesPresent(present)
-}
-
-func (e *e2e) deleteTask(title string, gone, present []string) {
-	e.t.Helper()
-
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
-	e.confirmField("Filter", title)
-	e.waitForMessagesPresent([]string{title})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
-
-	e.waitForMessagesPresent([]string{"⟹"})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
-	e.waitForMessagesPresent([]string{"Delete 1 task"})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	e.waitForMessageGone(gone, present)
 }
 
 // setGitAppConfig initializes a fresh git repo for testing and sets the viper
