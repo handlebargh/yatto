@@ -18,11 +18,11 @@ Your tasks remain transparent, portable, and fully under your control.
 
 ## Why yatto?
 
-- **Versioned by default** — every change is committed automatically
-- **Uses standard VCS remotes** — GitHub, GitLab, self-hosted, etc.
-- **Plain files, no lock-in** — inspect, edit, or script tasks with standard tools
-- **Terminal-native** — fast, keyboard-driven, and scriptable
-- **Offline-first** — works anywhere your VCS does
+- **Versioned by default** - every change is committed automatically
+- **Uses standard VCS remotes** - GitHub, GitLab, self-hosted, etc.
+- **Plain files, no lock-in** - inspect, edit, or script tasks with standard tools
+- **Terminal-native** - fast, keyboard-driven, and scriptable
+- **Offline-first** - works anywhere your VCS does
 
 ## Features
 
@@ -36,7 +36,7 @@ Your tasks remain transparent, portable, and fully under your control.
 - Project-based task organization
 - Task attributes:
     - due dates
-    - labels (searchable)
+    - labels
     - priority
     - author / assignee
 - Markdown support for task descriptions
