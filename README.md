@@ -11,7 +11,7 @@
 **yatto** is a terminal-first to-do application that stores each task as a plain JSON file
 and manages your task directory as a Git or Jujutsu repository.
 
-Every change is versioned. Collaboration and sync come for free.
+Every change is versioned. Collaboration and sync come with your version control system.
 Your tasks remain transparent, portable, and fully under your control.
 
 <img alt="yatto demo" src="docs/demo.gif" />
@@ -21,7 +21,7 @@ Your tasks remain transparent, portable, and fully under your control.
 - **Versioned by default** - every change is committed automatically
 - **Uses standard VCS remotes** - GitHub, GitLab, self-hosted, etc.
 - **Plain files, no lock-in** - inspect, edit, or script tasks with standard tools
-- **Terminal-native** - fast, keyboard-driven, and scriptable
+- **Terminal-native** - fast, keyboard-driven navigation
 - **Offline-first** - works anywhere your VCS does
 
 ## Features
@@ -40,7 +40,7 @@ Your tasks remain transparent, portable, and fully under your control.
     - priority
     - author / assignee
 - Markdown support for task descriptions
-- Non-interactive output (`yatto print`) for scripting and dashboards
+- Non-interactive output (`yatto print`) for simple dashboards
 - Simple theme and color customization
 
 ## Requirements
