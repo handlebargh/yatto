@@ -100,12 +100,14 @@ var rootCmd = &cobra.Command{
 		if (appConfig.Viper.GetString("vcs.backend") == "git" && appConfig.Viper.GetBool("git.remote.enable")) ||
 			(appConfig.Viper.GetString("vcs.backend") == "jj" && appConfig.Viper.GetBool("jj.remote.enable")) {
 
-			if _, err := tea.NewProgram(fetchmodel.NewFetchModel(appConfig.Viper), tea.WithAltScreen()).Run(); err != nil {
+			if _, err := tea.NewProgram(fetchmodel.NewFetchModel(appConfig.Viper), tea.WithAltScreen()).
+				Run(); err != nil {
 				return err
 			}
 		}
 
-		if _, err := tea.NewProgram(models.InitialProjectListModel(appConfig.Viper), tea.WithAltScreen()).Run(); err != nil {
+		if _, err := tea.NewProgram(models.InitialProjectListModel(appConfig.Viper), tea.WithAltScreen()).
+			Run(); err != nil {
 			return err
 		}
 

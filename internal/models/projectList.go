@@ -457,7 +457,11 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					deleteCmds = append(deleteCmds, item.DeleteProjectFromFS(m.config))
 				}
 
-				message := fmt.Sprintf("delete: %d project(s)\n\n- %s", len(projectNames), strings.Join(projectNames, "\n- "))
+				message := fmt.Sprintf(
+					"delete: %d project(s)\n\n- %s",
+					len(projectNames),
+					strings.Join(projectNames, "\n- "),
+				)
 
 				m.spinning = true
 
