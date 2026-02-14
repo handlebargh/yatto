@@ -93,6 +93,27 @@ brew install yatto
 </details>
 
 <details>
+  <summary>Nix</summary>
+
+To install, run the following [Nix](https://nixos.org/download/) commands.
+
+A nix-shell can be used to try yatto, before installing it permanently.
+
+```shell
+nix-shell -p yatto
+```
+
+On NixOS, add the following Nix code to your NixOS configuration.
+
+```
+environment.systemPackages = [
+    pkgs.yatto
+];
+```
+
+</details>
+
+<details>
   <summary>Eget</summary>
 
 To install, run the following [eget](https://github.com/zyedidia/eget) commands.
@@ -160,7 +181,7 @@ Take a look at the [releases](https://github.com/handlebargh/yatto/releases/late
     ```shell
     sudo rpm -i /path/to/yatto.rpm       # RPM
 
-    sudo dpkg -i /path/to/yatto.deb      # Deb
+    sudo dpkg -i /path/to/yatto.deb      # DEB
     or
     sudo apt install /path/to/yatto.deb  # DEB
     ```
