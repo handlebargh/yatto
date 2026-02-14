@@ -1,3 +1,10 @@
+## v0.22.0 (2026-02-14)
+
+### Refactor
+
+- rename version and printer packages
+- fix golines formatting
+
 ## v0.21.9 (2025-12-21)
 
 ### Fix
