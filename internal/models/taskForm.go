@@ -24,7 +24,9 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -157,31 +159,60 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 		huh.NewGroup(
 			huh.NewInput().
 				Key("dueDate").
-				Title("Enter a due date:").
+				Title(`Valid input formats:
+
+	tomorrow
+	next tuesday (or any other weekday)
+	in a week
+	in a month
+	in 3 days
+	in 6 weeks
+
+	15:04 (assume today)
+
+	2006-01-28
+	2006-01-28 15:04:05
+
+	28.01.2006
+	28.01.2006 15:04
+
+	28/01/2006
+	28/01/2006 15:04
+
+	Or RFC3339
+
+Date will be in your local timezone
+				`).
 				Value(&m.vars.taskDueDate).
-				Description("Format: YYYY-MM-DD hh:mm:ss").
 				Validate(func(str string) error {
-					// Ok if no date is set.
 					if str == "" {
 						return nil
 					}
 
-					t, err := time.Parse(time.DateTime, str)
+					t, err := parseShortcut(str)
+					if err == nil {
+						m.vars.taskDueDate = t.Format(time.DateTime)
+						return nil
+					}
+
+					t, err = parseFlexibleDate(str)
 					if err != nil {
-						return errors.New("invalid date format")
+						return fmt.Errorf("invalid format")
 					}
 
 					if !m.edit && t.Before(time.Now()) {
-						return errors.New("date must not be in the past")
+						return errors.New("due date must be in the future")
 					}
 
+					m.vars.taskDueDate = t.Format(time.DateTime)
 					return nil
 				}),
 		).Title("Due Date"),
+
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Key("existingLabels").
-				Title("Choose labels:").
+				Title("Choose existing labels:").
 				Height(15).
 				OptionsFunc(m.sortLabelsOptions, nil),
 
@@ -598,7 +629,7 @@ func (m taskFormModel) sortLabelsOptions() []huh.Option[string] {
 	// Build sorted options
 	opts := make([]huh.Option[string], 0, len(sortedLabels))
 	for _, item := range sortedLabels {
-		opt := huh.NewOption[string](item.Label, item.Label)
+		opt := huh.NewOption(item.Label, item.Label)
 		if _, selected := selectedSet[item.Label]; selected {
 			opt = opt.Selected(true)
 		}
@@ -636,7 +667,7 @@ func (m taskFormModel) sortEmailAddressesOptions() []huh.Option[string] {
 	// Build sorted options
 	opts := make([]huh.Option[string], 0, len(emails))
 	for _, item := range emails {
-		opt := huh.NewOption[string](item, item)
+		opt := huh.NewOption(item, item)
 		if item == m.task.Assignee {
 			opt = opt.Selected(true)
 		}
@@ -644,4 +675,108 @@ func (m taskFormModel) sortEmailAddressesOptions() []huh.Option[string] {
 	}
 
 	return opts
+}
+
+// parseFlexibleDate parses a string into a time.Time value, supporting a variety of common date and time formats.
+// It handles ISO 8601, localized formats (e.g., "DD.MM.YYYY", "MM/DD/YYYY"), time-only inputs (assumed for today),
+// and RFC3339. If the input does not match any supported format, it returns an error.
+//
+// Examples of valid inputs:
+//   - "2026-02-14"
+//   - "14.02.2026 15:04"
+//   - "02/14/2026"
+//   - "15:04" (assumes today's date)
+//   - "2006-01-02T15:04:05Z07:00"
+func parseFlexibleDate(str string) (time.Time, error) {
+	now := time.Now()
+	layouts := []string{
+		time.DateTime,      // "2006-01-02 15:04:05"
+		"2006-01-02",       // "2006-02-14"
+		"02.01.2006 15:04", // "14.02.2026 15:04"
+		"02.01.2006",       // "14.02.2026"
+		"02/01/2006 15:04", // "02/14/2026 15:04"
+		"02/01/2006",       // "02/14/2026"
+		"15:04",            // "15:04" (assume today)
+		time.RFC3339,       // "2006-01-02T15:04:05Z07:00"
+	}
+
+	if len(str) <= 5 {
+		if t, err := time.Parse("15:04", str); err == nil {
+			return time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location()), nil
+		}
+	}
+
+	for _, layout := range layouts {
+		t, err := time.Parse(layout, str)
+		if err == nil {
+			return t, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("unsupported date format")
+}
+
+// parseShortcut parses natural language date shortcuts into a time.Time value.
+// It supports expressions like "tomorrow", "in 3 days", "in 2 weeks", "next monday", etc.
+// All returned times are set to midnight (00:00:00) in the local timezone.
+// If the input does not match any supported shortcut, it returns an error.
+//
+// Examples of valid inputs:
+//   - "tomorrow"
+//   - "in 3 days"
+//   - "in 2 weeks"
+//   - "next monday"
+func parseShortcut(str string) (time.Time, error) {
+	now := time.Now()
+	todayAtMidnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	re := regexp.MustCompile(`^in (\d+) (days|weeks)$`)
+	matches := re.FindStringSubmatch(strings.ToLower(str))
+	if len(matches) == 3 {
+		amount, _ := strconv.Atoi(matches[1])
+		unit := matches[2]
+		switch unit {
+		case "days":
+			return todayAtMidnight.AddDate(0, 0, amount), nil
+		case "weeks":
+			return todayAtMidnight.AddDate(0, 0, amount*7), nil
+		}
+	}
+
+	switch strings.ToLower(str) {
+	case "tomorrow":
+		return todayAtMidnight.AddDate(0, 0, 1), nil
+	case "in a week":
+		return todayAtMidnight.AddDate(0, 0, 7), nil
+	case "in a month":
+		return todayAtMidnight.AddDate(0, 1, 0), nil
+	case "next monday":
+		return nextWeekday(todayAtMidnight, time.Monday), nil
+	case "next tuesday":
+		return nextWeekday(todayAtMidnight, time.Tuesday), nil
+	case "next wednesday":
+		return nextWeekday(todayAtMidnight, time.Wednesday), nil
+	case "next thursday":
+		return nextWeekday(todayAtMidnight, time.Thursday), nil
+	case "next friday":
+		return nextWeekday(todayAtMidnight, time.Friday), nil
+	case "next saturday":
+		return nextWeekday(todayAtMidnight, time.Saturday), nil
+	case "next sunday":
+		return nextWeekday(todayAtMidnight, time.Sunday), nil
+	default:
+		return time.Time{}, fmt.Errorf("unknown shortcut")
+	}
+}
+
+// nextWeekday returns the next occurrence of a specific weekday (e.g., time.Monday)
+// after the given time t. If t's weekday is already the target day,
+// it returns the time for the same day in the following week.
+//
+// Example:
+//
+//	nextWeekday(time.Now(), time.Monday) // Next Monday at the same time as t.
+func nextWeekday(t time.Time, day time.Weekday) time.Time {
+	diff := (day - t.Weekday() + 7) % 7
+	return t.AddDate(0, 0, int(diff))
 }
