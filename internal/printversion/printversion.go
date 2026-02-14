@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package version provides helper functions used to output version information
+// Package printversion provides helper functions used to output version information
 // when the version cobra-command is run.
-package version
+package printversion
 
 import (
 	"fmt"
@@ -75,7 +75,7 @@ func Info() string {
 // and project URL.
 func Header() string {
 	return `
- ____ ____ ____ ____ ____ 
+ ____ ____ ____ ____ ____
 ||y |||a |||t |||t |||o ||
 ||__|||__|||__|||__|||__||
 |/__\|/__\|/__\|/__\|/__\|

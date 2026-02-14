@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package printer provides the logic to print task lists
+// Package staticprinter provides the logic to print task lists
 // in a non-interactive way to stdout.
-package printer
+package staticprinter
 
 import (
 	"cmp"

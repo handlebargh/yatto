@@ -31,7 +31,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/config"
 	"github.com/handlebargh/yatto/internal/fetchmodel"
-	"github.com/handlebargh/yatto/internal/printer"
+	"github.com/handlebargh/yatto/internal/staticprinter"
 	"github.com/handlebargh/yatto/internal/storage"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -131,7 +131,7 @@ func printTaskList(v *viper.Viper, printProjects, printRegex string) {
 	// Get a slice of strings from user input.
 	projects := strings.Fields(printProjects)
 
-	printer.PrintTasks(v, printRegex, authorFlag, assigneeFlag, projects...)
+	staticprinter.PrintTasks(v, printRegex, authorFlag, assigneeFlag, projects...)
 }
 
 func init() {
