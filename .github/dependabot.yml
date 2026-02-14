@@ -4,14 +4,11 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "09:00"
-      timezone: "Europe/Vienna"
+      interval: "daily"
     commit-message:
       prefix: "chore"
       include: "scope"
-    reviewers:
+    assignees:
       - "handlebargh"
     groups:
       go-dependencies:
@@ -26,14 +23,11 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "09:15"
-      timezone: "Europe/Vienna"
+      interval: "daily"
     commit-message:
       prefix: "chore"
       include: "scope"
-    reviewers:
+    assignees:
       - "handlebargh"
     groups:
       github-actions:
