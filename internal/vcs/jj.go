@@ -195,7 +195,7 @@ func jjCommit(v *viper.Viper, message string) ([]byte, error) {
 		return output, nil // no changes
 	}
 
-	commitCmd := exec.Command("jj",
+	commitCmd := exec.Command("jj", // #nosec G204 no shell interpretation
 		"commit",
 		"--message", message,
 	)

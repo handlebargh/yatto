@@ -167,7 +167,7 @@ func gitCommit(v *viper.Viper, message string, files ...string) ([]byte, error) 
 		return output, nil
 	}
 
-	commitCmd := exec.Command("git",
+	commitCmd := exec.Command("git", // #nosec G204 no shell interpretation
 		"commit",
 		"--message",
 		message,

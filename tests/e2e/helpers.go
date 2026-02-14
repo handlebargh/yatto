@@ -282,7 +282,7 @@ func setupJJRepo(t *testing.T) string {
 // runCmd is a helper to run commands inside the temp directory.
 func runCmd(t *testing.T, dir, name string, args ...string) {
 	t.Helper()
-	cmd := exec.Command(name, args...)
+	cmd := exec.Command(name, args...) // #nosec G204
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("failed to run %s %v: %v", name, args, err)
