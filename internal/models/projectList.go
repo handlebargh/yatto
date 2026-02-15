@@ -195,16 +195,16 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	var progressBar progress.Model
 	switch {
 	case progressPercent < 0.33:
-		progressBar = progress.New(progress.WithSolidFill(colors.Red().Dark), progress.WithWidth(25))
+		progressBar = progress.New(progress.WithSolidFill(colors.Red().Dark), progress.WithWidth(30))
 
 	case progressPercent < 0.60:
-		progressBar = progress.New(progress.WithSolidFill(colors.Orange().Dark), progress.WithWidth(25))
+		progressBar = progress.New(progress.WithSolidFill(colors.Orange().Dark), progress.WithWidth(30))
 
 	case progressPercent < 1:
-		progressBar = progress.New(progress.WithSolidFill(colors.Yellow().Dark), progress.WithWidth(25))
+		progressBar = progress.New(progress.WithSolidFill(colors.Yellow().Dark), progress.WithWidth(30))
 
 	default:
-		progressBar = progress.New(progress.WithSolidFill(colors.Green().Dark), progress.WithWidth(25))
+		progressBar = progress.New(progress.WithSolidFill(colors.Green().Dark), progress.WithWidth(30))
 
 	}
 
@@ -215,9 +215,15 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	if numTasks > 0 {
 		taskTotalCompleteMessage = fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
 		if numCompletedTasks == numTasks {
-			taskTotalCompleteMessage = lipgloss.NewStyle().
-				Foreground(colors.Green()).
-				Render(fmt.Sprintf("All %d tasks completed", numCompletedTasks))
+			if numCompletedTasks == 1 {
+				taskTotalCompleteMessage = lipgloss.NewStyle().
+					Foreground(colors.Green()).
+					Render("1 task completed")
+			} else {
+				taskTotalCompleteMessage = lipgloss.NewStyle().
+					Foreground(colors.Green()).
+					Render(fmt.Sprintf("%d tasks completed", numCompletedTasks))
+			}
 		}
 	} else {
 		taskTotalCompleteMessage = "Empty project"
