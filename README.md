@@ -1,28 +1,15 @@
 # yatto
 
-**A Git-backed terminal task manager with full history, sync, and collaboration built in.**
-
 [![Go Report Card](https://goreportcard.com/badge/github.com/handlebargh/yatto)](https://goreportcard.com/report/github.com/handlebargh/yatto)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/handlebargh/yatto)](https://github.com/handlebargh/yatto/blob/main/go.mod)
 [![Release](https://img.shields.io/github/v/release/handlebargh/yatto)](https://github.com/handlebargh/yatto/releases)
 [![CI](https://github.com/handlebargh/yatto/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
 [![codecov](https://codecov.io/gh/handlebargh/yatto/branch/main/graph/badge.svg?threshold=80&style=flat-square)](https://codecov.io/gh/handlebargh/yatto)
 
-**yatto** is a terminal-first to-do application that stores each task as a plain JSON file
+**yatto** is a terminal to-do application that stores each task as a plain JSON file
 and manages your task directory as a Git or Jujutsu repository.
 
-Every change is versioned. Collaboration and sync come with your version control system.
-Your tasks remain transparent, portable, and fully under your control.
-
 ![Made with VHS](https://vhs.charm.sh/vhs-5iPFPAGREW8AqbsMaktsnR.gif)
-
-## Why yatto?
-
-- **Versioned by default** - every change is committed automatically
-- **Uses standard VCS remotes** - GitHub, GitLab, self-hosted, etc.
-- **Plain files, no lock-in** - inspect, edit, or script tasks with standard tools
-- **Terminal-native** - fast, keyboard-driven navigation
-- **Offline-first** - works anywhere your VCS does
 
 ## Features
 
