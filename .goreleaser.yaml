@@ -12,12 +12,15 @@ builds:
     binary: yatto
     ldflags:
       - "-s -w"
-      - "-extldflags=-zrelro"
-      - "-extldflags=-znow"
+      - "-buildid="
+      - '{{- if eq .Os "linux" }}-extldflags=-static-pie{{- end }}'
+      - '{{- if eq .Os "linux" }}-extldflags=-zrelro{{- end }}'
+      - '{{- if eq .Os "linux" }}-extldflags=-znow{{- end }}'
     env:
       - "CGO_ENABLED=0"
-      - "GO111MODULE=on"
-      - "GOFLAGS=-mod=readonly -trimpath"
+    flags:
+      - "-trimpath"
+      - "-mod=readonly"
     goos:
       - linux
       - windows
@@ -32,7 +35,7 @@ archives:
     formats: [tar.gz]
     format_overrides:
       - goos: windows
-        formats: [ zip ]
+        formats: [zip]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
@@ -66,7 +69,6 @@ release:
   extra_files:
     - glob: ./yatto_signing_pubkey.gpg
 
-
 brews:
   - name: yatto
     repository:
@@ -92,7 +94,7 @@ nfpms:
     homepage: https://github.com/handlebargh/yatto
     description: |-
       Interactive VCS-based todo-list for the command-line
-    maintainer: Benedikt Zumtobel <benedikt at zumtobel dot dev>
+    maintainer: Benedikt Zumtobel <github at zmtbl dot at>
     license: MIT
     bindir: /usr/bin
     section: utils
@@ -131,7 +133,7 @@ scoops:
 aur_sources:
   - name: yatto
     homepage: "https://github.com/handlebargh/yatto"
-    description: " Interactive VCS-based todo-list for the command-line"
+    description: "Interactive VCS-based todo-list for the command-line"
     maintainers:
       - "Benedikt Zumtobel <benedikt at zumtobel dot dev>"
     license: "MIT"
@@ -147,14 +149,15 @@ aur_sources:
       export CGO_ENABLED=0
       export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
       go build \
-        -ldflags "-s -w -extldflags=-zrelro -extldflags=-znow" \
+        -ldflags "-s -w -linkmode=external -extldflags=-Wl,-z,relro,-z,now -buildid=" \
         -o "${pkgname}"
+      chmod +x "${pkgname}"
       for shell in bash fish zsh; do
-        ./yatto completion "$shell" > "$shell-completion"
+        ./"${pkgname}" completion "$shell" > "${shell}-completion"
       done
     package: |-
-      install -Dm755 yatto "${pkgdir}/usr/bin/yatto"
-      install -Dm644 bash-completion "${pkgdir}/usr/share/bash-completion/completions/yatto"
-      install -Dm644 fish-completion "${pkgdir}/usr/share/fish/vendor_completions.d/yatto.fish"
-      install -Dm644 zsh-completion "${pkgdir}/usr/share/zsh/site-functions/_yatto"
+      install -Dm755 "${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
+      install -Dm644 bash-completion "${pkgdir}/usr/share/bash-completion/completions/${pkgname}"
+      install -Dm644 fish-completion "${pkgdir}/usr/share/fish/vendor_completions.d/${pkgname}.fish"
+      install -Dm644 zsh-completion "${pkgdir}/usr/share/zsh/site-functions/_${pkgname}"
       install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
