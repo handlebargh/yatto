@@ -28,6 +28,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -184,6 +185,50 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		)
 	}
 
+	var progressPercent float64
+	if numTasks > 0 {
+		progressPercent = float64(numCompletedTasks) / float64(numTasks)
+	} else {
+		progressPercent = 0
+	}
+
+	var progressBar progress.Model
+	switch {
+	case progressPercent < 0.33:
+		progressBar = progress.New(progress.WithSolidFill(colors.Red().Dark), progress.WithWidth(30))
+
+	case progressPercent < 0.60:
+		progressBar = progress.New(progress.WithSolidFill(colors.Orange().Dark), progress.WithWidth(30))
+
+	case progressPercent < 1:
+		progressBar = progress.New(progress.WithSolidFill(colors.Yellow().Dark), progress.WithWidth(30))
+
+	default:
+		progressBar = progress.New(progress.WithSolidFill(colors.Green().Dark), progress.WithWidth(30))
+
+	}
+
+	progressBar.ShowPercentage = true
+	progressBarView := progressBar.ViewAs(progressPercent)
+
+	var taskTotalCompleteMessage string
+	if numTasks > 0 {
+		taskTotalCompleteMessage = fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
+		if numCompletedTasks == numTasks {
+			if numCompletedTasks == 1 {
+				taskTotalCompleteMessage = lipgloss.NewStyle().
+					Foreground(colors.Green()).
+					Render("1 task completed")
+			} else {
+				taskTotalCompleteMessage = lipgloss.NewStyle().
+					Foreground(colors.Green()).
+					Render(fmt.Sprintf("%d tasks completed", numCompletedTasks))
+			}
+		}
+	} else {
+		taskTotalCompleteMessage = "Empty project"
+	}
+
 	var taskDueMessage string
 	if numDueTasks > 0 {
 		if numDueTasks == 1 {
@@ -197,13 +242,10 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		}
 	}
 
-	taskTotalCompleteMessage := fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
-	if numCompletedTasks == numTasks {
-		taskTotalCompleteMessage = lipgloss.NewStyle().Foreground(colors.Green()).Render(taskTotalCompleteMessage)
-	}
-
 	var right strings.Builder
 
+	right.WriteString(listItemInfoStyle.Render(progressBarView))
+	right.WriteString("\n")
 	right.WriteString(listItemInfoStyle.Render(taskTotalCompleteMessage))
 	right.WriteString("\n")
 	right.WriteString(taskDueMessage)
