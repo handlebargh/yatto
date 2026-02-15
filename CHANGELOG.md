@@ -1,3 +1,9 @@
+## v0.23.0 (2026-02-15)
+
+### Feat
+
+- show progress bars in project list (#74)
+
 ## v0.22.0 (2026-02-14)
 
 ### Refactor
