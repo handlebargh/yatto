@@ -149,7 +149,7 @@ aur_sources:
       export CGO_ENABLED=0
       export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
       go build \
-        -ldflags "-s -w -linkmode=external -extldflags=-Wl,-z,relro,-z,now -buildid=" \
+        -ldflags "-s -w -extldflags=-zrelro -extldflags=-znow -buildid=" \
         -o "${pkgname}"
       chmod +x "${pkgname}"
       for shell in bash fish zsh; do
