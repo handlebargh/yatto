@@ -14,7 +14,7 @@ and manages your task directory as a Git or Jujutsu repository.
 Every change is versioned. Collaboration and sync come with your version control system.
 Your tasks remain transparent, portable, and fully under your control.
 
-<img alt="yatto demo" src="docs/demo.gif" />
+![Made with VHS](https://vhs.charm.sh/vhs-5iPFPAGREW8AqbsMaktsnR.gif)
 
 ## Why yatto?
 
