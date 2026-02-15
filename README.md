@@ -97,6 +97,9 @@ brew install yatto
 
 To install, run the following [Nix](https://nixos.org/download/) commands.
 
+> [!TIP]
+> Check the available package version [here](https://search.nixos.org/packages)
+
 A nix-shell can be used to try yatto, before installing it permanently.
 
 ```shell
