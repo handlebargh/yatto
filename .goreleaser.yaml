@@ -135,7 +135,7 @@ aur_sources:
     homepage: "https://github.com/handlebargh/yatto"
     description: "Interactive VCS-based todo-list for the command-line"
     maintainers:
-      - "Benedikt Zumtobel <benedikt at zumtobel dot dev>"
+      - "Benedikt Zumtobel <github at zmtbl dot at>"
     license: "MIT"
     private_key: "{{ .Env.AUR_KEY }}"
     git_url: "ssh://aur@aur.archlinux.org/yatto.git"
