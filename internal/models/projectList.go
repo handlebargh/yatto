@@ -211,9 +211,16 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	progressBar.ShowPercentage = true
 	progressBarView := progressBar.ViewAs(progressPercent)
 
-	taskTotalCompleteMessage := fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
-	if numCompletedTasks == numTasks {
-		taskTotalCompleteMessage = lipgloss.NewStyle().Foreground(colors.Green()).Render(taskTotalCompleteMessage)
+	var taskTotalCompleteMessage string
+	if numTasks > 0 {
+		taskTotalCompleteMessage = fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
+		if numCompletedTasks == numTasks {
+			taskTotalCompleteMessage = lipgloss.NewStyle().
+				Foreground(colors.Green()).
+				Render(fmt.Sprintf("All %d tasks completed", numCompletedTasks))
+		}
+	} else {
+		taskTotalCompleteMessage = "Empty project"
 	}
 
 	var taskDueMessage string
