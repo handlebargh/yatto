@@ -363,7 +363,13 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.listModel.status = ""
 			return m.listModel, tea.Batch(cmds...)
 		}
-		return m.listModel, nil
+		// Return to the start of the form, keep filled in values
+		_ = m.formVarsToTask()
+		newModel := newTaskFormModel(m.task, m.listModel, m.edit)
+		newModel.width = m.width
+		newModel.height = m.height
+		newModel.previewViewport = viewport.New(previewWidth, m.height-previewVerticalPadding)
+		return newModel, newModel.Init()
 	}
 	return m, tea.Batch(cmds...)
 }
