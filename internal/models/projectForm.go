@@ -259,11 +259,11 @@ func (m projectFormModel) View() string {
 
 // errorView returns a string representation of validation error messages.
 func (m projectFormModel) errorView() string {
-	var s string
+	var b strings.Builder
 	for _, err := range m.form.Errors() {
-		s += err.Error()
+		b.WriteString(err.Error())
 	}
-	return s
+	return b.String()
 }
 
 // appBoundaryView returns a formatted header with colored boundaries,

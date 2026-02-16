@@ -83,7 +83,7 @@ type Task struct {
 func (t *Task) LabelsList() []string {
 	var result []string
 
-	for _, label := range strings.Split(t.Labels, ",") {
+	for label := range strings.SplitSeq(t.Labels, ",") {
 		if label != "" {
 			result = append(result, strings.TrimSpace(label))
 		}
@@ -247,8 +247,8 @@ func (t *Task) FindListIndexByID(items []list.Item) int {
 func (t *Task) TaskToMarkdown() string {
 	var content strings.Builder
 
-	content.WriteString(fmt.Sprintf("# %s\n\n", t.Title))
-	content.WriteString(fmt.Sprintf("## Description\n\n%s\n\n", t.Description))
+	fmt.Fprintf(&content, "# %s\n\n", t.Title)
+	fmt.Fprintf(&content, "## Description\n\n%s\n\n", t.Description)
 
 	content.WriteString("## Metadata\n\n")
 	content.WriteString("| **Completed** | **In Progress** | **Priority** |\n")
@@ -285,7 +285,7 @@ func (t *Task) TaskToMarkdown() string {
 	if t.DueDate != nil {
 		content.WriteString("| **Due Date** |\n")
 		content.WriteString("| ------------ |\n")
-		content.WriteString(fmt.Sprintf("| %s |\n\n", t.DueDate.Format(time.RFC1123)))
+		fmt.Fprintf(&content, "| %s |\n\n", t.DueDate.Format(time.RFC1123))
 	}
 
 	if t.Labels != "" {
@@ -294,14 +294,14 @@ func (t *Task) TaskToMarkdown() string {
 
 		labelsSeq := strings.SplitSeq(t.Labels, ",")
 		for label := range labelsSeq {
-			content.WriteString(fmt.Sprintf("| - %s |\n", label))
+			fmt.Fprintf(&content, "| - %s |\n", label)
 		}
 		content.WriteString("\n")
 	}
 
 	content.WriteString("| **ID** |\n")
 	content.WriteString("| ------ |\n")
-	content.WriteString(fmt.Sprintf("| %s |\n\n", t.ID))
+	fmt.Fprintf(&content, "| %s |\n\n", t.ID)
 
 	return content.String()
 }

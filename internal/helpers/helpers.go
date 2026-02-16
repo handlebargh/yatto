@@ -146,7 +146,7 @@ func AllLabels(v *viper.Viper) map[string]int {
 func LabelsStringToSlice(labels string) []string {
 	var result []string
 
-	for _, label := range strings.Split(labels, ",") {
+	for label := range strings.SplitSeq(labels, ",") {
 		if label != "" {
 			result = append(result, strings.TrimSpace(label))
 		}
@@ -202,17 +202,14 @@ func UniqueNonEmptyStrings(slice []string) []string {
 // If the email is already wrapped in "<" and ">", the string is returned unchanged.
 // If no email is found, the string is returned as-is.
 func AddAngleBracketsToEmail(s string) string {
-	atIndex := strings.Index(s, "@")
-	if atIndex == -1 {
+	beforeAt, afterAt, found := strings.Cut(s, "@")
+	if !found {
 		return s
 	}
 
-	start := strings.LastIndex(s[:atIndex], " ") + 1
-	end := len(s)
+	start := strings.LastIndex(beforeAt, " ") + 1
+	email := beforeAt[start:] + "@" + afterAt
 
-	email := s[start:end]
-
-	// Check if the email is already wrapped in < and >
 	if strings.HasPrefix(email, "<") && strings.HasSuffix(email, ">") {
 		return s
 	}
