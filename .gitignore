@@ -31,8 +31,8 @@ go.work.sum
 .idea/
 .vscode/
 
-# Added by goreleaser init:
+# Used by goreleaser
 dist/
 
-# Used by make build
+# Used by lint build
 bin/

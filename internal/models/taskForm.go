@@ -363,6 +363,13 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.listModel.status = ""
 			return m.listModel, tea.Batch(cmds...)
 		}
+		// Return to the start of the form, keep filled in values
+		_ = m.formVarsToTask()
+		newModel := newTaskFormModel(m.task, m.listModel, m.edit)
+		newModel.width = m.width
+		newModel.height = m.height
+		newModel.previewViewport = viewport.New(previewWidth, m.height-previewVerticalPadding)
+		return newModel, newModel.Init()
 	}
 	return m, tea.Batch(cmds...)
 }
@@ -439,11 +446,11 @@ func (m taskFormModel) View() string {
 
 // errorView returns a string representation of validation error messages.
 func (m taskFormModel) errorView() string {
-	var s string
+	var b strings.Builder
 	for _, err := range m.form.Errors() {
-		s += err.Error()
+		b.WriteString(err.Error())
 	}
-	return s
+	return b.String()
 }
 
 // appBoundaryView returns a formatted header with colored boundaries,
@@ -503,10 +510,24 @@ func (m taskFormModel) generatePreviewContent() string {
 		s.Priority.Render(m.vars.taskPriority),
 		m.styles.Completed.Render(completedString(m.vars.taskCompleted)))
 
+	var b strings.Builder
+	b.WriteString("Task preview")
+	b.WriteString("\n\n")
 	// We need to wrap our content so it fits into the statusViewport.
-	return m.styles.StatusHeader.Render("Task preview") + "\n\n" +
-		wordwrap.String(title, previewWidth-previewContentPadding) + "\n\n" +
-		wordwrap.String(m.vars.taskDescription, previewWidth-previewContentPadding)
+	b.WriteString(wordwrap.String(title, previewWidth-previewContentPadding))
+	b.WriteString("\n\n")
+	b.WriteString(wordwrap.String(m.vars.taskDescription, previewWidth-previewContentPadding))
+
+	// Add due date if set
+	if t, err := parseShortcut(m.vars.taskDueDate); err == nil {
+		b.WriteString("\n\nDue Date:\n")
+		b.WriteString(t.Format(time.RFC1123))
+	} else if t, err = parseFlexibleDate(m.vars.taskDueDate); err == nil {
+		b.WriteString("\n\nDue Date:\n")
+		b.WriteString(t.Format(time.RFC1123))
+	}
+
+	return m.styles.StatusHeader.Render(b.String())
 }
 
 // formVarsToTask updates the Task object with values from the form variables.

@@ -289,8 +289,8 @@ func jjContributors(v *viper.Viper) ([]string, error) {
 	}
 
 	var authors []string
-	for _, authorRaw := range strings.Split(string(output), "\n") {
-		author := strings.Split(authorRaw, " ")[1:]
+	for i := range strings.SplitSeq(string(output), "\n") {
+		author := strings.Split(i, " ")[1:]
 		authors = append(authors, strings.Join(author, " "))
 	}
 
