@@ -77,7 +77,7 @@ brews:
       branch: main
       token: "{{ .Env.PACKAGE_UPDATE_TOKEN }}"
     homepage: https://github.com/handlebargh/yatto
-    description: Interactive VCS-based todo-list for the command-line
+    description: Interactive version-controlled todo-list for the command-line
     license: MIT
     caveats: |
       yatto requires either Git or Jujutsu (jj) to be installed and available in your PATH.
@@ -93,7 +93,7 @@ nfpms:
     id: packages
     homepage: https://github.com/handlebargh/yatto
     description: |-
-      Interactive VCS-based todo-list for the command-line
+      Interactive version-controlled todo-list for the command-line
     maintainer: Benedikt Zumtobel <github at zmtbl dot at>
     license: MIT
     bindir: /usr/bin
@@ -127,13 +127,13 @@ scoops:
       branch: main
       token: "{{ .Env.PACKAGE_UPDATE_TOKEN }}"
     homepage: https://github.com/handlebargh/yatto
-    description: Interactive VCS-based todo-list for the command-line
+    description: Interactive version-controlled todo-list for the command-line
     license: MIT
 
 aur_sources:
   - name: yatto
     homepage: "https://github.com/handlebargh/yatto"
-    description: "Interactive VCS-based todo-list for the command-line"
+    description: Interactive version-controlled todo-list for the command-line
     maintainers:
       - "Benedikt Zumtobel <github at zmtbl dot at>"
     license: "MIT"
