@@ -84,6 +84,12 @@ However, if you feel a scope adds clarity, you may include one in parentheses ri
     just test
     ```
 
+> [!TIP]
+> If you don't want to install just, take a look a the justfile and run the commands manually.
+
+> [!TIP]
+> If you use pre-commit, be sure to run `pre-commit install` before commiting.
+
 7. Commit your changes.
 
 8. Push your branch and open a Pull Request.
