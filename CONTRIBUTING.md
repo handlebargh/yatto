@@ -3,10 +3,6 @@
 Thanks for your interest in contributing!
 Pull requests, bug reports, and new ideas are welcome.
 
-## Commit Messages
-
-Commit messages **must** follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
-
 ## Development Workflow
 
 1. Fork the repository.
@@ -16,32 +12,27 @@ Commit messages **must** follow the [Conventional Commits](https://www.conventio
 3. Create a new branch:
 
     ```shell
-    git checkout -b feat/my-new-feature
+    git checkout -b my-branch-name
     ```
 
 4. Make your changes.
 
-5. Lint and format before committing - all code must pass golangci-lint:
+5. Format, lint and test before committing - all code must pass the checks:
+
+    > [!TIP]
+    > If you don't want to install just, take a look a the justfile and run the commands manually.
 
     ```shell
-    just lint
     just fmt
+    just lint
+    just test
     ```
 
     If it fails, fix all reported issues before committing.
 
-6. Run the test suite before committing:
+6. Commit your changes.
 
-    ```shell
-    just test
-    ```
+    > [!TIP]
+    > If you use cocogitto, run `cog install-hook --all` before commiting.
 
-> [!TIP]
-> If you don't want to install just, take a look a the justfile and run the commands manually.
-
-> [!TIP]
-> If you use cocogitto, run `cog install-hook --all` before commiting.
-
-7. Commit your changes.
-
-8. Push your branch and open a Pull Request.
+7. Push your branch and open a Pull Request.
