@@ -1,5 +1,3 @@
-# Pull Request Template
-
 ## Type of Change
 
 (delete whichever not applicable)
@@ -12,7 +10,7 @@
 
 ## Description
 
-Please replace this text with a summary of the changes and the motivation behind them.  
+Please replace this text with a summary of the changes and the motivation behind them.
 If this PR fixes an issue, please mention it (e.g., Fixes #123).
 
 ## How Has This Been Tested?
