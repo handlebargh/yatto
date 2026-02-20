@@ -11,7 +11,7 @@ Pull requests, bug reports, and new ideas are welcome.
 
 3. Create a new branch:
 
-    ```shell
+    ```
     git checkout -b my-branch-name
     ```
 
@@ -19,7 +19,7 @@ Pull requests, bug reports, and new ideas are welcome.
 
 5. Format, lint and test before committing - all code must pass the checks:
 
-    ```shell
+    ```
     just fmt
     just lint
     just test
