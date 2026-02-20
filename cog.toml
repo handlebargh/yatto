@@ -1,0 +1,19 @@
+from_latest_tag = true
+tag_prefix = "v"
+
+[git_hooks.commit-msg]
+script = """#!/bin/sh
+set -e
+cog verify --file $1
+"""
+
+[git_hooks.pre-commit]
+script = """#!/bin/sh
+set -e
+just fmt
+just lint
+just test
+"""
+
+[changelog]
+path = "CHANGELOG.md"
