@@ -1,41 +1,27 @@
 # Print this help message
 help:
-    @echo 'Usage:'
     @just --list
 
 # Run golangci-lint linter package
 lint:
-    @echo 'Linting .go files...'
     golangci-lint run
 
 # Run golangci-lint formatter package
 fmt:
-    @echo 'Formatting .go files...'
     golangci-lint fmt
-
-# Update Go dependencies
-update:
-    @echo 'Updating module dependencies...'
-    go get -u ./...
-    @echo 'Tidying module dependencies...'
-    go mod tidy -v
 
 # Tidy and verify module dependencies
 tidy:
-    @echo 'Tidying module dependencies...'
-    go mod tidy -diff
-    @echo 'Verifying module dependencies...'
+    go mod tidy -v
     go mod verify
 
 # Run application tests
 test:
-    @echo 'Running tests...'
-    go test -v -race ./...
+    go test -v -race -count=1 ./...
 
 # Generate test coverage report as HTML
 test-cover:
     #!/usr/bin/env bash
-    echo 'Generating coverage report...'
     go test -coverpkg=./internal/...,./cmd/... -covermode=count -coverprofile coverage.out ./...
     go tool cover -html coverage.out -o coverage.html
     if command -v open >/dev/null 2>&1; then
@@ -47,13 +33,19 @@ test-cover:
     fi
     echo "Coverage report available at file://$(pwd)/coverage.html"
 
-# Build the application
+# Build yatto
 build:
-    @echo 'Building yatto...'
-    @CGO_ENABLED=0 \
-    GO111MODULE=on \
-    GOFLAGS="-mod=readonly -trimpath" \
+    CGO_ENABLED=0 \
+    GOFLAGS="-buildmode=pie -trimpath -mod=readonly" \
     go build -v \
-        -ldflags="-s -w -extldflags=-zrelro -extldflags=-znow" \
+        -ldflags="-s -w -extldflags=-zrelro,-znow,-buildid=" \
         -o=bin/yatto
-    @echo 'Placing binary in ./bin directory'
+    @echo 'Placed binary in ./bin directory'
+
+# Build and run yatto
+run:
+    go run .
+
+# Remove build and coverage artifacts
+clean:
+    rm -rf bin/ coverage.out coverage.html
