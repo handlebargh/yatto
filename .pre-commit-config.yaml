@@ -1,0 +1,34 @@
+repos:
+  - repo: local
+    hooks:
+      - id: just-check
+        name: Check just is installed
+        entry: bash -c 'command -v just'
+        language: system
+        types: [go]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: fmt
+        name: Format Go files
+        entry: just fmt
+        language: system
+        types: [go]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: lint
+        name: Lint Go files
+        entry: just lint
+        language: system
+        types: [go]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: test
+        name: Run Go tests
+        entry: just test
+        types: [go]
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
