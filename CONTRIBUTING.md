@@ -19,8 +19,8 @@ Pull requests, bug reports, and new ideas are welcome.
 
 5. Format, lint and test before committing - all code must pass the checks:
 
-    > [!TIP]
-    > If you don't want to install just, take a look a the justfile and run the commands manually.
+> [!TIP]
+> If you don't want to install just, take a look a the justfile and run the commands manually.
 
     ```shell
     just fmt
@@ -32,7 +32,7 @@ Pull requests, bug reports, and new ideas are welcome.
 
 6. Commit your changes.
 
-    > [!TIP]
-    > If you use cocogitto, run `cog install-hook --all` before commiting.
+> [!TIP]
+> If you use cocogitto, run `cog install-hook --all` before commiting.
 
 7. Push your branch and open a Pull Request.
