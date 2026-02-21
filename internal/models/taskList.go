@@ -54,6 +54,7 @@ type taskListKeyMap struct {
 	deleteItem       key.Binding
 	sortByPriority   key.Binding
 	sortByDueDate    key.Binding
+	sortByState      key.Binding
 	sortByAuthor     key.Binding
 	sortByAssignee   key.Binding
 	toggleInProgress key.Binding
@@ -86,6 +87,10 @@ func newTaskListKeyMap() *taskListKeyMap {
 		sortByDueDate: key.NewBinding(
 			key.WithKeys("alt+d"),
 			key.WithHelp("alt+d", "sort by due date"),
+		),
+		sortByState: key.NewBinding(
+			key.WithKeys("alt+s"),
+			key.WithHelp("alt+s", "sort by state"),
 		),
 		sortByAuthor: key.NewBinding(
 			key.WithKeys("alt+a"),
@@ -428,6 +433,7 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 			listKeys.deleteItem,
 			listKeys.sortByPriority,
 			listKeys.sortByDueDate,
+			listKeys.sortByState,
 			listKeys.sortByAuthor,
 			listKeys.sortByAssignee,
 			listKeys.toggleInProgress,
@@ -617,20 +623,19 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.sortByPriority):
-				m.sortTasksByKeys([]string{"state", "priority"})
-				return m, nil
+				m.sortTasksByKeys([]string{"completed", "priority"})
 
 			case key.Matches(msg, m.keys.sortByDueDate):
-				m.sortTasksByKeys([]string{"state", "dueDate"})
-				return m, nil
+				m.sortTasksByKeys([]string{"completed", "dueDate"})
 
 			case key.Matches(msg, m.keys.sortByAuthor):
-				m.sortTasksByKeys([]string{"state", "author", "dueDate", "priority"})
-				return m, nil
+				m.sortTasksByKeys([]string{"completed", "author", "dueDate", "priority"})
 
 			case key.Matches(msg, m.keys.sortByAssignee):
-				m.sortTasksByKeys([]string{"state", "assignee", "dueDate", "priority"})
-				return m, nil
+				m.sortTasksByKeys([]string{"completed", "assignee", "dueDate", "priority"})
+
+			case key.Matches(msg, m.keys.sortByState):
+				m.sortTasksByKeys([]string{"completed", "inProgress", "dueDate", "priority"})
 
 			case key.Matches(msg, m.keys.chooseItem):
 				if m.list.SelectedItem() != nil {
@@ -792,18 +797,19 @@ func (m *taskListModel) sortTasksByKeys(keys []string) {
 		for _, k := range keys {
 			var cmpResult int
 			switch k {
-			case "state":
+			case "completed":
 				switch {
 				case x.Completed && !y.Completed:
 					cmpResult = 1
 				case !x.Completed && y.Completed:
 					cmpResult = -1
+				}
+			case "inProgress":
+				switch {
 				case x.InProgress && !y.InProgress:
 					cmpResult = -1
 				case !x.InProgress && y.InProgress:
 					cmpResult = 1
-				default:
-					cmpResult = 0
 				}
 			case "assignee":
 				switch {
