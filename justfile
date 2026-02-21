@@ -19,6 +19,10 @@ tidy:
 test:
     go test -v -race -count=1 ./...
 
+# Run application tests with cache
+test-cache:
+    go test -v -race ./...
+
 # Generate test coverage report as HTML
 test-cover:
     #!/usr/bin/env bash

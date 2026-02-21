@@ -10,9 +10,8 @@ cog verify --file $1
 [git_hooks.pre-commit]
 script = """#!/bin/sh
 set -e
-just fmt
 just lint
-just test
+just test-cache
 """
 
 [changelog]
