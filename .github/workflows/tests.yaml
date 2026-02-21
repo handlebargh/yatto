@@ -35,7 +35,7 @@ jobs:
           go-version: ${{ matrix.go.go-version }}
           go-version-file: ${{ matrix.go.go-version-file }}
 
-      - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
+      - uses: geomys/sandboxed-step@v1.2.0
         with:
           run: |
             curl -Lo /tmp/jj.tar.gz https://github.com/jj-vcs/jj/releases/download/v0.38.0/jj-v0.38.0-x86_64-unknown-linux-musl.tar.gz
@@ -57,6 +57,6 @@ jobs:
         with:
           go-version: stable
 
-      - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
+      - uses: geomys/sandboxed-step@v1.2.0
         with:
           run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
