@@ -1,4 +1,20 @@
 - - -
+## v1.1.1 - 2026-02-21
+#### Bug Fixes
+- add new sortByState key (#81) - (91f3079) - Benedikt Zumtobel
+#### Documentation
+- prepare CHANGELOG for cocogitto takeover - (f63a2b0) - Benedikt Zumtobel
+- redo contribution guidelines (#78) - (ee86e40) - Benedikt Zumtobel
+#### Build system
+- fix build commands (#80) - (7fd289e) - Benedikt Zumtobel
+- improve build configs (#79) - (a546588) - Benedikt Zumtobel
+#### Miscellaneous Chores
+- (**deps**) bump github.com/mattn/go-runewidth (#76) - (b754bd1) - dependabot[bot]
+- run commit hook tests with cache - (a4eff63) - Benedikt Zumtobel
+- add pre-commit config (#77) - (a7acb48) - Benedikt Zumtobel
+
+- - -
+
 
 # pre-cocogitto history
 
