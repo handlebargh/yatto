@@ -38,7 +38,7 @@ jobs:
       - name: Install jj
         run: brew install jj
 
-      - uses: geomys/sandboxed-step@v7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
+      - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
         with:
           run: |
             if [ "${{ matrix.deps }}" = "latest" ]; then
@@ -57,6 +57,6 @@ jobs:
         with:
           go-version: stable
 
-      - uses: geomys/sandboxed-step@v7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
+      - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
         with:
           run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
