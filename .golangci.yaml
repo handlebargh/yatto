@@ -27,3 +27,5 @@ linters:
     - ineffassign
     - revive
     - gocritic
+    - gosec
+    - staticcheck

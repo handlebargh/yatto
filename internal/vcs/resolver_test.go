@@ -107,9 +107,9 @@ func makeCommit(t *testing.T, dir, vcs, message string) {
 		cmd.Dir = dir
 		err = cmd.Run()
 		assert.NoError(t, err)
-		cmd = exec.Command("git", "commit", "-m", message)
+		cmd = exec.Command("git", "commit", "-m", message) //nolint:gosec
 	} else {
-		cmd = exec.Command("jj", "commit", "-m", message)
+		cmd = exec.Command("jj", "commit", "-m", message) //nolint:gosec
 	}
 	cmd.Dir = dir
 	err = cmd.Run()

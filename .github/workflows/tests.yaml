@@ -1,0 +1,62 @@
+---
+name: Tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "33 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - { go-version: stable }
+          - { go-version-file: go.mod }
+        deps:
+          - locked
+          - latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go.go-version }}
+          go-version-file: ${{ matrix.go.go-version-file }}
+
+      - uses: Homebrew/actions/setup-homebrew@f181caf81dacfb95901873fccc6399facff2b788
+
+      - name: Install jj
+        run: brew install jj
+
+      - uses: geomys/sandboxed-step@v7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
+        with:
+          run: |
+            if [ "${{ matrix.deps }}" = "latest" ]; then
+              go get -u -t ./...
+            fi
+            go test -v -race ./...
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      - uses: geomys/sandboxed-step@v7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
+        with:
+          run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...

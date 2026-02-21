@@ -70,7 +70,7 @@ func TestProject_DeleteProjectFromFS(t *testing.T) {
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
 	projectDir := filepath.Join(tempDir, project.ID)
-	_ = os.Mkdir(projectDir, 0o755)
+	_ = os.Mkdir(projectDir, 0o750)
 
 	cmd := project.DeleteProjectFromFS(v)
 	msg := cmd()
@@ -91,13 +91,13 @@ func TestProject_ReadTasksFromFS(t *testing.T) {
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
 	projectDir := filepath.Join(tempDir, project.ID)
-	_ = os.Mkdir(projectDir, 0o755)
+	_ = os.Mkdir(projectDir, 0o750)
 
 	task1 := &Task{ID: uuid.NewString(), Title: "Task 1"}
 	task2 := &Task{ID: uuid.NewString(), Title: "Task 2"}
 
-	_ = os.WriteFile(filepath.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o644)
-	_ = os.WriteFile(filepath.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o644)
+	_ = os.WriteFile(filepath.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o600)
+	_ = os.WriteFile(filepath.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o600)
 
 	tasks := project.ReadTasksFromFS(v)
 
@@ -113,16 +113,16 @@ func TestProject_NumOfTasks(t *testing.T) {
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
 	projectDir := filepath.Join(tempDir, project.ID)
-	_ = os.Mkdir(projectDir, 0o755)
+	_ = os.Mkdir(projectDir, 0o750)
 
 	now := time.Now()
 	task1 := &Task{ID: uuid.NewString(), Title: "Task 1", Completed: true}
 	task2 := &Task{ID: uuid.NewString(), Title: "Task 2", DueDate: &now}
 	task3 := &Task{ID: uuid.NewString(), Title: "Task 3"}
 
-	_ = os.WriteFile(filepath.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o644)
-	_ = os.WriteFile(filepath.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o644)
-	_ = os.WriteFile(filepath.Join(projectDir, task3.ID+".json"), task3.MarshalTask(), 0o644)
+	_ = os.WriteFile(filepath.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o600)
+	_ = os.WriteFile(filepath.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o600)
+	_ = os.WriteFile(filepath.Join(projectDir, task3.ID+".json"), task3.MarshalTask(), 0o600)
 
 	total, completed, due, err := project.NumOfTasks(v)
 	if err != nil {
