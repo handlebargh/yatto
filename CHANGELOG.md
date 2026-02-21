@@ -1,3 +1,7 @@
+- - -
+
+# pre-cocogitto history
+
 ## v1.1.0 (2026-02-16)
 
 ### Feat
