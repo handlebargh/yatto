@@ -37,9 +37,6 @@ jobs:
 
       - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9
         with:
-          persist-workspace-changes: false
-          disable-network: true
-          allow-checkout-credentials: false
           run: |
             curl -Lo /tmp/jj.tar.gz https://github.com/jj-vcs/jj/releases/download/v0.38.0/jj-v0.38.0-x86_64-unknown-linux-musl.tar.gz
             tar -xf /tmp/jj.tar.gz -C /usr/local/bin jj
