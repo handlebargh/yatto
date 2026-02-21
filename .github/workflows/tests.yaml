@@ -3,6 +3,8 @@ name: Tests
 
 on:
   push:
+    branch:
+      - main
   pull_request:
   schedule:
     - cron: "33 6 * * *"
