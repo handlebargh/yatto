@@ -39,7 +39,8 @@ jobs:
         with:
           run: |
             curl -Lo /tmp/jj.tar.gz https://github.com/jj-vcs/jj/releases/download/v0.38.0/jj-v0.38.0-x86_64-unknown-linux-musl.tar.gz
-            tar -xf /tmp/jj.tar.gz -C /usr/local/bin jj
+            tar -xf /tmp/jj.tar.gz -C /tmp
+            mv /tmp/jj-*/jj /usr/local/bin/jj
             if [ "${{ matrix.deps }}" = "latest" ]; then
               go get -u -t ./...
             fi
