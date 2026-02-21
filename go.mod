@@ -1,6 +1,6 @@
 module github.com/handlebargh/yatto
 
-go 1.25.0
+go 1.25.7
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0

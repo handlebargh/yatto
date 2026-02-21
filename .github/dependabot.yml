@@ -1,25 +1,6 @@
 ---
 version: 2
 updates:
-  - package-ecosystem: "gomod"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    assignees:
-      - "handlebargh"
-    groups:
-      go-dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-    open-pull-requests-limit: 5
-    rebase-strategy: "auto"
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

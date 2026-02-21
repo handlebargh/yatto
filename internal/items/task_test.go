@@ -125,7 +125,7 @@ func TestTask_WriteTaskJSON(t *testing.T) {
 
 	project := Project{ID: "test-project"}
 	projectDir := filepath.Join(tempDir, project.ID)
-	_ = os.Mkdir(projectDir, 0o755)
+	_ = os.Mkdir(projectDir, 0o750)
 
 	task := &Task{ID: uuid.NewString(), Title: "Test Task"}
 	cmd := task.WriteTaskJSON(v, task.MarshalTask(), project, "create")
@@ -148,11 +148,11 @@ func TestTask_DeleteTaskFromFS(t *testing.T) {
 
 	project := Project{ID: "test-project"}
 	projectDir := filepath.Join(tempDir, project.ID)
-	_ = os.Mkdir(projectDir, 0o755)
+	_ = os.Mkdir(projectDir, 0o750)
 
 	task := &Task{ID: uuid.NewString(), Title: "Test Task"}
 	taskFile := filepath.Join(projectDir, task.ID+".json")
-	_ = os.WriteFile(taskFile, task.MarshalTask(), 0o644)
+	_ = os.WriteFile(taskFile, task.MarshalTask(), 0o600)
 
 	cmd := task.DeleteTaskFromFS(v, project)
 	msg := cmd()

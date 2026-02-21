@@ -4,7 +4,8 @@
 [![Go Version](https://img.shields.io/github/go-mod/go-version/handlebargh/yatto)](https://github.com/handlebargh/yatto/blob/main/go.mod)
 [![Release](https://img.shields.io/github/v/release/handlebargh/yatto)](https://github.com/handlebargh/yatto/releases)
 [![CI](https://github.com/handlebargh/yatto/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
-[![codecov](https://codecov.io/gh/handlebargh/yatto/branch/main/graph/badge.svg?threshold=80&style=flat-square)](https://codecov.io/gh/handlebargh/yatto)
+[![Tests](https://github.com/handlebargh/yatto/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
+[![Vulnerabilities](https://github.com/handlebargh/yatto/actions/workflows/vuln.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
 
 **yatto** is a terminal to-do application that stores each task as a plain JSON file
 and manages your task directory as a Git or Jujutsu repository.

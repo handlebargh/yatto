@@ -36,7 +36,7 @@ func TestFileExists(t *testing.T) {
 
 	t.Run("returns true when file exists", func(t *testing.T) {
 		filePath := filepath.Join(tempDir, "exists.txt")
-		_, err := os.Create(filePath)
+		_, err := os.Create(filePath) //nolint:gosec
 		assert.NoError(t, err)
 
 		assert.True(t, FileExists(v, "exists.txt"))
