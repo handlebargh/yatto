@@ -139,17 +139,15 @@ aur_sources:
     license: "MIT"
     private_key: "{{ .Env.AUR_KEY }}"
     git_url: "ssh://aur@aur.archlinux.org/yatto.git"
-    provides: []
-    conflicts: []
     depends:
       - git
     prepare: |-
       go mod download
     build: |-
       export CGO_ENABLED=0
-      export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+      export GOFLAGS="-buildmode=pie -trimpath -mod=readonly"
       go build \
-        -ldflags "-s -w -extldflags=-zrelro -extldflags=-znow -buildid=" \
+        -ldflags "-s -w -extldflags=-zrelro,-znow,-buildid=" \
         -o "${pkgname}"
       chmod +x "${pkgname}"
       for shell in bash fish zsh; do
