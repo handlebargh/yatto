@@ -36,9 +36,9 @@ test-cover:
 # Build yatto
 build:
     CGO_ENABLED=0 \
-    GOFLAGS="-buildmode=pie -trimpath -mod=readonly" \
+    GOFLAGS="-trimpath -mod=readonly" \
     go build -v \
-        -ldflags="-s -w -extldflags=-zrelro,-znow,-buildid=" \
+        -ldflags="-s -w -buildid= -extldflags=-static-pie,-zrelro,-znow" \
         -o=bin/yatto
     @echo 'Placed binary in ./bin directory'
 
