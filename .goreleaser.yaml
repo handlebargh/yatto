@@ -13,9 +13,7 @@ builds:
     ldflags:
       - "-s -w"
       - "-buildid="
-      - '{{- if eq .Os "linux" }}-extldflags=-static-pie{{- end }}'
-      - '{{- if eq .Os "linux" }}-extldflags=-zrelro{{- end }}'
-      - '{{- if eq .Os "linux" }}-extldflags=-znow{{- end }}'
+      - '{{- if eq .Os "linux" }}-extldflags=-static-pie,-zrelro,-znow{{- end }}'
     env:
       - "CGO_ENABLED=0"
     flags:
@@ -145,9 +143,9 @@ aur_sources:
       go mod download
     build: |-
       export CGO_ENABLED=0
-      export GOFLAGS="-buildmode=pie -trimpath -mod=readonly"
+      export GOFLAGS="-trimpath -mod=readonly"
       go build \
-        -ldflags "-s -w -extldflags=-zrelro,-znow,-buildid=" \
+        -ldflags "-s -w -buildid= -extldflags=-static-pie,-zrelro,-znow" \
         -o "${pkgname}"
       chmod +x "${pkgname}"
       for shell in bash fish zsh; do
