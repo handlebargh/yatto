@@ -5,6 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/handlebargh/yatto)](https://github.com/handlebargh/yatto/releases)
 [![CI](https://github.com/handlebargh/yatto/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
 [![Tests](https://github.com/handlebargh/yatto/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
+[![Vulnerabilities](https://github.com/handlebargh/yatto/actions/workflows/vuln.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
 
 **yatto** is a terminal to-do application that stores each task as a plain JSON file
 and manages your task directory as a Git or Jujutsu repository.
