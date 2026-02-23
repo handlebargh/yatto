@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/handlebargh/yatto)](https://github.com/handlebargh/yatto/releases)
 [![CI](https://github.com/handlebargh/yatto/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
 [![Tests](https://github.com/handlebargh/yatto/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
-[![Vulnerabilities](https://github.com/handlebargh/yatto/actions/workflows/vuln.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
+[![Vulnerability check](https://github.com/handlebargh/yatto/actions/workflows/vuln.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
 
 **yatto** is a terminal to-do application that stores each task as a plain JSON file
 and manages your task directory as a Git or Jujutsu repository.
@@ -20,13 +20,17 @@ and manages your task directory as a Git or Jujutsu repository.
     - full task history
     - safe backup
     - multi-machine sync
+    - collaboration via shared repositories
 - Automatic commit on every change (optional auto-push)
 - Project-based task organization
-- Task attributes:
+- Task attributes with sorting support:
     - due dates
-    - labels
+    - status (open, in-progress, done)
     - priority
     - author / assignee
+- Task attributes with filtering support:
+    - titles
+    - labels
 - Markdown support for task descriptions
 - Non-interactive output (`yatto print`) for simple dashboards
 - Simple theme and color customization
@@ -300,6 +304,15 @@ esac
 
 > [!TIP]
 > Add the --pull flag to pull from a configured remote before printing.
+
+## Multiple storage locations / repositories
+
+I suggest working with shell aliases, for example:
+
+```shell
+alias yatto-work="yatto --config ~/.config/yatto/work.toml"
+alias yatto-personal="yatto --config ~/.config/yatto/personal.toml"
+```
 
 ## License
 
