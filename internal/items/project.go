@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -105,7 +106,7 @@ func (p *Project) ReadTasksFromFS(v *viper.Viper) []Task {
 			continue
 		}
 
-		filePath := filepath.Join(p.ID, entry.Name())
+		filePath := path.Join(p.ID, entry.Name())
 		fileContent, err := fs.ReadFile(root.FS(), filePath)
 		if err != nil {
 			panic(err)
