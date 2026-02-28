@@ -119,6 +119,7 @@ nfpms:
 
 scoops:
   - name: yatto
+    directory: bucket
     repository:
       owner: handlebargh
       name: scoop-bucket
