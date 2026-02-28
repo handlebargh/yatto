@@ -22,7 +22,7 @@ package storage
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -35,7 +35,7 @@ func TestFileExists(t *testing.T) {
 	v.Set("storage.path", tempDir)
 
 	t.Run("returns true when file exists", func(t *testing.T) {
-		filePath := path.Join(tempDir, "exists.txt")
+		filePath := filepath.Join(tempDir, "exists.txt")
 		_, err := os.Create(filePath) //nolint:gosec
 		assert.NoError(t, err)
 

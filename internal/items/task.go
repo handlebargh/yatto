@@ -31,7 +31,7 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -204,7 +204,7 @@ func (t *Task) WriteTaskJSON(v *viper.Viper, json []byte, p Project, kind string
 		}
 		defer root.Close() //nolint:errcheck
 
-		file := path.Join(p.ID, t.ID+".json")
+		file := filepath.Join(p.ID, t.ID+".json")
 
 		if err := root.WriteFile(file, json, 0o600); err != nil {
 			return WriteTaskJSONErrorMsg{err}
@@ -218,7 +218,7 @@ func (t *Task) WriteTaskJSON(v *viper.Viper, json []byte, p Project, kind string
 // Returns a Tea message on success or failure.
 func (t *Task) DeleteTaskFromFS(v *viper.Viper, p Project) tea.Cmd {
 	return func() tea.Msg {
-		file := path.Join(v.GetString("storage.path"), p.ID, t.ID+".json")
+		file := filepath.Join(v.GetString("storage.path"), p.ID, t.ID+".json")
 
 		err := os.Remove(file)
 		if err != nil {

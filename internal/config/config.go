@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 
 	"github.com/charmbracelet/huh"
@@ -70,7 +70,7 @@ type config struct {
 // InitConfig sets default values for application configuration and
 // attempts to load configuration from a file.
 func InitConfig(v *viper.Viper, home string, configPath *string) {
-	v.SetDefault("storage.path", path.Join(home, ".yatto"))
+	v.SetDefault("storage.path", filepath.Join(home, ".yatto"))
 
 	// assignee
 	v.SetDefault("assignee.show", false)
@@ -120,8 +120,8 @@ func InitConfig(v *viper.Viper, home string, configPath *string) {
 	} else {
 		v.SetConfigName("config")
 		v.SetConfigType("toml")
-		v.AddConfigPath(path.Join(home, ".config", "yatto"))
-		*configPath = path.Join(home, ".config", "yatto", "config.toml")
+		v.AddConfigPath(filepath.Join(home, ".config", "yatto"))
+		*configPath = filepath.Join(home, ".config", "yatto", "config.toml")
 	}
 }
 
@@ -161,9 +161,9 @@ func CreateConfigFile(settings Settings) error {
 			return fmt.Errorf("fatal error getting config: %w", err)
 		}
 
-		configPath := path.Join(settings.Home, ".config", "yatto", "config.toml")
+		path := filepath.Join(settings.Home, ".config", "yatto", "config.toml")
 		if settings.ConfigPath != "" {
-			configPath = settings.ConfigPath
+			path = settings.ConfigPath
 		}
 
 		var (
@@ -177,7 +177,7 @@ func CreateConfigFile(settings Settings) error {
 			huh.NewGroup(
 				huh.NewConfirm().
 					Title("Create config file?").
-					Description(fmt.Sprintf("Location: %s", configPath)).
+					Description(fmt.Sprintf("Location: %s", path)).
 					Affirmative("Yes").
 					Negative("No").
 					Value(&createConfig),
@@ -253,7 +253,7 @@ func CreateConfigFile(settings Settings) error {
 		}
 
 		// Create config dir
-		if err := os.MkdirAll(path.Join(settings.Home, ".config", "yatto"), 0o750); err != nil {
+		if err := os.MkdirAll(filepath.Join(settings.Home, ".config", "yatto"), 0o750); err != nil {
 			return fmt.Errorf("error creating config directory: %w", err)
 		}
 
@@ -321,7 +321,7 @@ func (c *config) Validate() error {
 	if c.storagePath == "" {
 		return fmt.Errorf("storage path cannot be empty")
 	}
-	if !path.IsAbs(c.storagePath) {
+	if !filepath.IsAbs(c.storagePath) {
 		return fmt.Errorf("storage path must be absolute: %q", c.storagePath)
 	}
 

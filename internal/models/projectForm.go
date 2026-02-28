@@ -23,7 +23,7 @@ package models
 import (
 	"errors"
 	"fmt"
-	"path"
+	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -195,7 +195,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			vcs.CommitCmd(
 				m.listModel.config,
 				fmt.Sprintf("%s: %s", action, m.project.Title),
-				path.Join(m.project.ID, "project.json"),
+				filepath.Join(m.project.ID, "project.json"),
 			),
 		)
 

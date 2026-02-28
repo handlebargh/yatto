@@ -23,7 +23,7 @@ package models
 import (
 	"errors"
 	"fmt"
-	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -341,7 +341,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			json := m.task.MarshalTask()
-			taskPath := path.Join(m.listModel.project.ID, m.task.ID+".json")
+			taskPath := filepath.Join(m.listModel.project.ID, m.task.ID+".json")
 
 			action := "create"
 			if storage.FileExists(m.listModel.projectModel.config, taskPath) {

@@ -22,7 +22,7 @@ package items
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -52,12 +52,12 @@ func TestProject_WriteProjectJSON(t *testing.T) {
 		t.Errorf("Expected WriteProjectJSONDoneMsg, but got %T", msg)
 	}
 
-	projectDir := path.Join(tempDir, project.ID)
+	projectDir := filepath.Join(tempDir, project.ID)
 	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
 		t.Errorf("Expected project directory to be created, but it wasn't")
 	}
 
-	jsonFile := path.Join(projectDir, "project.json")
+	jsonFile := filepath.Join(projectDir, "project.json")
 	if _, err := os.Stat(jsonFile); os.IsNotExist(err) {
 		t.Errorf("Expected project.json to be created, but it wasn't")
 	}
@@ -69,7 +69,7 @@ func TestProject_DeleteProjectFromFS(t *testing.T) {
 	v.Set("storage.path", tempDir)
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
-	projectDir := path.Join(tempDir, project.ID)
+	projectDir := filepath.Join(tempDir, project.ID)
 	_ = os.Mkdir(projectDir, 0o750)
 
 	cmd := project.DeleteProjectFromFS(v)
@@ -90,14 +90,14 @@ func TestProject_ReadTasksFromFS(t *testing.T) {
 	v.Set("storage.path", tempDir)
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
-	projectDir := path.Join(tempDir, project.ID)
+	projectDir := filepath.Join(tempDir, project.ID)
 	_ = os.Mkdir(projectDir, 0o750)
 
 	task1 := &Task{ID: uuid.NewString(), Title: "Task 1"}
 	task2 := &Task{ID: uuid.NewString(), Title: "Task 2"}
 
-	_ = os.WriteFile(path.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o600)
-	_ = os.WriteFile(path.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o600)
+	_ = os.WriteFile(filepath.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o600)
+	_ = os.WriteFile(filepath.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o600)
 
 	tasks := project.ReadTasksFromFS(v)
 
@@ -112,7 +112,7 @@ func TestProject_NumOfTasks(t *testing.T) {
 	v.Set("storage.path", tempDir)
 
 	project := &Project{ID: "test-project", Title: "Test Project"}
-	projectDir := path.Join(tempDir, project.ID)
+	projectDir := filepath.Join(tempDir, project.ID)
 	_ = os.Mkdir(projectDir, 0o750)
 
 	now := time.Now()
@@ -120,9 +120,9 @@ func TestProject_NumOfTasks(t *testing.T) {
 	task2 := &Task{ID: uuid.NewString(), Title: "Task 2", DueDate: &now}
 	task3 := &Task{ID: uuid.NewString(), Title: "Task 3"}
 
-	_ = os.WriteFile(path.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o600)
-	_ = os.WriteFile(path.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o600)
-	_ = os.WriteFile(path.Join(projectDir, task3.ID+".json"), task3.MarshalTask(), 0o600)
+	_ = os.WriteFile(filepath.Join(projectDir, task1.ID+".json"), task1.MarshalTask(), 0o600)
+	_ = os.WriteFile(filepath.Join(projectDir, task2.ID+".json"), task2.MarshalTask(), 0o600)
+	_ = os.WriteFile(filepath.Join(projectDir, task3.ID+".json"), task3.MarshalTask(), 0o600)
 
 	total, completed, due, err := project.NumOfTasks(v)
 	if err != nil {

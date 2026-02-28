@@ -23,7 +23,7 @@ package vcs
 import (
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -74,7 +74,7 @@ func TestGitContributors(t *testing.T) {
 	storagePath := v.GetString("storage.path")
 
 	// Create a commit to have an author
-	err := os.WriteFile(path.Join(storagePath, "file.txt"), []byte("content"), 0o600)
+	err := os.WriteFile(filepath.Join(storagePath, "file.txt"), []byte("content"), 0o600)
 	assert.NoError(t, err)
 	cmd := exec.Command("git", "add", "file.txt")
 	cmd.Dir = storagePath
@@ -94,7 +94,7 @@ func TestGitCommit(t *testing.T) {
 	v := setupTestRepo(t)
 	storagePath := v.GetString("storage.path")
 
-	filePath := path.Join(storagePath, "test.txt")
+	filePath := filepath.Join(storagePath, "test.txt")
 	err := os.WriteFile(filePath, []byte("hello"), 0o600)
 	assert.NoError(t, err)
 
@@ -130,6 +130,6 @@ func TestGitInitCmd(t *testing.T) {
 
 	assert.IsType(t, InitDoneMsg{}, msg)
 
-	_, err := os.Stat(path.Join(tempDir, "INIT"))
+	_, err := os.Stat(filepath.Join(tempDir, "INIT"))
 	assert.NoError(t, err, "INIT file should be created")
 }
