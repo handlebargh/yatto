@@ -1,4 +1,17 @@
 - - -
+## v1.1.2 - 2026-02-28
+#### Bug Fixes
+- replace filepath with path (#86) - (3f5b54a) - Benedikt Zumtobel
+#### Documentation
+- update README - (45a4200) - Benedikt Zumtobel
+#### Continuous Integration
+- rename workflow - (a0afcff) - Benedikt Zumtobel
+- redo actions workflows (#82) - (38cfa5c) - Benedikt Zumtobel
+#### Miscellaneous Chores
+- (**deps**) bump goreleaser/goreleaser-action (#83) - (a76342c) - dependabot[bot]
+
+- - -
+
 ## v1.1.1 - 2026-02-21
 #### Bug Fixes
 - add new sortByState key (#81) - (91f3079) - Benedikt Zumtobel
