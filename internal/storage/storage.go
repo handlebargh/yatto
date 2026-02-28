@@ -27,7 +27,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/viper"
@@ -143,7 +143,7 @@ func CreateStorageDir(settings Settings) error {
 // FileExists returns true if the specified file exists within the configured
 // storage directory. It uses os.Stat to check for existence and ignores other errors.
 func FileExists(v *viper.Viper, file string) bool {
-	fullPath := filepath.Join(v.GetString("storage.path"), file)
+	fullPath := path.Join(v.GetString("storage.path"), file)
 	_, err := os.Stat(fullPath)
 	return !os.IsNotExist(err)
 }

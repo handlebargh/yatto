@@ -21,7 +21,7 @@
 package config
 
 import (
-	"path/filepath"
+	"path"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -120,11 +120,11 @@ func TestInitConfig(t *testing.T) {
 
 	InitConfig(v, homeDir, &configPath)
 
-	assert.Equal(t, filepath.Join(homeDir, ".yatto"), v.GetString("storage.path"))
+	assert.Equal(t, path.Join(homeDir, ".yatto"), v.GetString("storage.path"))
 	assert.Equal(t, "git", v.GetString("vcs.backend"))
 	assert.Equal(t, "main", v.GetString("git.default_branch"))
 	assert.Equal(t, "Base16", v.GetString("colors.form.theme"))
-	assert.Equal(t, filepath.Join(homeDir, ".config", "yatto", "config.toml"), configPath)
+	assert.Equal(t, path.Join(homeDir, ".config", "yatto", "config.toml"), configPath)
 
 	// Test with explicit config path
 	v = viper.New()

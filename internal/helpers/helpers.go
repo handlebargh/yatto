@@ -28,6 +28,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -59,7 +60,7 @@ func ReadProjectsFromFS(v *viper.Viper) []items.Project {
 			continue
 		}
 
-		projectFile, err := root.ReadFile(filepath.Join(entry.Name(), "project.json"))
+		projectFile, err := root.ReadFile(path.Join(entry.Name(), "project.json"))
 		if err != nil {
 			panic(err)
 		}

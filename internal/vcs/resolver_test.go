@@ -23,7 +23,7 @@ package vcs
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -98,7 +98,7 @@ func TestResolver(t *testing.T) {
 func makeCommit(t *testing.T, dir, vcs, message string) {
 	t.Helper()
 
-	err := os.WriteFile(filepath.Join(dir, "file.txt"), []byte("content"), 0o600)
+	err := os.WriteFile(path.Join(dir, "file.txt"), []byte("content"), 0o600)
 	assert.NoError(t, err)
 
 	var cmd *exec.Cmd

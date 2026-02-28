@@ -24,7 +24,7 @@ import (
 	"cmp"
 	"fmt"
 	"io"
-	"path/filepath"
+	"path"
 	"slices"
 	"strings"
 	"time"
@@ -584,7 +584,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var deleteCmds []tea.Cmd
 				for _, item := range m.selectedItems {
 					taskNames = append(taskNames, item.Title)
-					taskPaths = append(taskPaths, filepath.Join(m.project.ID, item.ID+".json"))
+					taskPaths = append(taskPaths, path.Join(m.project.ID, item.ID+".json"))
 					deleteCmds = append(deleteCmds, item.DeleteTaskFromFS(m.projectModel.config, *m.project))
 				}
 
@@ -937,7 +937,7 @@ func (m taskListModel) toggleTasks(
 		toggleFunc(t)
 		json := t.MarshalTask()
 		writeCmds = append(writeCmds, t.WriteTaskJSON(m.projectModel.config, json, *m.project, commitKind(t)))
-		taskPaths = append(taskPaths, filepath.Join(m.project.ID, t.ID+".json"))
+		taskPaths = append(taskPaths, path.Join(m.project.ID, t.ID+".json"))
 		taskNames = append(taskNames, t.Title)
 	}
 

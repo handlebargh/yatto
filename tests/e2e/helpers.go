@@ -25,7 +25,7 @@ import (
 	"bytes"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"strconv"
 	"testing"
 	"time"
@@ -247,7 +247,7 @@ func setupGitRepo(t *testing.T) string {
 	runCmd(t, tmpDir, "git", "config", "user.email", "test@example.com")
 	runCmd(t, tmpDir, "git", "config", "commit.gpgSign", "false")
 
-	testFile := filepath.Join(tmpDir, "INIT")
+	testFile := path.Join(tmpDir, "INIT")
 	if err := os.WriteFile(testFile, []byte(""), 0o600); err != nil {
 		t.Fatal("error writing INIT file")
 	}
@@ -269,7 +269,7 @@ func setupJJRepo(t *testing.T) string {
 	runCmd(t, tmpDir, "jj", "config", "set", "--repo", "user.name", "Test User")
 	runCmd(t, tmpDir, "jj", "config", "set", "--repo", "user.email", "test@example.com")
 
-	testFile := filepath.Join(tmpDir, "INIT")
+	testFile := path.Join(tmpDir, "INIT")
 	if err := os.WriteFile(testFile, []byte(""), 0o600); err != nil {
 		t.Fatal("error writing INIT file")
 	}

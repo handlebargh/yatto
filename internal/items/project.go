@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
+	"path"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -105,7 +105,7 @@ func (p *Project) ReadTasksFromFS(v *viper.Viper) []Task {
 			continue
 		}
 
-		filePath := filepath.Join(p.ID, entry.Name())
+		filePath := path.Join(p.ID, entry.Name())
 		fileContent, err := fs.ReadFile(root.FS(), filePath)
 		if err != nil {
 			panic(err)
@@ -125,7 +125,7 @@ func (p *Project) ReadTasksFromFS(v *viper.Viper) []Task {
 // from disk. Returns a Tea message indicating success or failure.
 func (p *Project) DeleteProjectFromFS(v *viper.Viper) tea.Cmd {
 	return func() tea.Msg {
-		dir := filepath.Join(v.GetString("storage.path"), p.ID)
+		dir := path.Join(v.GetString("storage.path"), p.ID)
 
 		err := os.RemoveAll(dir)
 		if err != nil {
@@ -163,7 +163,7 @@ func (p *Project) WriteProjectJSON(v *viper.Viper, json []byte, kind string) tea
 			return WriteProjectJSONErrorMsg{err}
 		}
 
-		file := filepath.Join(p.ID, "project.json")
+		file := path.Join(p.ID, "project.json")
 		if err := root.WriteFile(file, json, 0o600); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
@@ -196,7 +196,7 @@ func (p *Project) NumOfTasks(v *viper.Viper) (int, int, int, error) {
 			continue
 		}
 
-		filePath := filepath.Join(p.ID, entry.Name())
+		filePath := path.Join(p.ID, entry.Name())
 		data, err := root.ReadFile(filePath)
 		if err != nil {
 			continue

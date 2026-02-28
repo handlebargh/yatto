@@ -22,7 +22,7 @@ package items
 
 import (
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -124,7 +124,7 @@ func TestTask_WriteTaskJSON(t *testing.T) {
 	v.Set("storage.path", tempDir)
 
 	project := Project{ID: "test-project"}
-	projectDir := filepath.Join(tempDir, project.ID)
+	projectDir := path.Join(tempDir, project.ID)
 	_ = os.Mkdir(projectDir, 0o750)
 
 	task := &Task{ID: uuid.NewString(), Title: "Test Task"}
@@ -135,7 +135,7 @@ func TestTask_WriteTaskJSON(t *testing.T) {
 		t.Errorf("Expected WriteTaskJSONDoneMsg, but got %T", msg)
 	}
 
-	taskFile := filepath.Join(projectDir, task.ID+".json")
+	taskFile := path.Join(projectDir, task.ID+".json")
 	if _, err := os.Stat(taskFile); os.IsNotExist(err) {
 		t.Errorf("Expected task file to be created, but it wasn't")
 	}
@@ -147,11 +147,11 @@ func TestTask_DeleteTaskFromFS(t *testing.T) {
 	v.Set("storage.path", tempDir)
 
 	project := Project{ID: "test-project"}
-	projectDir := filepath.Join(tempDir, project.ID)
+	projectDir := path.Join(tempDir, project.ID)
 	_ = os.Mkdir(projectDir, 0o750)
 
 	task := &Task{ID: uuid.NewString(), Title: "Test Task"}
-	taskFile := filepath.Join(projectDir, task.ID+".json")
+	taskFile := path.Join(projectDir, task.ID+".json")
 	_ = os.WriteFile(taskFile, task.MarshalTask(), 0o600)
 
 	cmd := task.DeleteTaskFromFS(v, project)
