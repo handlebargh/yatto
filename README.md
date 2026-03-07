@@ -269,6 +269,15 @@ To set up a remote
     url = <GIT_REMOTE_URL>
     ```
 
+## Multiple storage locations / repositories
+
+I suggest working with shell aliases, for example:
+
+```shell
+alias yatto-work="yatto --config ~/.config/yatto/work.toml"
+alias yatto-personal="yatto --config ~/.config/yatto/personal.toml"
+```
+
 ## Non-interactive mode
 
 You can print a static list of your tasks to standard output:
@@ -303,15 +312,6 @@ esac
 
 > [!TIP]
 > Add the --pull flag to pull from a configured remote before printing.
-
-## Multiple storage locations / repositories
-
-I suggest working with shell aliases, for example:
-
-```shell
-alias yatto-work="yatto --config ~/.config/yatto/work.toml"
-alias yatto-personal="yatto --config ~/.config/yatto/personal.toml"
-```
 
 ## License
 
