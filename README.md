@@ -5,7 +5,6 @@
 [![Release](https://img.shields.io/github/v/release/handlebargh/yatto)](https://github.com/handlebargh/yatto/releases)
 [![CI](https://github.com/handlebargh/yatto/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
 [![Tests](https://github.com/handlebargh/yatto/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
-[![Vulnerability check](https://github.com/handlebargh/yatto/actions/workflows/vuln.yaml/badge.svg?branch=main)](https://github.com/handlebargh/yatto/actions)
 
 **yatto** is a terminal to-do application that stores each task as a plain JSON file
 and manages your task directory as a Git or Jujutsu repository.
@@ -270,6 +269,15 @@ To set up a remote
     url = <GIT_REMOTE_URL>
     ```
 
+## Multiple storage locations / repositories
+
+I suggest working with shell aliases, for example:
+
+```shell
+alias yatto-work="yatto --config ~/.config/yatto/work.toml"
+alias yatto-personal="yatto --config ~/.config/yatto/personal.toml"
+```
+
 ## Non-interactive mode
 
 You can print a static list of your tasks to standard output:
@@ -304,15 +312,6 @@ esac
 
 > [!TIP]
 > Add the --pull flag to pull from a configured remote before printing.
-
-## Multiple storage locations / repositories
-
-I suggest working with shell aliases, for example:
-
-```shell
-alias yatto-work="yatto --config ~/.config/yatto/work.toml"
-alias yatto-personal="yatto --config ~/.config/yatto/personal.toml"
-```
 
 ## License
 
