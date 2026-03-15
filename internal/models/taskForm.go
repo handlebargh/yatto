@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -72,7 +73,7 @@ type taskFormModel struct {
 	edit            bool
 	cancel          bool
 	width, height   int
-	styles          *Styles
+	styles          lipgloss.Style
 	vars            *taskFormVars
 }
 
@@ -115,7 +116,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	m.task = t
 	m.listModel = listModel
 	m.taskLabels = helpers.AllLabels(m.listModel.projectModel.config)
-	m.styles = NewStyles()
+	m.styles = lipgloss.NewStyle()
 
 	var confirmQuestion string
 	if edit {
@@ -381,6 +382,9 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the task form UI and the task preview, depending on the current state.
 func (m taskFormModel) View() tea.View {
+	var v tea.View
+	v.AltScreen = true
+
 	if m.cancel {
 		centeredStyle := lipgloss.NewStyle().
 			Width(m.width).
@@ -389,23 +393,27 @@ func (m taskFormModel) View() tea.View {
 			AlignVertical(lipgloss.Center)
 
 		if m.edit {
-			return tea.NewView(centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No"))
+			v.SetContent(centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No"))
+
+			return v
 		}
 
-		return tea.NewView(centeredStyle.Render("Cancel task creation?\n\n[y] Yes   [n] No"))
+		v.SetContent(centeredStyle.Render("Cancel task creation?\n\n[y] Yes   [n] No"))
+
+		return v
 	}
 
 	s := m.styles
 
 	// Form (left side)
-	v := strings.TrimSuffix(m.form.View(), "\n\n")
-	form := s.Base.Margin(1, 0).Render(v)
+	formView := strings.TrimSuffix(m.form.View(), "\n\n")
+	form := s.Padding(1, 4, 0, 1).Margin(1, 0).Render(formView)
 
 	switch m.vars.taskCompleted {
 	case true:
-		s.Completed = s.Completed.Background(colors.Green())
+		s.Foreground(lipgloss.Color("#000000")).Padding(0, 1).Background(colors.Green())
 	case false:
-		s.Completed = s.Completed.Background(colors.Blue())
+		s.Foreground(lipgloss.Color("#000000")).Padding(0, 1).Background(colors.Blue())
 	}
 
 	var header string
@@ -418,9 +426,19 @@ func (m taskFormModel) View() tea.View {
 		color = colors.Green()
 	}
 
-	previewMarginLeft := max(0, m.width-previewWidth-lipgloss.Width(form)-s.Status.GetMarginRight())
+	previewMarginLeft := max(
+		0,
+		m.width-previewWidth-lipgloss.Width(
+			form,
+		)-s.Border(lipgloss.RoundedBorder()).
+			PaddingLeft(1).
+			MarginTop(1).
+			GetMarginRight(),
+	)
 
-	status := s.Status.
+	status := s.Border(lipgloss.RoundedBorder()).
+		PaddingLeft(1).
+		MarginTop(1).
 		MarginLeft(previewMarginLeft).
 		BorderForeground(color).
 		Width(previewWidth).
@@ -446,7 +464,9 @@ func (m taskFormModel) View() tea.View {
 	b.WriteString("\n\n")
 	b.WriteString(footer)
 
-	return tea.NewView(s.Base.Render(b.String()))
+	v.SetContent(s.Padding(1, 4, 0, 1).Render(b.String()))
+
+	return v
 }
 
 // errorView returns a string representation of validation error messages.
@@ -455,6 +475,7 @@ func (m taskFormModel) errorView() string {
 	for _, err := range m.form.Errors() {
 		b.WriteString(err.Error())
 	}
+
 	return b.String()
 }
 
@@ -474,7 +495,7 @@ func (m taskFormModel) appBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,
 		lipgloss.Left,
-		m.styles.HeaderText.Foreground(color).Render(text),
+		m.styles.Bold(true).Padding(0, 1, 0, 2).Foreground(color).Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
 		lipgloss.WithWhitespaceStyle(whitespaceColor),
 	)
@@ -485,7 +506,7 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,
 		lipgloss.Left,
-		m.styles.ErrorHeaderText.Render(text),
+		m.styles.Foreground(colors.Red()).Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
 		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Foreground(colors.Red())))
 }
@@ -503,19 +524,19 @@ func (m taskFormModel) generatePreviewContent() string {
 
 	switch m.vars.taskPriority {
 	case "high":
-		s.Priority = s.Priority.Background(colors.Red())
+		s.Foreground(lipgloss.Color("#000000")).Padding(0, 1).Background(colors.Red())
 	case "medium":
-		s.Priority = s.Priority.Background(colors.Orange())
+		s.Foreground(lipgloss.Color("#000000")).Padding(0, 1).Background(colors.Orange())
 	case "low":
-		s.Priority = s.Priority.Background(colors.Indigo())
+		s.Foreground(lipgloss.Color("#000000")).Padding(0, 1).Background(colors.Indigo())
 	default:
-		s.Priority = s.Priority.Background(colors.Indigo())
+		s.Foreground(lipgloss.Color("#000000")).Padding(0, 1).Background(colors.Indigo())
 	}
 
 	title := fmt.Sprintf("%s %s %s",
-		m.styles.Title.Render(m.vars.taskTitle),
-		s.Priority.Render(m.vars.taskPriority),
-		m.styles.Completed.Render(completedString(m.vars.taskCompleted)))
+		s.Bold(true).Render(m.vars.taskTitle),
+		s.Foreground(lipgloss.Color("#000000")).Padding(0, 1).Render(m.vars.taskPriority),
+		s.Foreground(lipgloss.Color("#000000")).Padding(0, 1).Render(completedString(m.vars.taskCompleted)))
 
 	var b strings.Builder
 	b.WriteString("Task preview")
@@ -534,7 +555,11 @@ func (m taskFormModel) generatePreviewContent() string {
 		b.WriteString(t.Format(time.RFC1123))
 	}
 
-	return m.styles.StatusHeader.Render(b.String())
+	hasDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+	lightDark := lipgloss.LightDark(hasDark)
+	statusHeaderColor := lightDark(lipgloss.Color("#000000"), lipgloss.Color("#FFFFFF"))
+
+	return s.Foreground(statusHeaderColor).Bold(true).Render(b.String())
 }
 
 // formVarsToTask updates the Task object with values from the form variables.

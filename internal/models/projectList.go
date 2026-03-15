@@ -95,7 +95,7 @@ func newProjectListKeyMap() *projectListKeyMap {
 			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
 		toggleSelect: key.NewBinding(
-			key.WithKeys(" "),
+			key.WithKeys("space"),
 			key.WithHelp("space", "select/deselect"),
 		),
 	}
@@ -608,6 +608,9 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the current UI state of the project list,
 // including list view, progress bar, and any status messages.
 func (m ProjectListModel) View() tea.View {
+	var v tea.View
+	v.AltScreen = true
+
 	centeredStyle := lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
@@ -616,8 +619,7 @@ func (m ProjectListModel) View() tea.View {
 
 	// Spinner active view
 	if m.spinning {
-		v := tea.NewView(centeredStyle.Render(fmt.Sprintf("%s  %s", m.spinner.View(), m.status)))
-		v.AltScreen = true
+		v.SetContent(centeredStyle.Render(fmt.Sprintf("%s  %s", m.spinner.View(), m.status)))
 
 		return v
 	}
@@ -625,13 +627,12 @@ func (m ProjectListModel) View() tea.View {
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
 		if len(m.selectedItems) > 0 {
-			v := tea.NewView(centeredStyle.Render(
+			v.SetContent(centeredStyle.Render(
 				fmt.Sprintf("Delete %d project(s)?\n\n%s%s%s", len(m.selectedItems),
 					"[y] Yes",
 					"    ",
 					"[n] No",
 				)))
-			v.AltScreen = true
 
 			return v
 		}
@@ -647,15 +648,13 @@ func (m ProjectListModel) View() tea.View {
 		e.WriteString("\n\n")
 		e.WriteString("Please commit manually!")
 
-		v := tea.NewView(centeredStyle.Render(e.String()))
-		v.AltScreen = true
+		v.SetContent(centeredStyle.Render(e.String()))
 
 		return v
 	}
 
 	// Display list view.
-	v := tea.NewView(appStyle.Render(m.list.View()))
-	v.AltScreen = true
+	v.SetContent(appStyle.Render(m.list.View()))
 
 	return v
 }

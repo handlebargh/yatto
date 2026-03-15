@@ -24,10 +24,7 @@
 package models
 
 import (
-	"os"
-
 	"charm.land/lipgloss/v2"
-	"github.com/handlebargh/yatto/internal/colors"
 )
 
 type (
@@ -51,55 +48,3 @@ const (
 
 // appStyle defines the base padding for the entire application.
 var appStyle = lipgloss.NewStyle().Padding(1, 2)
-
-// Styles defines a reusable collection of lipgloss styles used in task and project forms.
-type Styles struct {
-	Base,
-	HeaderText,
-	Status,
-	StatusHeader,
-	Title,
-	Priority,
-	Completed,
-	Highlight,
-	ErrorHeaderText,
-	Help lipgloss.Style
-}
-
-// NewStyles returns a new instance of Styles configured using the provided lipgloss.Renderer.
-// It defines base padding, bold headers, status boxes, error highlights, and more UI styling presets.
-func NewStyles() *Styles {
-	s := Styles{}
-	s.Base = lipgloss.NewStyle().
-		Padding(1, 4, 0, 1)
-	s.HeaderText = lipgloss.NewStyle().
-		Bold(true).
-		Padding(0, 1, 0, 2)
-	s.Status = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		PaddingLeft(1).
-		MarginTop(1)
-
-	hasDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
-	lightDark := lipgloss.LightDark(hasDark)
-	statusHeaderColor := lightDark(lipgloss.Color("#000000"), lipgloss.Color("#FFFFFF"))
-
-	s.StatusHeader = lipgloss.NewStyle().
-		Foreground(statusHeaderColor).
-		Bold(true)
-	s.Title = lipgloss.NewStyle().
-		Bold(true)
-	s.Priority = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Padding(0, 1)
-	s.Completed = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Padding(0, 1)
-	s.Highlight = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("212"))
-	s.ErrorHeaderText = s.HeaderText.
-		Foreground(colors.Red())
-	s.Help = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240"))
-	return &s
-}

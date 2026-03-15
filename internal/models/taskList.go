@@ -133,7 +133,7 @@ func newTaskListKeyMap() *taskListKeyMap {
 			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
 		toggleSelect: key.NewBinding(
-			key.WithKeys(" "),
+			key.WithKeys("space"),
 			key.WithHelp("space", "select/deselect"),
 		),
 	}

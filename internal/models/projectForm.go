@@ -46,7 +46,7 @@ type projectFormModel struct {
 	edit          bool
 	cancel        bool
 	width, height int
-	styles        *Styles
+	styles        lipgloss.Style
 	vars          *projectFormVars
 }
 
@@ -78,7 +78,7 @@ func newProjectFormModel(
 	m.vars = &v
 	m.project = p
 	m.listModel = listModel
-	m.styles = NewStyles()
+	m.styles = lipgloss.NewStyle()
 
 	var confirmQuestion string
 	if edit {
@@ -207,6 +207,9 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the project form UI.
 func (m projectFormModel) View() tea.View {
+	var v tea.View
+	v.AltScreen = true
+
 	if m.cancel {
 		centeredStyle := lipgloss.NewStyle().
 			Width(m.width).
@@ -215,17 +218,19 @@ func (m projectFormModel) View() tea.View {
 			AlignVertical(lipgloss.Center)
 
 		if m.edit {
-			return tea.NewView(centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No"))
+			v.SetContent(centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No"))
+
+			return v
 		}
 
-		return tea.NewView(centeredStyle.Render("Cancel project creation?\n\n[y] Yes   [n] No"))
+		v.SetContent(centeredStyle.Render("Cancel project creation?\n\n[y] Yes   [n] No"))
+
+		return v
 	}
 
-	s := m.styles
-
 	// Form
-	v := strings.TrimSuffix(m.form.View(), "\n\n")
-	form := lipgloss.NewStyle().Margin(1, 0).Render(v)
+	formView := strings.TrimSuffix(m.form.View(), "\n\n")
+	form := lipgloss.NewStyle().Margin(1, 0).Render(formView)
 
 	var header string
 	if m.edit {
@@ -253,7 +258,9 @@ func (m projectFormModel) View() tea.View {
 	b.WriteString("\n\n")
 	b.WriteString(footer)
 
-	return tea.NewView(s.Base.Render(b.String()))
+	v.SetContent(b.String())
+
+	return v
 }
 
 // errorView returns a string representation of validation error messages.
@@ -262,6 +269,7 @@ func (m projectFormModel) errorView() string {
 	for _, err := range m.form.Errors() {
 		b.WriteString(err.Error())
 	}
+
 	return b.String()
 }
 
@@ -281,7 +289,7 @@ func (m projectFormModel) appBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,
 		lipgloss.Left,
-		m.styles.HeaderText.Foreground(color).Render(text),
+		m.styles.Bold(true).Padding(0, 1, 0, 2).Foreground(color).Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
 		lipgloss.WithWhitespaceStyle(whitespaceColor),
 	)
@@ -292,7 +300,7 @@ func (m projectFormModel) appErrorBoundaryView(text string) string {
 	return lipgloss.PlaceHorizontal(
 		m.width,
 		lipgloss.Left,
-		m.styles.ErrorHeaderText.Render(text),
+		m.styles.Foreground(colors.Red()).Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
 		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Foreground(colors.Red())),
 	)
