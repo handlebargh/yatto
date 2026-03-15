@@ -168,7 +168,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	form, cmd := m.form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
 		m.form = f
-		cmds = append(cmds, cmd)
+		return m, cmd
 	}
 
 	if m.form.State == huh.StateCompleted {
@@ -250,15 +250,7 @@ func (m projectFormModel) View() tea.View {
 		footer = m.appErrorBoundaryView("")
 	}
 
-	var b strings.Builder
-
-	b.WriteString(header)
-	b.WriteString("\n")
-	b.WriteString(form)
-	b.WriteString("\n\n")
-	b.WriteString(footer)
-
-	v.SetContent(b.String())
+	v.SetContent(lipgloss.JoinVertical(lipgloss.Top, header, form, footer))
 
 	return v
 }
