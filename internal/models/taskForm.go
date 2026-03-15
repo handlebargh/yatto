@@ -23,6 +23,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"image/color"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -30,10 +31,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"
@@ -71,7 +72,6 @@ type taskFormModel struct {
 	edit            bool
 	cancel          bool
 	width, height   int
-	lg              *lipgloss.Renderer
 	styles          *Styles
 	vars            *taskFormVars
 }
@@ -115,8 +115,7 @@ func newTaskFormModel(t *items.Task, listModel *taskListModel, edit bool) taskFo
 	m.task = t
 	m.listModel = listModel
 	m.taskLabels = helpers.AllLabels(m.listModel.projectModel.config)
-	m.lg = lipgloss.DefaultRenderer()
-	m.styles = NewStyles(m.lg)
+	m.styles = NewStyles()
 
 	var confirmQuestion string
 	if edit {
@@ -268,7 +267,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if m.cancel {
 			switch msg.String() {
 			case "y", "Y":
@@ -288,7 +287,7 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		switch msg.Type {
+		switch msg.Code {
 		case tea.KeyPgUp:
 			m.previewViewport.ScrollUp(previewLinesToScroll)
 			m.previewViewport.SetContent(m.generatePreviewContent())
@@ -311,7 +310,10 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width - h
 		m.height = msg.Height - v
 
-		m.previewViewport = viewport.New(previewWidth, m.height-previewVerticalPadding)
+		m.previewViewport = viewport.New(
+			viewport.WithWidth(previewWidth),
+			viewport.WithHeight(m.height-previewVerticalPadding),
+		)
 	}
 
 	form, cmd := m.form.Update(msg)
@@ -368,14 +370,17 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newModel := newTaskFormModel(m.task, m.listModel, m.edit)
 		newModel.width = m.width
 		newModel.height = m.height
-		newModel.previewViewport = viewport.New(previewWidth, m.height-previewVerticalPadding)
+		newModel.previewViewport = viewport.New(
+			viewport.WithWidth(previewWidth),
+			viewport.WithHeight(m.height-previewVerticalPadding),
+		)
 		return newModel, newModel.Init()
 	}
 	return m, tea.Batch(cmds...)
 }
 
 // View renders the task form UI and the task preview, depending on the current state.
-func (m taskFormModel) View() string {
+func (m taskFormModel) View() tea.View {
 	if m.cancel {
 		centeredStyle := lipgloss.NewStyle().
 			Width(m.width).
@@ -384,10 +389,10 @@ func (m taskFormModel) View() string {
 			AlignVertical(lipgloss.Center)
 
 		if m.edit {
-			return centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No")
+			return tea.NewView(centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No"))
 		}
 
-		return centeredStyle.Render("Cancel task creation?\n\n[y] Yes   [n] No")
+		return tea.NewView(centeredStyle.Render("Cancel task creation?\n\n[y] Yes   [n] No"))
 	}
 
 	s := m.styles
@@ -404,7 +409,7 @@ func (m taskFormModel) View() string {
 	}
 
 	var header string
-	var color lipgloss.AdaptiveColor
+	var color color.Color
 	if m.edit {
 		header = m.appBoundaryView("Edit task")
 		color = colors.Orange()
@@ -441,7 +446,7 @@ func (m taskFormModel) View() string {
 	b.WriteString("\n\n")
 	b.WriteString(footer)
 
-	return s.Base.Render(b.String())
+	return tea.NewView(s.Base.Render(b.String()))
 }
 
 // errorView returns a string representation of validation error messages.
@@ -456,10 +461,13 @@ func (m taskFormModel) errorView() string {
 // appBoundaryView returns a formatted header with colored boundaries,
 // used for visual separation in the UI.
 func (m taskFormModel) appBoundaryView(text string) string {
-	var color lipgloss.AdaptiveColor
+	var whitespaceColor lipgloss.Style
+	var color color.Color
 	if m.edit {
+		whitespaceColor.Foreground(colors.Orange())
 		color = colors.Orange()
 	} else {
+		whitespaceColor.Foreground(colors.Green())
 		color = colors.Green()
 	}
 
@@ -468,7 +476,7 @@ func (m taskFormModel) appBoundaryView(text string) string {
 		lipgloss.Left,
 		m.styles.HeaderText.Foreground(color).Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
-		lipgloss.WithWhitespaceForeground(color),
+		lipgloss.WithWhitespaceStyle(whitespaceColor),
 	)
 }
 
@@ -479,8 +487,7 @@ func (m taskFormModel) appErrorBoundaryView(text string) string {
 		lipgloss.Left,
 		m.styles.ErrorHeaderText.Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
-		lipgloss.WithWhitespaceForeground(colors.Red()),
-	)
+		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Foreground(colors.Red())))
 }
 
 // generatePreviewContent generates the formatted string content for the task preview pane.

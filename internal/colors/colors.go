@@ -23,132 +23,121 @@
 package colors
 
 import (
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"image/color"
+	"os"
+
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/viper"
 )
 
-// Red returns an AdaptiveColor configured for light and dark themes.
+// getColor returns a color.Color based on the specified colorName.
+// It retrieves the light and dark color settings from the configuration
+// using viper, and adjusts for dark or light background environments.
 //
-// The color values are loaded from Viper configuration keys:
-//   - "colors.red_light" for the light theme
-//   - "colors.red_dark" for the dark theme
+// colorName is expected to correspond to configuration keys
+// formatted as "colors.{colorName}_light" and "colors.{colorName}_dark".
 //
-// These should be set via Viper's defaults or loaded from a config file
-// before calling this function. If not set, the returned color will use empty strings.
-func Red() lipgloss.AdaptiveColor {
-	return lipgloss.AdaptiveColor{
-		Light: viper.GetString("colors.red_light"),
-		Dark:  viper.GetString("colors.red_dark"),
-	}
+// Returns:
+//   - A color.Color representing the specified color, modified for the
+//     current terminal background.
+func getColor(colorName string) color.Color {
+	hasDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+	lightDark := lipgloss.LightDark(hasDark)
+	lightColor := lipgloss.Color(viper.GetString("colors." + colorName + "_light"))
+	darkColor := lipgloss.Color(viper.GetString("colors." + colorName + "_dark"))
+	return lightDark(lightColor, darkColor)
 }
 
-// VividRed returns an AdaptiveColor configured for light and dark themes.
+// Red returns a color.Color representing the red color
+// as defined in the configuration. It calls GetColor with the
+// appropriate color name ("red").
 //
-// The color values are loaded from Viper configuration keys:
-//   - "colors.vividRed_light" for the light theme
-//   - "colors.vividRed_dark" for the dark theme
-//
-// These should be set via Viper's defaults or loaded from a config file
-// before calling this function. If not set, the returned color will use empty strings.
-func VividRed() lipgloss.AdaptiveColor {
-	return lipgloss.AdaptiveColor{
-		Light: viper.GetString("colors.vividRed_light"),
-		Dark:  viper.GetString("colors.vividRed_dark"),
-	}
+// Returns:
+//   - A color.Color representing the red color, modified
+//     for the current terminal background.
+func Red() color.Color {
+	return getColor("red")
 }
 
-// Indigo returns an AdaptiveColor configured for light and dark themes.
+// VividRed returns a color.Color representing the vividred color
+// as defined in the configuration. It calls GetColor with the
+// appropriate color name ("vividred").
 //
-// The color values are loaded from Viper configuration keys:
-//   - "colors.indigo_light" for the light theme
-//   - "colors.indigo_dark" for the dark theme
-//
-// These should be set via Viper's defaults or loaded from a config file
-// before calling this function. If not set, the returned color will use empty strings.
-func Indigo() lipgloss.AdaptiveColor {
-	return lipgloss.AdaptiveColor{
-		Light: viper.GetString("colors.indigo_light"),
-		Dark:  viper.GetString("colors.indigo_dark"),
-	}
+// Returns:
+//   - A color.Color representing the vividred color, modified
+//     for the current terminal background.
+func VividRed() color.Color {
+	return getColor("vividred")
 }
 
-// Green returns an AdaptiveColor configured for light and dark themes.
+// Indigo returns a color.Color representing the indigo color
+// as defined in the configuration. It calls GetColor with the
+// appropriate color name ("indigo").
 //
-// The color values are loaded from Viper configuration keys:
-//   - "colors.green_light" for the light theme
-//   - "colors.green_dark" for the dark theme
-//
-// These should be set via Viper's defaults or loaded from a config file
-// before calling this function. If not set, the returned color will use empty strings.
-func Green() lipgloss.AdaptiveColor {
-	return lipgloss.AdaptiveColor{
-		Light: viper.GetString("colors.green_light"),
-		Dark:  viper.GetString("colors.green_dark"),
-	}
+// Returns:
+//   - A color.Color representing the indigo color, modified
+//     for the current terminal background.
+func Indigo() color.Color {
+	return getColor("indigo")
 }
 
-// Orange returns an AdaptiveColor configured for light and dark themes.
+// Green returns a color.Color representing the green color
+// as defined in the configuration. It calls GetColor with the
+// appropriate color name ("green").
 //
-// The color values are loaded from Viper configuration keys:
-//   - "colors.orange_light" for the light theme
-//   - "colors.orange_dark" for the dark theme
-//
-// These should be set via Viper's defaults or loaded from a config file
-// before calling this function. If not set, the returned color will use empty strings.
-func Orange() lipgloss.AdaptiveColor {
-	return lipgloss.AdaptiveColor{
-		Light: viper.GetString("colors.orange_light"),
-		Dark:  viper.GetString("colors.orange_dark"),
-	}
+// Returns:
+//   - A color.Color representing the green color, modified
+//     for the current terminal background.
+func Green() color.Color {
+	return getColor("green")
 }
 
-// Blue returns an AdaptiveColor configured for light and dark themes.
+// Orange returns a color.Color representing the orange color
+// as defined in the configuration. It calls GetColor with the
+// appropriate color name ("orange").
 //
-// The color values are loaded from Viper configuration keys:
-//   - "colors.blue_light" for the light theme
-//   - "colors.blue_dark" for the dark theme
-//
-// These should be set via Viper's defaults or loaded from a config file
-// before calling this function. If not set, the returned color will use empty strings.
-func Blue() lipgloss.AdaptiveColor {
-	return lipgloss.AdaptiveColor{
-		Light: viper.GetString("colors.blue_light"),
-		Dark:  viper.GetString("colors.blue_dark"),
-	}
+// Returns:
+//   - A color.Color representing the orange color, modified
+//     for the current terminal background.
+func Orange() color.Color {
+	return getColor("orange")
 }
 
-// Yellow returns an AdaptiveColor configured for light and dark themes.
+// Blue returns a color.Color representing the blue color
+// as defined in the configuration. It calls GetColor with the
+// appropriate color name ("blue").
 //
-// The color values are loaded from Viper configuration keys:
-//   - "colors.yellow_light" for the light theme
-//   - "colors.yellow_dark" for the dark theme
-//
-// These should be set via Viper's defaults or loaded from a config file
-// before calling this function. If not set, the returned color will use empty strings.
-func Yellow() lipgloss.AdaptiveColor {
-	return lipgloss.AdaptiveColor{
-		Light: viper.GetString("colors.yellow_light"),
-		Dark:  viper.GetString("colors.yellow_dark"),
-	}
+// Returns:
+//   - A color.Color representing the blue color, modified
+//     for the current terminal background.
+func Blue() color.Color {
+	return getColor("blue")
 }
 
-// BadgeText returns an AdaptiveColor configured for light and dark themes.
+// Yellow returns a color.Color representing the yellow color
+// as defined in the configuration. It calls GetColor with the
+// appropriate color name ("yellow").
 //
-// The color values are loaded from Viper configuration keys:
-//   - "colors.badge_text_light" for the light theme
-//   - "colors.Badge_text_dark" for the dark theme
-//
-// These should be set via Viper's defaults or loaded from a config file
-// before calling this function. If not set, the returned color will use empty strings.
-func BadgeText() lipgloss.AdaptiveColor {
-	return lipgloss.AdaptiveColor{
-		Light: viper.GetString("colors.badge_text_light"),
-		Dark:  viper.GetString("colors.Badge_text_dark"),
-	}
+// Returns:
+//   - A color.Color representing the yellow color, modified
+//     for the current terminal background.
+func Yellow() color.Color {
+	return getColor("yellow")
 }
 
-// FormTheme returns a pointer to a huh.Theme based on the configured theme name.
+// BadgeText returns a color.Color representing the badge_text color
+// as defined in the configuration. It calls GetColor with the
+// appropriate color name ("badge_text").
+//
+// Returns:
+//   - A color.Color representing the badge_text color, modified
+//     for the current terminal background.
+func BadgeText() color.Color {
+	return getColor("badge_text")
+}
+
+// FormTheme returns a huh.ThemeFunc based on the configured theme name.
 //
 // It reads the configuration key "colors.form.theme" using Viper and returns the
 // corresponding predefined theme from the huh package. Supported theme values are:
@@ -161,19 +150,19 @@ func BadgeText() lipgloss.AdaptiveColor {
 //
 // If the configuration key is unset or does not match any of the supported values,
 // the function defaults to returning ThemeBase16.
-func FormTheme() *huh.Theme {
+func FormTheme() huh.ThemeFunc {
 	switch viper.GetString("colors.form.theme") {
 	case "Charm":
-		return huh.ThemeCharm()
+		return huh.ThemeFunc(huh.ThemeCharm)
 	case "Dracula":
-		return huh.ThemeDracula()
+		return huh.ThemeFunc(huh.ThemeDracula)
 	case "Catppuccin":
-		return huh.ThemeCatppuccin()
+		return huh.ThemeFunc(huh.ThemeCatppuccin)
 	case "Base16":
-		return huh.ThemeBase16()
+		return huh.ThemeFunc(huh.ThemeBase16)
 	case "Base":
-		return huh.ThemeBase()
+		return huh.ThemeFunc(huh.ThemeBase)
 	default:
-		return huh.ThemeBase16()
+		return huh.ThemeFunc(huh.ThemeBase16)
 	}
 }

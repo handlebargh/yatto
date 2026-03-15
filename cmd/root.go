@@ -27,7 +27,7 @@ import (
 	"os"
 	"os/exec"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/handlebargh/yatto/internal/config"
 	"github.com/handlebargh/yatto/internal/fetchmodel"
 	"github.com/handlebargh/yatto/internal/models"
@@ -100,13 +100,13 @@ var rootCmd = &cobra.Command{
 		if (appConfig.Viper.GetString("vcs.backend") == "git" && appConfig.Viper.GetBool("git.remote.enable")) ||
 			(appConfig.Viper.GetString("vcs.backend") == "jj" && appConfig.Viper.GetBool("jj.remote.enable")) {
 
-			if _, err := tea.NewProgram(fetchmodel.NewFetchModel(appConfig.Viper), tea.WithAltScreen()).
+			if _, err := tea.NewProgram(fetchmodel.NewFetchModel(appConfig.Viper)).
 				Run(); err != nil {
 				return err
 			}
 		}
 
-		if _, err := tea.NewProgram(models.InitialProjectListModel(appConfig.Viper), tea.WithAltScreen()).
+		if _, err := tea.NewProgram(models.InitialProjectListModel(appConfig.Viper)).
 			Run(); err != nil {
 			return err
 		}

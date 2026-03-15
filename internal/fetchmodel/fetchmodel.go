@@ -24,10 +24,11 @@ package fetchmodel
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/handlebargh/yatto/internal/vcs"
 	"github.com/spf13/viper"
 )
@@ -46,8 +47,13 @@ type FetchModel struct {
 func NewFetchModel(v *viper.Viper) FetchModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
+
+	hasDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+	lightDark := lipgloss.LightDark(hasDark)
+	spinnerColor := lightDark(lipgloss.Color("#FFB733"), lipgloss.Color("#FFA336"))
+
 	s.Style = s.Style.
-		Foreground(lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}).
+		Foreground(spinnerColor).
 		Bold(true)
 
 	m := FetchModel{
@@ -99,13 +105,9 @@ func (m FetchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Err = vcs.ErrorNoInit
 		return m, nil
 
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC {
-			return m, tea.Interrupt
-		}
-
+	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "esc", "q":
+		case "esc", "q", "ctrl+c":
 			return m, tea.Interrupt
 		}
 	}
@@ -115,7 +117,7 @@ func (m FetchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the spinner UI, displaying a loading animation or an error message,
 // centered in the terminal window.
-func (m FetchModel) View() string {
+func (m FetchModel) View() tea.View {
 	var content string
 	if m.Err != nil {
 		content = m.CmdOutput
@@ -124,11 +126,14 @@ func (m FetchModel) View() string {
 	}
 
 	// Center horizontally and vertically
-	return lipgloss.Place(
+	v := tea.NewView(lipgloss.Place(
 		m.Width,
 		m.Height,
 		lipgloss.Center,
 		lipgloss.Center,
 		content,
-	)
+	))
+	v.AltScreen = true
+
+	return v
 }

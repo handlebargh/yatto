@@ -26,9 +26,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/handlebargh/yatto/internal/config"
 	"github.com/handlebargh/yatto/internal/fetchmodel"
 	"github.com/handlebargh/yatto/internal/staticprinter"
@@ -98,15 +98,20 @@ var printCmd = &cobra.Command{
 				(appConfig.Viper.GetString("vcs.backend") == "jj" && appConfig.Viper.GetBool("jj.remote.enable"))) {
 			s := spinner.New()
 			s.Spinner = spinner.Dot
+
+			hasDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+			lightDark := lipgloss.LightDark(hasDark)
+			spinnerColor := lightDark(lipgloss.Color("#FFB733"), lipgloss.Color("#FFA336"))
+
 			s.Style = s.Style.
-				Foreground(lipgloss.AdaptiveColor{Light: "#FFB733", Dark: "#FFA336"}).
+				Foreground(spinnerColor).
 				Bold(true)
 
 			fetchModel := fetchmodel.FetchModel{
 				Spinner: s,
 			}
 
-			if _, err := tea.NewProgram(fetchModel, tea.WithAltScreen()).Run(); err != nil {
+			if _, err := tea.NewProgram(fetchModel).Run(); err != nil {
 				return err
 			}
 		}

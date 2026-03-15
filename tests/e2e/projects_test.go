@@ -24,8 +24,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/exp/teatest"
+	"github.com/charmbracelet/x/exp/teatest/v2"
 	"github.com/spf13/viper"
 )
 
@@ -74,13 +73,10 @@ func TestE2E_AddEditDeleteProject(t *testing.T) {
 				[]string{"No projects"},
 			)
 
-			e.tm.Send(tea.KeyMsg{
-				Type:  tea.KeyRunes,
-				Runes: []rune{'q'},
-			})
+			e.tm.Send([]rune{'q'})
 
 			e.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
-			out := e.tm.FinalModel(t).View()
+			out := e.tm.FinalModel(t).View().Content
 			teatest.RequireEqualOutput(t, []byte(out))
 		})
 	}

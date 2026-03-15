@@ -21,9 +21,9 @@
 package helpers
 
 import (
+	"image/color"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/stretchr/testify/assert"
 )
@@ -73,7 +73,7 @@ func TestGetColorCode(t *testing.T) {
 	testCases := []struct {
 		name     string
 		input    string
-		expected lipgloss.AdaptiveColor
+		expected color.Color
 	}{
 		{"green", "green", colors.Green()},
 		{"orange", "orange", colors.Orange()},

@@ -30,7 +30,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
 	"github.com/handlebargh/yatto/internal/items"

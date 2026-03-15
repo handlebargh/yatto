@@ -24,8 +24,8 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/exp/teatest"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/exp/teatest/v2"
 	"github.com/spf13/viper"
 )
 
@@ -71,7 +71,7 @@ func TestE2E_AddEditDeleteTask(t *testing.T) {
 			)
 
 			e.chooseItem(tc.projectTitle, false)
-			e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+			e.tm.Send(tea.KeyEnter)
 
 			// Then run the actual test.
 			e.addTask(
@@ -92,17 +92,11 @@ func TestE2E_AddEditDeleteTask(t *testing.T) {
 				[]string{"No tasks"},
 			)
 
-			e.tm.Send(tea.KeyMsg{
-				Type:  tea.KeyRunes,
-				Runes: []rune{'q'},
-			})
-			e.tm.Send(tea.KeyMsg{
-				Type:  tea.KeyRunes,
-				Runes: []rune{'q'},
-			})
+			e.tm.Send([]rune{'q'})
+			e.tm.Send([]rune{'q'})
 
 			e.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
-			out := e.tm.FinalModel(t).View()
+			out := e.tm.FinalModel(t).View().Content
 			teatest.RequireEqualOutput(t, []byte(out))
 		})
 	}

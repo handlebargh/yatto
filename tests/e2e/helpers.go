@@ -30,8 +30,8 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/exp/teatest"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/exp/teatest/v2"
 	"github.com/handlebargh/yatto/internal/models"
 	"github.com/spf13/viper"
 )
@@ -107,20 +107,20 @@ func (e *e2e) waitForMessageGone(gone, present []string) {
 func (e *e2e) confirmField(label, value string) {
 	e.waitForMessagesPresent([]string{label})
 	if value != "" {
-		e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(value)})
+		e.tm.Send([]rune(value))
 	}
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.tm.Send(tea.KeyEnter)
 }
 
 func (e *e2e) chooseItem(title string, selectItem bool) {
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	e.tm.Send([]rune{'/'})
 	e.waitForMessagesPresent([]string{"Filter"})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(title)})
+	e.tm.Send([]rune(title))
 	e.waitForMessagesPresent([]string{title})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	e.tm.Send(tea.KeyEnter)
 
 	if selectItem {
-		e.tm.Send(tea.KeyMsg{Type: tea.KeySpace})
+		e.tm.Send(tea.KeySpace)
 		e.waitForMessagesPresent([]string{"⟹"})
 	}
 }
@@ -132,9 +132,9 @@ func (e *e2e) deleteItems(kind string, title, gone, present []string) {
 		e.chooseItem(item, true)
 	}
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'D'}})
+	e.tm.Send([]rune{'D'})
 	e.waitForMessagesPresent([]string{"Delete " + strconv.Itoa(len(title)) + " " + kind})
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	e.tm.Send([]rune{'y'})
 
 	e.waitForMessageGone(gone, present)
 }
@@ -142,7 +142,7 @@ func (e *e2e) deleteItems(kind string, title, gone, present []string) {
 func (e *e2e) addProject(title, desc string, present []string) {
 	e.t.Helper()
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	e.tm.Send([]rune{'a'})
 
 	e.confirmField("Select a color", "")
 	e.confirmField("Enter a title", title)
@@ -157,7 +157,7 @@ func (e *e2e) editProject(title, appendText string, present []string) {
 
 	e.chooseItem(title, false)
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	e.tm.Send([]rune{'e'})
 
 	e.confirmField("Select a color", "")
 	e.confirmField("Enter a title", appendText)
@@ -170,7 +170,7 @@ func (e *e2e) editProject(title, appendText string, present []string) {
 func (e *e2e) addTask(title, desc string, present []string) {
 	e.t.Helper()
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}}) // Open task creation form
+	e.tm.Send([]rune{'a'}) // Open task creation form
 
 	e.confirmField("Select priority", "")
 	e.confirmField("Enter a title", title)
@@ -191,7 +191,7 @@ func (e *e2e) editTask(title, appendTitle, appendDesc string, present []string) 
 
 	e.chooseItem(title, false)
 
-	e.tm.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}}) // Open task editing form
+	e.tm.Send([]rune{'e'}) // Open task editing form
 
 	e.confirmField("Select priority", "")
 	e.confirmField("Enter a title", appendTitle)

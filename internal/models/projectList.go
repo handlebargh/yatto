@@ -23,16 +23,17 @@ package models
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
@@ -195,16 +196,16 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	var progressBar progress.Model
 	switch {
 	case progressPercent < 0.33:
-		progressBar = progress.New(progress.WithSolidFill(colors.Red().Dark), progress.WithWidth(30))
+		progressBar = progress.New(progress.WithColors(colors.Red()), progress.WithWidth(30))
 
 	case progressPercent < 0.60:
-		progressBar = progress.New(progress.WithSolidFill(colors.Orange().Dark), progress.WithWidth(30))
+		progressBar = progress.New(progress.WithColors(colors.Orange()), progress.WithWidth(30))
 
 	case progressPercent < 1:
-		progressBar = progress.New(progress.WithSolidFill(colors.Yellow().Dark), progress.WithWidth(30))
+		progressBar = progress.New(progress.WithColors(colors.Yellow()), progress.WithWidth(30))
 
 	default:
-		progressBar = progress.New(progress.WithSolidFill(colors.Green().Dark), progress.WithWidth(30))
+		progressBar = progress.New(progress.WithColors(colors.Green()), progress.WithWidth(30))
 
 	}
 
@@ -349,7 +350,13 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 
 	m.list = itemList
 
-	renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+	isDark := lipgloss.HasDarkBackground(os.Stdin, os.Stderr)
+
+	style := "dark"
+	if !isDark {
+		style = "light"
+	}
+	renderer, err := glamour.NewTermRenderer(glamour.WithStylePath(style))
 	if err != nil {
 		panic(err)
 	}
@@ -465,8 +472,8 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC {
+	case tea.KeyPressMsg:
+		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
 
@@ -543,7 +550,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.chooseProject):
 				if m.list.SelectedItem() != nil {
 					listModel := newTaskListModel(m.list.SelectedItem().(*items.Project), &m)
-					return listModel, tea.WindowSize()
+					return listModel, tea.RequestWindowSize
 				}
 				return m, nil
 
@@ -562,7 +569,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.list.SelectedItem() != nil {
 					// Switch to formModel for editing.
 					formModel := newProjectFormModel(m.list.SelectedItem().(*items.Project), &m, true)
-					return formModel, tea.WindowSize()
+					return formModel, tea.RequestWindowSize
 				}
 
 			case key.Matches(msg, m.keys.addProject):
@@ -572,7 +579,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					Description: "",
 				}
 				formModel := newProjectFormModel(project, &m, false)
-				return formModel, tea.WindowSize()
+				return formModel, tea.RequestWindowSize
 
 			case key.Matches(msg, m.keys.toggleSelect):
 				if m.list.SelectedItem() != nil {
@@ -600,7 +607,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the current UI state of the project list,
 // including list view, progress bar, and any status messages.
-func (m ProjectListModel) View() string {
+func (m ProjectListModel) View() tea.View {
 	centeredStyle := lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
@@ -609,19 +616,24 @@ func (m ProjectListModel) View() string {
 
 	// Spinner active view
 	if m.spinning {
-		return centeredStyle.
-			Render(fmt.Sprintf("%s  %s", m.spinner.View(), m.status))
+		v := tea.NewView(centeredStyle.Render(fmt.Sprintf("%s  %s", m.spinner.View(), m.status)))
+		v.AltScreen = true
+
+		return v
 	}
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
 		if len(m.selectedItems) > 0 {
-			return centeredStyle.Render(
+			v := tea.NewView(centeredStyle.Render(
 				fmt.Sprintf("Delete %d project(s)?\n\n%s%s%s", len(m.selectedItems),
 					"[y] Yes",
 					"    ",
 					"[n] No",
-				))
+				)))
+			v.AltScreen = true
+
+			return v
 		}
 	}
 
@@ -635,9 +647,15 @@ func (m ProjectListModel) View() string {
 		e.WriteString("\n\n")
 		e.WriteString("Please commit manually!")
 
-		return centeredStyle.Render(e.String())
+		v := tea.NewView(centeredStyle.Render(e.String()))
+		v.AltScreen = true
+
+		return v
 	}
 
 	// Display list view.
-	return appStyle.Render(m.list.View())
+	v := tea.NewView(appStyle.Render(m.list.View()))
+	v.AltScreen = true
+
+	return v
 }

@@ -23,12 +23,13 @@ package models
 import (
 	"errors"
 	"fmt"
+	"image/color"
 	"path/filepath"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
@@ -45,7 +46,6 @@ type projectFormModel struct {
 	edit          bool
 	cancel        bool
 	width, height int
-	lg            *lipgloss.Renderer
 	styles        *Styles
 	vars          *projectFormVars
 }
@@ -78,8 +78,7 @@ func newProjectFormModel(
 	m.vars = &v
 	m.project = p
 	m.listModel = listModel
-	m.lg = lipgloss.DefaultRenderer()
-	m.styles = NewStyles(m.lg)
+	m.styles = NewStyles()
 
 	var confirmQuestion string
 	if edit {
@@ -141,7 +140,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if m.cancel {
 			switch msg.String() {
 			case "y", "Y":
@@ -207,7 +206,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View renders the project form UI.
-func (m projectFormModel) View() string {
+func (m projectFormModel) View() tea.View {
 	if m.cancel {
 		centeredStyle := lipgloss.NewStyle().
 			Width(m.width).
@@ -216,17 +215,17 @@ func (m projectFormModel) View() string {
 			AlignVertical(lipgloss.Center)
 
 		if m.edit {
-			return centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No")
+			return tea.NewView(centeredStyle.Render("Cancel edit?\n\n[y] Yes   [n] No"))
 		}
 
-		return centeredStyle.Render("Cancel project creation?\n\n[y] Yes   [n] No")
+		return tea.NewView(centeredStyle.Render("Cancel project creation?\n\n[y] Yes   [n] No"))
 	}
 
 	s := m.styles
 
 	// Form
 	v := strings.TrimSuffix(m.form.View(), "\n\n")
-	form := m.lg.NewStyle().Margin(1, 0).Render(v)
+	form := lipgloss.NewStyle().Margin(1, 0).Render(v)
 
 	var header string
 	if m.edit {
@@ -254,7 +253,7 @@ func (m projectFormModel) View() string {
 	b.WriteString("\n\n")
 	b.WriteString(footer)
 
-	return s.Base.Render(b.String())
+	return tea.NewView(s.Base.Render(b.String()))
 }
 
 // errorView returns a string representation of validation error messages.
@@ -269,10 +268,13 @@ func (m projectFormModel) errorView() string {
 // appBoundaryView returns a formatted header with colored boundaries,
 // used for visual separation in the UI.
 func (m projectFormModel) appBoundaryView(text string) string {
-	var color lipgloss.AdaptiveColor
+	var whitespaceColor lipgloss.Style
+	var color color.Color
 	if m.edit {
+		whitespaceColor.Foreground(colors.Orange())
 		color = colors.Orange()
 	} else {
+		whitespaceColor.Foreground(colors.Green())
 		color = colors.Green()
 	}
 
@@ -281,7 +283,7 @@ func (m projectFormModel) appBoundaryView(text string) string {
 		lipgloss.Left,
 		m.styles.HeaderText.Foreground(color).Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
-		lipgloss.WithWhitespaceForeground(color),
+		lipgloss.WithWhitespaceStyle(whitespaceColor),
 	)
 }
 
@@ -292,6 +294,6 @@ func (m projectFormModel) appErrorBoundaryView(text string) string {
 		lipgloss.Left,
 		m.styles.ErrorHeaderText.Render(text),
 		lipgloss.WithWhitespaceChars("❯"),
-		lipgloss.WithWhitespaceForeground(colors.Red()),
+		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Foreground(colors.Red())),
 	)
 }
