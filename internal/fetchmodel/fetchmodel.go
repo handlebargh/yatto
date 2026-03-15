@@ -118,6 +118,7 @@ func (m FetchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the spinner UI, displaying a loading animation or an error message,
 // centered in the terminal window.
 func (m FetchModel) View() tea.View {
+	var v tea.View
 	var content string
 	if m.Err != nil {
 		content = m.CmdOutput
@@ -126,7 +127,7 @@ func (m FetchModel) View() tea.View {
 	}
 
 	// Center horizontally and vertically
-	v := tea.NewView(lipgloss.Place(
+	v.SetContent(lipgloss.Place(
 		m.Width,
 		m.Height,
 		lipgloss.Center,
