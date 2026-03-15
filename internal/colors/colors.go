@@ -31,110 +31,116 @@ import (
 	"github.com/spf13/viper"
 )
 
-// getColor returns a color.Color based on the specified colorName.
-// It retrieves the light and dark color settings from the configuration
-// using viper, and adjusts for dark or light background environments.
-//
-// colorName is expected to correspond to configuration keys
-// formatted as "colors.{colorName}_light" and "colors.{colorName}_dark".
-//
-// Returns:
-//   - A color.Color representing the specified color, modified for the
-//     current terminal background.
-func getColor(colorName string) color.Color {
-	hasDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
-	lightDark := lipgloss.LightDark(hasDark)
-	lightColor := lipgloss.Color(viper.GetString("colors." + colorName + "_light"))
-	darkColor := lipgloss.Color(viper.GetString("colors." + colorName + "_dark"))
-	return lightDark(lightColor, darkColor)
-}
-
 // Red returns a color.Color representing the red color
-// as defined in the configuration. It calls GetColor with the
-// appropriate color name ("red").
+// as defined in the configuration.
 //
 // Returns:
 //   - A color.Color representing the red color, modified
 //     for the current terminal background.
 func Red() color.Color {
-	return getColor("red")
+	lightDark := lipgloss.LightDark(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	return lightDark(
+		lipgloss.Color(viper.GetString("colors.red_light")),
+		lipgloss.Color(viper.GetString("colors.red_dark")),
+	)
 }
 
 // VividRed returns a color.Color representing the vividred color
-// as defined in the configuration. It calls GetColor with the
-// appropriate color name ("vividred").
+// as defined in the configuration.
 //
 // Returns:
 //   - A color.Color representing the vividred color, modified
 //     for the current terminal background.
 func VividRed() color.Color {
-	return getColor("vividred")
+	lightDark := lipgloss.LightDark(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	return lightDark(
+		lipgloss.Color(viper.GetString("colors.vividred_light")),
+		lipgloss.Color(viper.GetString("colors.vividred_dark")),
+	)
 }
 
 // Indigo returns a color.Color representing the indigo color
-// as defined in the configuration. It calls GetColor with the
-// appropriate color name ("indigo").
+// as defined in the configuration.
 //
 // Returns:
 //   - A color.Color representing the indigo color, modified
 //     for the current terminal background.
 func Indigo() color.Color {
-	return getColor("indigo")
+	lightDark := lipgloss.LightDark(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	return lightDark(
+		lipgloss.Color(viper.GetString("colors.indigo_light")),
+		lipgloss.Color(viper.GetString("colors.indigo_dark")),
+	)
 }
 
 // Green returns a color.Color representing the green color
-// as defined in the configuration. It calls GetColor with the
-// appropriate color name ("green").
+// as defined in the configuration.
 //
 // Returns:
 //   - A color.Color representing the green color, modified
 //     for the current terminal background.
 func Green() color.Color {
-	return getColor("green")
+	lightDark := lipgloss.LightDark(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	return lightDark(
+		lipgloss.Color(viper.GetString("colors.green_light")),
+		lipgloss.Color(viper.GetString("colors.green_dark")),
+	)
 }
 
 // Orange returns a color.Color representing the orange color
-// as defined in the configuration. It calls GetColor with the
-// appropriate color name ("orange").
+// as defined in the configuration.
 //
 // Returns:
 //   - A color.Color representing the orange color, modified
 //     for the current terminal background.
 func Orange() color.Color {
-	return getColor("orange")
+	lightDark := lipgloss.LightDark(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	return lightDark(
+		lipgloss.Color(viper.GetString("colors.orange_light")),
+		lipgloss.Color(viper.GetString("colors.orange_dark")),
+	)
 }
 
 // Blue returns a color.Color representing the blue color
-// as defined in the configuration. It calls GetColor with the
-// appropriate color name ("blue").
+// as defined in the configuration.
 //
 // Returns:
 //   - A color.Color representing the blue color, modified
 //     for the current terminal background.
 func Blue() color.Color {
-	return getColor("blue")
+	lightDark := lipgloss.LightDark(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	return lightDark(
+		lipgloss.Color(viper.GetString("colors.blue_light")),
+		lipgloss.Color(viper.GetString("colors.blue_dark")),
+	)
 }
 
 // Yellow returns a color.Color representing the yellow color
-// as defined in the configuration. It calls GetColor with the
-// appropriate color name ("yellow").
+// as defined in the configuration.
 //
 // Returns:
 //   - A color.Color representing the yellow color, modified
 //     for the current terminal background.
 func Yellow() color.Color {
-	return getColor("yellow")
+	lightDark := lipgloss.LightDark(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	return lightDark(
+		lipgloss.Color(viper.GetString("colors.yellow_light")),
+		lipgloss.Color(viper.GetString("colors.yellow_dark")),
+	)
 }
 
 // BadgeText returns a color.Color representing the badge_text color
-// as defined in the configuration. It calls GetColor with the
-// appropriate color name ("badge_text").
+// as defined in the configuration.
 //
 // Returns:
 //   - A color.Color representing the badge_text color, modified
 //     for the current terminal background.
 func BadgeText() color.Color {
-	return getColor("badge_text")
+	lightDark := lipgloss.LightDark(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	return lightDark(
+		lipgloss.Color(viper.GetString("colors.badge_text_light")),
+		lipgloss.Color(viper.GetString("colors.badge_text_dark")),
+	)
 }
 
 // FormTheme returns a huh.ThemeFunc based on the configured theme name.
