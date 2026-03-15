@@ -279,10 +279,10 @@ func (m projectFormModel) appBoundaryView(text string) string {
 	var whitespaceColor lipgloss.Style
 	var color color.Color
 	if m.edit {
-		whitespaceColor.Foreground(colors.Orange())
+		whitespaceColor = whitespaceColor.Foreground(colors.Orange())
 		color = colors.Orange()
 	} else {
-		whitespaceColor.Foreground(colors.Green())
+		whitespaceColor = whitespaceColor.Foreground(colors.Green())
 		color = colors.Green()
 	}
 
@@ -290,7 +290,7 @@ func (m projectFormModel) appBoundaryView(text string) string {
 		m.width,
 		lipgloss.Left,
 		m.styles.Bold(true).Padding(0, 1, 0, 2).Foreground(color).Render(text),
-		lipgloss.WithWhitespaceChars("❯"),
+		lipgloss.WithWhitespaceChars("|"),
 		lipgloss.WithWhitespaceStyle(whitespaceColor),
 	)
 }
@@ -301,7 +301,7 @@ func (m projectFormModel) appErrorBoundaryView(text string) string {
 		m.width,
 		lipgloss.Left,
 		m.styles.Foreground(colors.Red()).Render(text),
-		lipgloss.WithWhitespaceChars("❯"),
+		lipgloss.WithWhitespaceChars("|"),
 		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Foreground(colors.Red())),
 	)
 }
