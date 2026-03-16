@@ -1,4 +1,17 @@
 - - -
+## v1.1.3 - 2026-03-16
+#### Performance Improvements
+- load renderer and task stats asynchronously (#90) - (90ef42f) - Benedikt Zumtobel
+#### Refactoring
+- use a shared state struct to hold async initialized values (#92) - (e3af551) - Benedikt Zumtobel
+#### Miscellaneous Chores
+- (**deps**) update dependencies (#91) - (09c7d1d) - Benedikt Zumtobel
+- (**deps**) bump sigstore/cosign-installer in the github-actions group (#88) - (af7e8d4) - dependabot[bot], *dependabot[bot]*
+- update copyright (#89) - (d7b92a0) - Benedikt Zumtobel
+- increase go version (#87) - (f07cd95) - Benedikt Zumtobel
+
+- - -
+
 ## v1.1.2 - 2026-02-28
 #### Bug Fixes
 - replace filepath with path (#86) - (3f5b54a) - Benedikt Zumtobel
