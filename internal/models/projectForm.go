@@ -200,6 +200,7 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		)
 
 		m.listModel.status = ""
+		cmds = append(cmds, func() tea.Msg { return returnedToProjectListMsg{} })
 		return m.listModel, tea.Batch(cmds...)
 	}
 

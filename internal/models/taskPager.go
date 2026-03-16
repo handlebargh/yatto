@@ -114,7 +114,7 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		footerHeight := lipgloss.Height(m.footerView())
 
 		if !m.ready {
-			rendered, err := m.listModel.projectModel.renderer.Render(m.content)
+			rendered, err := m.listModel.projectModel.state.renderer.Render(m.content)
 			if err != nil {
 				rendered = "Error rendering markdown"
 			}
