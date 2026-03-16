@@ -613,10 +613,10 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			switch {
 			case key.Matches(msg, m.keys.quit):
-				return m.projectModel, nil
+				return m.projectModel, func() tea.Msg { return returnedToProjectListMsg{} }
 
 			case key.Matches(msg, m.keys.goBackVim):
-				return m.projectModel, nil
+				return m.projectModel, func() tea.Msg { return returnedToProjectListMsg{} }
 
 			case key.Matches(msg, m.keys.toggleHelpMenu):
 				m.list.SetShowHelp(!m.list.ShowHelp())
@@ -638,7 +638,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.sortTasksByKeys([]string{"completed", "inProgress", "dueDate", "priority"})
 
 			case key.Matches(msg, m.keys.chooseItem):
-				if m.list.SelectedItem() != nil && m.projectModel.renderer != nil {
+				if m.list.SelectedItem() != nil && m.projectModel.state.renderer != nil {
 					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
 					pagerModel := newTaskPagerModel(markdown, &m)
 

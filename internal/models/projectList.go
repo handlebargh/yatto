@@ -125,6 +125,15 @@ type rendererReadyMsg struct {
 	renderer *glamour.TermRenderer
 }
 
+// projectListState holds shared mutable state that must remain consistent
+// between the ProjectListModel and its customProjectDelegate across value
+// copies. Fields are accessed via pointer to avoid stale reads after updates.
+type projectListState struct {
+	taskStats     map[string]items.TaskStats
+	selectedItems map[string]*items.Project
+	renderer      *glamour.TermRenderer
+}
+
 // customProjectDelegate implements a custom
 // renderer for items in the project list.
 type customProjectDelegate struct {
@@ -155,7 +164,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	leftWidth := max(availableWidth-40, 20)
 
 	// Check if item is selected
-	_, selected := d.parent.selectedItems[projectItem.ID]
+	_, selected := d.parent.state.selectedItems[projectItem.ID]
 
 	marker := ""
 	indent := 0
@@ -201,7 +210,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	left.WriteString("\n")
 	left.WriteString(listDescStyle.Render(projectItem.CropDescription(projectDescLength)))
 
-	stats := d.parent.taskStats[projectItem.ID]
+	stats := d.parent.state.taskStats[projectItem.ID]
 	numTasks := stats.Total
 	numCompletedTasks := stats.Completed
 	numDueTasks := stats.Due
@@ -295,9 +304,7 @@ type ProjectListModel struct {
 	spinning      bool
 	status        string
 	width, height int
-	selectedItems map[string]*items.Project
-	taskStats     map[string]items.TaskStats
-	renderer      *glamour.TermRenderer
+	state         *projectListState
 
 	progressRed    progress.Model
 	progressOrange progress.Model
@@ -323,11 +330,14 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 	sp.Style = lipgloss.NewStyle().Foreground(colors.Orange())
 
 	m := ProjectListModel{
-		config:        v,
-		keys:          listKeys,
-		spinner:       sp,
-		spinning:      false,
-		selectedItems: make(map[string]*items.Project),
+		config:   v,
+		keys:     listKeys,
+		spinner:  sp,
+		spinning: false,
+		state: &projectListState{
+			taskStats:     make(map[string]items.TaskStats),
+			selectedItems: make(map[string]*items.Project),
+		},
 	}
 
 	itemList := list.New(
@@ -369,8 +379,6 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 
 	m.list = itemList
 
-	m.taskStats = make(map[string]items.TaskStats)
-
 	m.progressRed = progress.New(progress.WithSolidFill(colors.Red().Dark), progress.WithWidth(30))
 	m.progressOrange = progress.New(progress.WithSolidFill(colors.Orange().Dark), progress.WithWidth(30))
 	m.progressYellow = progress.New(progress.WithSolidFill(colors.Yellow().Dark), progress.WithWidth(30))
@@ -404,12 +412,15 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case rendererReadyMsg:
-		m.renderer = msg.renderer
+		m.state.renderer = msg.renderer
 		return m, nil
 
 	case doneWaitingMsg:
 		m.spinning = false
 		return m, nil
+
+	case returnedToProjectListMsg:
+		return m, items.LoadAllTaskStatsCmd(m.config, m.allProjects())
 
 	case vcs.InitDoneMsg:
 		return m, nil
@@ -421,8 +432,8 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case vcs.CommitDoneMsg:
 		// Remove all map entries after successful commit.
-		for k := range m.selectedItems {
-			delete(m.selectedItems, k)
+		for k := range m.state.selectedItems {
+			delete(m.state.selectedItems, k)
 		}
 		m.status = "🗘  Changes committed"
 
@@ -471,10 +482,10 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case items.ProjectDeleteDoneMsg:
-		for i, project := range m.selectedItems {
+		for i, project := range m.state.selectedItems {
 			if idx := project.FindListIndexByID(m.list.Items()); idx >= 0 {
 				m.list.RemoveItem(idx)
-				delete(m.selectedItems, i)
+				delete(m.state.selectedItems, i)
 			}
 		}
 		m.status = "✘ Project(s) deleted ― committing changes"
@@ -487,7 +498,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case items.TaskStatsDoneMsg:
-		m.taskStats = msg.Stats
+		m.state.taskStats = msg.Stats
 		return m, nil
 
 	case items.TaskStatsErrorMsg:
@@ -519,7 +530,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case modeConfirmDelete:
 			switch msg.String() {
 			case "y", "Y":
-				if len(m.selectedItems) == 0 {
+				if len(m.state.selectedItems) == 0 {
 
 					m.mode = modeNormal
 					return m, nil
@@ -527,7 +538,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				var projectNames, projectPaths []string
 				var deleteCmds []tea.Cmd
-				for _, item := range m.selectedItems {
+				for _, item := range m.state.selectedItems {
 					projectNames = append(projectNames, item.Title)
 					projectPaths = append(projectPaths, item.ID)
 					deleteCmds = append(deleteCmds, item.DeleteProjectFromFS(m.config))
@@ -582,7 +593,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case key.Matches(msg, m.keys.deleteProject):
-				if len(m.selectedItems) > 0 {
+				if len(m.state.selectedItems) > 0 {
 					m.mode = modeConfirmDelete
 				} else {
 					cmds = append(cmds, m.list.NewStatusMessage(lipgloss.NewStyle().
@@ -612,10 +623,10 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.list.SelectedItem() != nil {
 					p := m.list.SelectedItem().(*items.Project)
 
-					if _, ok := m.selectedItems[p.ID]; ok {
-						delete(m.selectedItems, p.ID)
+					if _, ok := m.state.selectedItems[p.ID]; ok {
+						delete(m.state.selectedItems, p.ID)
 					} else {
-						m.selectedItems[p.ID] = p
+						m.state.selectedItems[p.ID] = p
 					}
 					return m, nil
 				}
@@ -649,9 +660,9 @@ func (m ProjectListModel) View() string {
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
-		if len(m.selectedItems) > 0 {
+		if len(m.state.selectedItems) > 0 {
 			return centeredStyle.Render(
-				fmt.Sprintf("Delete %d project(s)?\n\n%s%s%s", len(m.selectedItems),
+				fmt.Sprintf("Delete %d project(s)?\n\n%s%s%s", len(m.state.selectedItems),
 					"[y] Yes",
 					"    ",
 					"[n] No",

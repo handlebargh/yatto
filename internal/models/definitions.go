@@ -34,6 +34,9 @@ type (
 
 	// doneWaitingMsg signals that the spinner has finished its post-completion delay.
 	doneWaitingMsg struct{}
+
+	// returnedToProjectListMsg signals the return from another model to the project list.
+	returnedToProjectListMsg struct{}
 )
 
 const (
