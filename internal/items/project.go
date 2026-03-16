@@ -50,6 +50,14 @@ type (
 
 	// ProjectDeleteErrorMsg is returned when a project fails to delete from disk.
 	ProjectDeleteErrorMsg struct{ Err error }
+
+	// TaskStatsDoneMsg carries the loaded stats for all projects.
+	TaskStatsDoneMsg struct {
+		Stats map[string]TaskStats
+	}
+
+	// TaskStatsErrorMsg is returned when stats loading fails.
+	TaskStatsErrorMsg struct{ Err error }
 )
 
 // Error implements the error interface for WriteProjectJSONErrorMsg.
@@ -57,6 +65,13 @@ func (e WriteProjectJSONErrorMsg) Error() string { return e.Err.Error() }
 
 // Error implements the error interface for ProjectDeleteErrorMsg.
 func (e ProjectDeleteErrorMsg) Error() string { return e.Err.Error() }
+
+// TaskStats holds cached task counts for a project.
+type TaskStats struct {
+	Total     int
+	Completed int
+	Due       int
+}
 
 // Project represents a collection of tasks, identified by an ID, title, description,
 // and a display color. Projects are stored as directories on disk containing a JSON file
@@ -235,4 +250,23 @@ func (p *Project) FindListIndexByID(items []list.Item) int {
 	}
 
 	return -1 // not found
+}
+
+// LoadAllTaskStatsCmd loads task stats for all given projects asynchronously.
+func LoadAllTaskStatsCmd(v *viper.Viper, projects []*Project) tea.Cmd {
+	return func() tea.Msg {
+		stats := make(map[string]TaskStats, len(projects))
+		for _, p := range projects {
+			total, completed, due, err := p.NumOfTasks(v)
+			if err != nil {
+				return TaskStatsErrorMsg{Err: err}
+			}
+			stats[p.ID] = TaskStats{
+				Total:     total,
+				Completed: completed,
+				Due:       due,
+			}
+		}
+		return TaskStatsDoneMsg{Stats: stats}
+	}
 }
