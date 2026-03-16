@@ -20,6 +20,8 @@
 
 package models
 
+import "github.com/handlebargh/yatto/internal/items"
+
 // completedString returns a string representation of the task completion state.
 // It returns "completed" if completed is true, otherwise "open".
 func completedString(completed bool) string {
@@ -28,4 +30,16 @@ func completedString(completed bool) string {
 	}
 
 	return "open"
+}
+
+// allProjects is a helper to collect current list items as []*Project
+func (m ProjectListModel) allProjects() []*items.Project {
+	raw := m.list.Items()
+	out := make([]*items.Project, 0, len(raw))
+	for _, item := range raw {
+		if p, ok := item.(*items.Project); ok {
+			out = append(out, p)
+		}
+	}
+	return out
 }

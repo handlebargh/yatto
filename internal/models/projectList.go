@@ -100,6 +100,31 @@ func newProjectListKeyMap() *projectListKeyMap {
 	}
 }
 
+// initRendererCmd initializes a glamour terminal renderer asynchronously.
+// It queries the terminal background color to determine whether to use a
+// dark or light style, then constructs the renderer accordingly. The result
+// is sent back to the update loop via a rendererReadyMsg.
+func initRendererCmd() tea.Cmd {
+	return func() tea.Msg {
+		isDark := lipgloss.HasDarkBackground()
+		style := "dark"
+		if !isDark {
+			style = "light"
+		}
+		renderer, err := glamour.NewTermRenderer(glamour.WithStylePath(style))
+		if err != nil {
+			panic(err)
+		}
+		return rendererReadyMsg{renderer: renderer}
+	}
+}
+
+// rendererReadyMsg is sent when the glamour terminal renderer has been
+// successfully initialized and is ready for use.
+type rendererReadyMsg struct {
+	renderer *glamour.TermRenderer
+}
+
 // customProjectDelegate implements a custom
 // renderer for items in the project list.
 type customProjectDelegate struct {
@@ -176,36 +201,26 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	left.WriteString("\n")
 	left.WriteString(listDescStyle.Render(projectItem.CropDescription(projectDescLength)))
 
-	numTasks, numCompletedTasks, numDueTasks, err := projectItem.NumOfTasks(d.parent.config)
-	if err != nil {
-		m.NewStatusMessage(
-			lipgloss.NewStyle().Foreground(colors.Red()).Render(
-				fmt.Sprintf("Error gathering task info for project %s", projectItem.Title),
-			),
-		)
-	}
+	stats := d.parent.taskStats[projectItem.ID]
+	numTasks := stats.Total
+	numCompletedTasks := stats.Completed
+	numDueTasks := stats.Due
 
 	var progressPercent float64
 	if numTasks > 0 {
 		progressPercent = float64(numCompletedTasks) / float64(numTasks)
-	} else {
-		progressPercent = 0
 	}
 
 	var progressBar progress.Model
 	switch {
 	case progressPercent < 0.33:
-		progressBar = progress.New(progress.WithSolidFill(colors.Red().Dark), progress.WithWidth(30))
-
+		progressBar = d.parent.progressRed
 	case progressPercent < 0.60:
-		progressBar = progress.New(progress.WithSolidFill(colors.Orange().Dark), progress.WithWidth(30))
-
+		progressBar = d.parent.progressOrange
 	case progressPercent < 1:
-		progressBar = progress.New(progress.WithSolidFill(colors.Yellow().Dark), progress.WithWidth(30))
-
+		progressBar = d.parent.progressYellow
 	default:
-		progressBar = progress.New(progress.WithSolidFill(colors.Green().Dark), progress.WithWidth(30))
-
+		progressBar = d.parent.progressGreen
 	}
 
 	progressBar.ShowPercentage = true
@@ -260,7 +275,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 			),
 		)
 
-	_, err = fmt.Fprint(w, row)
+	_, err := fmt.Fprint(w, row)
 	if err != nil {
 		panic(err)
 	}
@@ -281,8 +296,13 @@ type ProjectListModel struct {
 	status        string
 	width, height int
 	selectedItems map[string]*items.Project
+	taskStats     map[string]items.TaskStats
+	renderer      *glamour.TermRenderer
 
-	renderer *glamour.TermRenderer
+	progressRed    progress.Model
+	progressOrange progress.Model
+	progressYellow progress.Model
+	progressGreen  progress.Model
 }
 
 // InitialProjectListModel returns an initialized projectListModel
@@ -349,12 +369,12 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 
 	m.list = itemList
 
-	renderer, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
-	if err != nil {
-		panic(err)
-	}
+	m.taskStats = make(map[string]items.TaskStats)
 
-	m.renderer = renderer
+	m.progressRed = progress.New(progress.WithSolidFill(colors.Red().Dark), progress.WithWidth(30))
+	m.progressOrange = progress.New(progress.WithSolidFill(colors.Orange().Dark), progress.WithWidth(30))
+	m.progressYellow = progress.New(progress.WithSolidFill(colors.Yellow().Dark), progress.WithWidth(30))
+	m.progressGreen = progress.New(progress.WithSolidFill(colors.Green().Dark), progress.WithWidth(30))
 
 	return m
 }
@@ -362,8 +382,11 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 // Init initializes the Bubble Tea program
 // for the project list model.
 func (m ProjectListModel) Init() tea.Cmd {
+	projects := m.allProjects()
 	return tea.Batch(
 		vcs.InitCmd(m.config),
+		items.LoadAllTaskStatsCmd(m.config, projects),
+		initRendererCmd(),
 	)
 }
 
@@ -379,6 +402,10 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
 		}
+
+	case rendererReadyMsg:
+		m.renderer = msg.renderer
+		return m, nil
 
 	case doneWaitingMsg:
 		m.spinning = false
@@ -430,11 +457,11 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "create":
 			m.list.InsertItem(0, &msg.Project)
 			m.status = "🗸  Project created ― committing changes"
-			return m, nil
+			return m, items.LoadAllTaskStatsCmd(m.config, m.allProjects())
 
 		case "update":
 			m.status = "🗸  Project updated ― committing changes"
-			return m, nil
+			return m, items.LoadAllTaskStatsCmd(m.config, m.allProjects())
 		}
 		return m, nil
 
@@ -451,12 +478,19 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		m.status = "✘ Project(s) deleted ― committing changes"
-		return m, nil
+		return m, items.LoadAllTaskStatsCmd(m.config, m.allProjects())
 
 	case items.ProjectDeleteErrorMsg:
 		m.mode = 2
 		m.err = msg.Err
 		m.spinning = false
+		return m, nil
+
+	case items.TaskStatsDoneMsg:
+		m.taskStats = msg.Stats
+		return m, nil
+
+	case items.TaskStatsErrorMsg:
 		return m, nil
 
 	case tea.WindowSizeMsg:

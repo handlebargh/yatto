@@ -638,7 +638,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.sortTasksByKeys([]string{"completed", "inProgress", "dueDate", "priority"})
 
 			case key.Matches(msg, m.keys.chooseItem):
-				if m.list.SelectedItem() != nil {
+				if m.list.SelectedItem() != nil && m.projectModel.renderer != nil {
 					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
 					pagerModel := newTaskPagerModel(markdown, &m)
 
