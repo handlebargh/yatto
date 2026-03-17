@@ -113,8 +113,11 @@ func TestTask_TaskToMarkdown(t *testing.T) {
 	if !strings.Contains(markdown, "This is a test task.") {
 		t.Errorf("Expected markdown to contain the task description, but it didn't")
 	}
-	if !strings.Contains(markdown, "|NO|YES|HIGH") {
-		t.Errorf("Expected markdown to contain the task metadata, but it didn't")
+	if !strings.Contains(markdown, "| **Status** | In Progress |") {
+		t.Errorf("Expected markdown to contain the task status, but it didn't")
+	}
+	if !strings.Contains(markdown, "| **Priority** | HIGH |") {
+		t.Errorf("Expected markdown to contain the task priority, but it didn't")
 	}
 }
 

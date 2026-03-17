@@ -281,60 +281,49 @@ func (t *Task) FindListIndexByID(items []list.Item) int {
 func (t *Task) TaskToMarkdown() string {
 	var content strings.Builder
 
+	// Title
 	fmt.Fprintf(&content, "# %s\n\n", t.Title)
-	fmt.Fprintf(&content, "## Description\n\n%s\n\n", t.Description)
 
-	content.WriteString("## Metadata\n\n")
-	content.WriteString("| **Completed** | **In Progress** | **Priority** |\n")
-	content.WriteString("| ------------- | --------------- | ------------ |\n")
+	// Description
+	if t.Description != "" {
+		fmt.Fprintf(&content, "%s\n\n", t.Description)
+	} else {
+		content.WriteString("*No description provided.*\n\n")
+	}
 
-	completed := "NO"
+	content.WriteString("---\n\n")
+
+	// Metadata
+	content.WriteString("### Metadata\n\n")
+	content.WriteString("| Property | Value |\n")
+	content.WriteString("| :--- | :--- |\n")
+
+	status := "Open"
 	if t.Completed {
-		completed = "YES"
+		status = "Completed"
+	} else if t.InProgress {
+		status = "In Progress"
 	}
+	fmt.Fprintf(&content, "| **Status** | %s |\n", status)
+	fmt.Fprintf(&content, "| **Priority** | %s |\n", strings.ToUpper(t.Priority))
 
-	inProgress := "NO"
-	if !t.Completed && t.InProgress {
-		inProgress = "YES"
+	if t.DueDate != nil {
+		fmt.Fprintf(&content, "| **Due Date** | %s |\n", t.DueDate.Format(time.RFC1123))
 	}
-
-	priority := strings.ToUpper(t.Priority)
-
-	content.WriteString("|" + completed + "|" + inProgress + "|" + priority + "\n\n")
 
 	if t.Author != "" {
-		content.WriteString("| **Task Author** |\n")
-		content.WriteString("| --------------- |\n\n")
-		content.WriteString(t.Author)
-		content.WriteString("\n\n")
+		fmt.Fprintf(&content, "| **Author** | %s |\n", t.Author)
 	}
 
 	if t.Assignee != "" {
-		content.WriteString("| **Assigned to** |\n")
-		content.WriteString("| --------------- |\n\n")
-		content.WriteString(t.Assignee)
-		content.WriteString("\n\n")
-	}
-
-	if t.DueDate != nil {
-		content.WriteString("| **Due Date** |\n")
-		content.WriteString("| ------------ |\n")
-		fmt.Fprintf(&content, "| %s |\n\n", t.DueDate.Format(time.RFC1123))
+		fmt.Fprintf(&content, "| **Assignee** | %s |\n", t.Assignee)
 	}
 
 	if len(t.Labels) > 0 {
-		content.WriteString("| **Labels** |\n")
-		content.WriteString("| ---------- |\n")
-
-		for _, label := range t.Labels {
-			fmt.Fprintf(&content, "| - %s |\n", label)
-		}
-		content.WriteString("\n")
+		fmt.Fprintf(&content, "| **Labels** | %s |\n", strings.Join(t.Labels, ", "))
 	}
 
-	content.WriteString("| **ID** |\n")
-	content.WriteString("| ------ |\n")
-	fmt.Fprintf(&content, "| %s |\n\n", t.ID)
+	fmt.Fprintf(&content, "| **ID** | %s |\n", t.ID)
 
 	return content.String()
 }
