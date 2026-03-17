@@ -181,7 +181,7 @@ func PrintTasks(v *viper.Viper, labelRegex string, author, assignee bool, projec
 
 	var pendingTasks []projectTask
 	for _, pt := range projTask {
-		if !pt.task.Completed && regex.MatchString(pt.task.Labels) {
+		if !pt.task.Completed && regex.MatchString(pt.task.Labels.String()) {
 			switch {
 			case author && pt.task.Author == me:
 				pendingTasks = append(pendingTasks, pt)

@@ -40,7 +40,7 @@ func TestTask_CropTaskTitle(t *testing.T) {
 }
 
 func TestTask_CropTaskLabels(t *testing.T) {
-	task := &Task{Labels: "label1,label2,label3"}
+	task := &Task{Labels: Labels{"label1", "label2", "label3"}}
 	cropped := task.CropTaskLabels(10)
 	if !strings.HasSuffix(cropped, "...") {
 		t.Errorf("Expected labels to be cropped with an ellipsis, but got %s", cropped)
@@ -99,7 +99,7 @@ func TestTask_TaskToMarkdown(t *testing.T) {
 		Title:       "Test Task",
 		Description: "This is a test task.",
 		Priority:    "high",
-		Labels:      "label1,label2",
+		Labels:      Labels{"label1", "label2"},
 		Author:      "Test User <test.user@example.com>",
 		Assignee:    "Test User <test.user@example.com>",
 		InProgress:  true,

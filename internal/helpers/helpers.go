@@ -83,8 +83,7 @@ func ReadProjectsFromFS(v *viper.Viper) []items.Project {
 // label appears across all tasks.
 //
 // Task files are expected to contain a "labels" field as a comma-separated
-// string. This string is split and trimmed by LabelsStringToSlice before
-// counting.
+// string or a string array.
 //
 // It is assumed that all matching files are readable and contain valid JSON.
 // If this invariant is violated (e.g., a file is unreadable or cannot be
@@ -115,13 +114,13 @@ func AllLabels(v *viper.Viper) map[string]int {
 		}
 
 		var task struct {
-			Labels string `json:"labels"`
+			Labels items.Labels `json:"labels"`
 		}
 		if err := json.Unmarshal(data, &task); err != nil {
 			panic(fmt.Sprintf("unexpected JSON parse error for %s: %v", path, err))
 		}
 
-		for _, label := range LabelsStringToSlice(task.Labels) {
+		for _, label := range task.Labels {
 			labelCount[label]++
 		}
 
