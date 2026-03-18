@@ -1,4 +1,10 @@
 - - -
+## v1.2.0 - 2026-03-18
+#### Features
+- save task labels as array (#93) - (edf803c) - Benedikt Zumtobel
+
+- - -
+
 ## v1.1.3 - 2026-03-16
 #### Performance Improvements
 - load renderer and task stats asynchronously (#90) - (90ef42f) - Benedikt Zumtobel
