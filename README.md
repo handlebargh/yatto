@@ -52,6 +52,16 @@ To install, run the following [Go](https://go.dev/) command.
 go install github.com/handlebargh/yatto@latest
 ```
 
+Or if you want to take advantage of the build optimizations, run this command instead:
+
+```shell
+CGO_ENABLED=0 \
+GOFLAGS="-trimpath -mod=readonly" \
+go install \
+    -ldflags="-s -w -buildid= -extldflags=-static-pie,-zrelro,-znow" \
+    github.com/handlebargh/yatto@latest
+```
+
 </details>
 
 <details>
