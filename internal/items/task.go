@@ -71,7 +71,7 @@ type Task struct {
 	Title       string     `json:"title"`
 	Description string     `json:"description,omitempty"`
 	Priority    string     `json:"priority"`
-	Labels      string     `json:"labels,omitempty"`
+	Labels      Labels     `json:"labels,omitempty"`
 	Author      string     `json:"author,omitempty"`
 	Assignee    string     `json:"assignee,omitempty"`
 	InProgress  bool       `json:"in_progress"`
@@ -79,20 +79,53 @@ type Task struct {
 	DueDate     *time.Time `json:"due_date,omitempty"`
 }
 
-// LabelsList returns the task's labels as slice of string.
-func (t *Task) LabelsList() []string {
-	var result []string
+// Labels is a custom type for task labels to handle both string and array formats in JSON.
+type Labels []string
 
-	for label := range strings.SplitSeq(t.Labels, ",") {
+// UnmarshalJSON implements the json.Unmarshaler interface for Labels.
+// It handles both comma-separated strings and string arrays.
+func (l *Labels) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	var s []string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*l = s
+		return nil
+	}
+
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+
+	if str == "" {
+		*l = nil
+		return nil
+	}
+
+	for label := range strings.SplitSeq(str, ",") {
 		if label != "" {
-			result = append(result, strings.TrimSpace(label))
+			*l = append(*l, strings.TrimSpace(label))
 		}
 	}
-	return result
+
+	return nil
+}
+
+// String returns the labels as a comma-separated string.
+func (l Labels) String() string {
+	return strings.Join(l, ",")
+}
+
+// LabelsList returns the task's labels as slice of string.
+func (t *Task) LabelsList() []string {
+	return t.Labels
 }
 
 // FilterValue returns a string used for filtering/search, combining title and labels.
-func (t *Task) FilterValue() string { return fmt.Sprintf("%s %s", t.Title, t.Labels) }
+func (t *Task) FilterValue() string { return fmt.Sprintf("%s %s", t.Title, t.Labels.String()) }
 
 // CropTaskTitle returns the task's title cropped to fit
 // length with a concatenated ellipses.
@@ -113,11 +146,12 @@ func (t *Task) CropTaskTitle(length int) string {
 // If the returned string would exceed length
 // it is cropped and an ellipses is appended to fit length.
 func (t *Task) CropTaskLabels(length int) string {
-	if len(t.Labels) > length {
-		return strings.ReplaceAll(t.Labels[:length-len(ellipses)]+ellipses, ",", ", ")
+	lStr := t.Labels.String()
+	if len(lStr) > length {
+		return strings.ReplaceAll(lStr[:length-len(ellipses)]+ellipses, ",", ", ")
 	}
 
-	labels := strings.ReplaceAll(t.Labels, ",", ", ")
+	labels := strings.ReplaceAll(lStr, ",", ", ")
 
 	if labels == "" {
 		return "No labels"
@@ -247,61 +281,49 @@ func (t *Task) FindListIndexByID(items []list.Item) int {
 func (t *Task) TaskToMarkdown() string {
 	var content strings.Builder
 
+	// Title
 	fmt.Fprintf(&content, "# %s\n\n", t.Title)
-	fmt.Fprintf(&content, "## Description\n\n%s\n\n", t.Description)
 
-	content.WriteString("## Metadata\n\n")
-	content.WriteString("| **Completed** | **In Progress** | **Priority** |\n")
-	content.WriteString("| ------------- | --------------- | ------------ |\n")
+	// Description
+	if t.Description != "" {
+		fmt.Fprintf(&content, "%s\n\n", t.Description)
+	} else {
+		content.WriteString("*No description provided.*\n\n")
+	}
 
-	completed := "NO"
+	content.WriteString("---\n\n")
+
+	// Metadata
+	content.WriteString("### Metadata\n\n")
+	content.WriteString("| Property | Value |\n")
+	content.WriteString("| :--- | :--- |\n")
+
+	status := "Open"
 	if t.Completed {
-		completed = "YES"
+		status = "Completed"
+	} else if t.InProgress {
+		status = "In Progress"
 	}
+	fmt.Fprintf(&content, "| **Status** | %s |\n", status)
+	fmt.Fprintf(&content, "| **Priority** | %s |\n", strings.ToUpper(t.Priority))
 
-	inProgress := "NO"
-	if !t.Completed && t.InProgress {
-		inProgress = "YES"
+	if t.DueDate != nil {
+		fmt.Fprintf(&content, "| **Due Date** | %s |\n", t.DueDate.Format(time.RFC1123))
 	}
-
-	priority := strings.ToUpper(t.Priority)
-
-	content.WriteString("|" + completed + "|" + inProgress + "|" + priority + "\n\n")
 
 	if t.Author != "" {
-		content.WriteString("| **Task Author** |\n")
-		content.WriteString("| --------------- |\n\n")
-		content.WriteString(t.Author)
-		content.WriteString("\n\n")
+		fmt.Fprintf(&content, "| **Author** | %s |\n", t.Author)
 	}
 
 	if t.Assignee != "" {
-		content.WriteString("| **Assigned to** |\n")
-		content.WriteString("| --------------- |\n\n")
-		content.WriteString(t.Assignee)
-		content.WriteString("\n\n")
+		fmt.Fprintf(&content, "| **Assignee** | %s |\n", t.Assignee)
 	}
 
-	if t.DueDate != nil {
-		content.WriteString("| **Due Date** |\n")
-		content.WriteString("| ------------ |\n")
-		fmt.Fprintf(&content, "| %s |\n\n", t.DueDate.Format(time.RFC1123))
+	if len(t.Labels) > 0 {
+		fmt.Fprintf(&content, "| **Labels** | %s |\n", strings.Join(t.Labels, ", "))
 	}
 
-	if t.Labels != "" {
-		content.WriteString("| **Labels** |\n")
-		content.WriteString("| ---------- |\n")
-
-		labelsSeq := strings.SplitSeq(t.Labels, ",")
-		for label := range labelsSeq {
-			fmt.Fprintf(&content, "| - %s |\n", label)
-		}
-		content.WriteString("\n")
-	}
-
-	content.WriteString("| **ID** |\n")
-	content.WriteString("| ------ |\n")
-	fmt.Fprintf(&content, "| %s |\n\n", t.ID)
+	fmt.Fprintf(&content, "| **ID** | %s |\n", t.ID)
 
 	return content.String()
 }

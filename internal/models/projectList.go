@@ -587,7 +587,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case key.Matches(msg, m.keys.chooseProject):
 				if m.list.SelectedItem() != nil {
-					listModel := newTaskListModel(m.list.SelectedItem().(*items.Project), &m)
+					listModel := newTaskListModel(m.list.SelectedItem().(*items.Project), &m, m.width, m.height)
 					return listModel, tea.WindowSize()
 				}
 				return m, nil

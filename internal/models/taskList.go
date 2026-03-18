@@ -369,7 +369,7 @@ type taskListModel struct {
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
-func newTaskListModel(project *items.Project, projectModel *ProjectListModel) taskListModel {
+func newTaskListModel(project *items.Project, projectModel *ProjectListModel, width, height int) taskListModel {
 	listKeys := newTaskListKeyMap()
 
 	tasks := project.ReadTasksFromFS(projectModel.config)
@@ -390,10 +390,14 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 	sp.Spinner = spinner.Dot
 	sp.Style = lipgloss.NewStyle().Foreground(colors.Orange())
 
+	w, h := appStyle.GetFrameSize()
+
 	m := taskListModel{
 		project:       project,
 		projectModel:  projectModel,
 		keys:          listKeys,
+		width:         width - w,
+		height:        height - h,
 		spinner:       sp,
 		spinning:      false,
 		selectedItems: make(map[string]*items.Task),
@@ -402,8 +406,8 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel) ta
 	itemList := list.New(
 		listItems,
 		customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate(), parent: &m},
-		0,
-		0,
+		m.width,
+		m.height,
 	)
 	itemList.SetShowPagination(true)
 	itemList.SetShowTitle(true)
