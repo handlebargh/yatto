@@ -22,12 +22,14 @@ package models
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/handlebargh/yatto/internal/items"
 )
 
@@ -61,8 +63,8 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC {
+	case tea.KeyPressMsg:
+		if msg.Code == 'c' && msg.Mod == tea.ModCtrl {
 			return m, tea.Quit
 		}
 
@@ -74,7 +76,7 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.listModel.list.SelectedItem() != nil {
 				// Switch to formModel for editing.
 				formModel := newTaskFormModel(m.listModel.list.SelectedItem().(*items.Task), m.listModel, true)
-				return formModel, tea.WindowSize()
+				return formModel, tea.RequestWindowSize
 			}
 
 			return m, nil
@@ -114,18 +116,39 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		footerHeight := lipgloss.Height(m.footerView())
 
 		if !m.ready {
+			// Initialize renderer if not already set (race condition protection)
+			if m.listModel.projectModel.state.renderer == nil {
+				// Initialize renderer synchronously if it wasn't initialized yet
+				// This handles the race condition where the user opens a task before
+				// the async renderer initialization completes
+				isDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+				style := "dark"
+				if !isDark {
+					style = "light"
+				}
+				renderer, err := glamour.NewTermRenderer(glamour.WithStylePath(style))
+				if err != nil {
+					// Fallback: just use plain text without rendering
+					m.listModel.projectModel.state.renderer = nil
+				} else {
+					m.listModel.projectModel.state.renderer = renderer
+				}
+			}
 			rendered, err := m.listModel.projectModel.state.renderer.Render(m.content)
 			if err != nil {
 				rendered = "Error rendering markdown"
 			}
 
-			m.viewport = viewport.New(msg.Width, msg.Height-footerHeight)
+			m.viewport = viewport.New(
+				viewport.WithWidth(msg.Width),
+				viewport.WithHeight(msg.Height-footerHeight),
+			)
 			m.viewport.YPosition = 10
 			m.viewport.SetContent(rendered)
 			m.ready = true
 		} else {
-			m.viewport.Width = msg.Width
-			m.viewport.Height = msg.Height - footerHeight
+			m.viewport.SetWidth(msg.Width)
+			m.viewport.SetHeight(msg.Height - footerHeight)
 		}
 	}
 
@@ -135,12 +158,18 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// View returns the string representation of the task detail view.
-func (m taskPagerModel) View() string {
+// View returns the tea.View representation of the task detail view.
+func (m taskPagerModel) View() tea.View {
 	if !m.ready {
-		return "\n  Initializing..."
+		content := "\n  Initializing..."
+		v := tea.NewView(content)
+		v.AltScreen = true
+		return v
 	}
-	return fmt.Sprintf("%s\n%s", m.viewport.View(), m.footerView())
+	content := fmt.Sprintf("%s\n%s", m.viewport.View(), m.footerView())
+	v := tea.NewView(content)
+	v.AltScreen = true
+	return v
 }
 
 // footerView returns the string representation of the task detail view's footer.
@@ -148,7 +177,7 @@ func (m taskPagerModel) footerView() string {
 	info := lipgloss.NewStyle().
 		Padding(0, 1).
 		Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
-	line := strings.Repeat(" ", max(0, m.viewport.Width-lipgloss.Width(info)))
+	line := strings.Repeat(" ", max(0, m.viewport.Width()-lipgloss.Width(info)))
 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
 }
 

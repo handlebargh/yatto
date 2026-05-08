@@ -29,11 +29,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/helpers"
@@ -133,7 +133,7 @@ func newTaskListKeyMap() *taskListKeyMap {
 			key.WithHelp("→/pgdn/f/d", "next page"),
 		),
 		toggleSelect: key.NewBinding(
-			key.WithKeys(" "),
+			key.WithKeys(" ", "space"),
 			key.WithHelp("space", "select/deselect"),
 		),
 	}
@@ -558,8 +558,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC {
+	case tea.KeyPressMsg:
+		if msg.Code == 'c' && msg.Mod == tea.ModCtrl {
 			return m, tea.Quit
 		}
 
@@ -642,11 +642,11 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.sortTasksByKeys([]string{"completed", "inProgress", "dueDate", "priority"})
 
 			case key.Matches(msg, m.keys.chooseItem):
-				if m.list.SelectedItem() != nil && m.projectModel.state.renderer != nil {
+				if m.list.SelectedItem() != nil {
 					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
 					pagerModel := newTaskPagerModel(markdown, &m)
 
-					return pagerModel, tea.WindowSize()
+					return pagerModel, tea.RequestWindowSize
 				}
 				return m, nil
 
@@ -700,7 +700,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.list.SelectedItem() != nil {
 					// Switch to formModel for editing.
 					formModel := newTaskFormModel(m.list.SelectedItem().(*items.Task), &m, true)
-					return formModel, tea.WindowSize()
+					return formModel, tea.RequestWindowSize
 				}
 
 				return m, nil
@@ -712,7 +712,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					Description: "",
 				}
 				formModel := newTaskFormModel(task, &m, false)
-				return formModel, tea.WindowSize()
+				return formModel, tea.RequestWindowSize
 
 			case key.Matches(msg, m.keys.toggleSelect):
 				if m.list.SelectedItem() != nil {
@@ -738,8 +738,8 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// View returns the string representation of the task list view.
-func (m taskListModel) View() string {
+// View returns the tea.View representation of the task list view.
+func (m taskListModel) View() tea.View {
 	centeredStyle := lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
@@ -748,20 +748,26 @@ func (m taskListModel) View() string {
 
 	// Spinner active view
 	if m.spinning {
-		return centeredStyle.
+		content := centeredStyle.
 			Render(fmt.Sprintf("%s  %s", m.spinner.View(), m.status))
+		v := tea.NewView(content)
+		v.AltScreen = true
+		return v
 	}
 
 	// Display deletion confirm view.
 	if m.mode == modeConfirmDelete {
 		// Check bulk selection
 		if len(m.selectedItems) > 0 {
-			return centeredStyle.Render(
+			content := centeredStyle.Render(
 				fmt.Sprintf("Delete %d task(s)?\n\n%s%s%s", len(m.selectedItems),
 					"[y] Yes",
 					"    ",
 					"[n] No",
 				))
+			v := tea.NewView(content)
+			v.AltScreen = true
+			return v
 		}
 	}
 
@@ -775,11 +781,17 @@ func (m taskListModel) View() string {
 		e.WriteString("\n\n")
 		e.WriteString("Please commit manually!")
 
-		return centeredStyle.Render(e.String())
+		content := centeredStyle.Render(e.String())
+		v := tea.NewView(content)
+		v.AltScreen = true
+		return v
 	}
 
 	// Display list view.
-	return appStyle.Render(m.list.View())
+	content := appStyle.Render(m.list.View())
+	v := tea.NewView(content)
+	v.AltScreen = true
+	return v
 }
 
 // sortTasksByKey sorts the tasks in the list model by a specified keys.

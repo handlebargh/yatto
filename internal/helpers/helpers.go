@@ -25,13 +25,13 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"image/color"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/spf13/viper"
@@ -154,10 +154,10 @@ func LabelsStringToSlice(labels string) []string {
 	return result
 }
 
-// GetColorCode maps a project color name to its corresponding lipgloss.AdaptiveColor.
+// GetColorCode maps a project color name to its corresponding color.Color.
 // Supported colors include: green, orange, red, blue, indigo.
 // Defaults to blue if the color is unrecognized.
-func GetColorCode(color string) lipgloss.AdaptiveColor {
+func GetColorCode(color string) color.Color {
 	switch color {
 	case "green":
 		return colors.Green()
