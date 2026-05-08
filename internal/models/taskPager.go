@@ -22,11 +22,13 @@ package models
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/handlebargh/yatto/internal/items"
 )
@@ -114,6 +116,24 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		footerHeight := lipgloss.Height(m.footerView())
 
 		if !m.ready {
+			// Initialize renderer if not already set (race condition protection)
+			if m.listModel.projectModel.state.renderer == nil {
+				// Initialize renderer synchronously if it wasn't initialized yet
+				// This handles the race condition where the user opens a task before
+				// the async renderer initialization completes
+				isDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+				style := "dark"
+				if !isDark {
+					style = "light"
+				}
+				renderer, err := glamour.NewTermRenderer(glamour.WithStylePath(style))
+				if err != nil {
+					// Fallback: just use plain text without rendering
+					m.listModel.projectModel.state.renderer = nil
+				} else {
+					m.listModel.projectModel.state.renderer = renderer
+				}
+			}
 			rendered, err := m.listModel.projectModel.state.renderer.Render(m.content)
 			if err != nil {
 				rendered = "Error rendering markdown"
