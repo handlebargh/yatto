@@ -87,16 +87,16 @@ func BadgeText() color.Color {
 func FormTheme() huh.Theme {
 	switch viper.GetString("colors.form.theme") {
 	case "Charm":
-		return huh.ThemeFunc(func(isDark bool) *huh.Styles { return huh.ThemeCharm(isDark) })
+		return huh.ThemeFunc(huh.ThemeCharm)
 	case "Dracula":
-		return huh.ThemeFunc(func(isDark bool) *huh.Styles { return huh.ThemeDracula(isDark) })
+		return huh.ThemeFunc(huh.ThemeDracula)
 	case "Catppuccin":
-		return huh.ThemeFunc(func(isDark bool) *huh.Styles { return huh.ThemeCatppuccin(isDark) })
+		return huh.ThemeFunc(huh.ThemeCatppuccin)
 	case "Base16":
-		return huh.ThemeFunc(func(isDark bool) *huh.Styles { return huh.ThemeBase16(isDark) })
+		return huh.ThemeFunc(huh.ThemeBase16)
 	case "Base":
-		return huh.ThemeFunc(func(isDark bool) *huh.Styles { return huh.ThemeBase(isDark) })
+		return huh.ThemeFunc(huh.ThemeBase)
 	default:
-		return huh.ThemeFunc(func(isDark bool) *huh.Styles { return huh.ThemeBase16(isDark) })
+		return huh.ThemeFunc(huh.ThemeBase16)
 	}
 }

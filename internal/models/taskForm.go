@@ -310,7 +310,10 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width - h
 		m.height = msg.Height - v
 
-		m.previewViewport = viewport.New(viewport.WithWidth(previewWidth), viewport.WithHeight(m.height-previewVerticalPadding))
+		m.previewViewport = viewport.New(
+			viewport.WithWidth(previewWidth),
+			viewport.WithHeight(m.height-previewVerticalPadding),
+		)
 	}
 
 	form, cmd := m.form.Update(msg)
@@ -367,7 +370,10 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newModel := newTaskFormModel(m.task, m.listModel, m.edit)
 		newModel.width = m.width
 		newModel.height = m.height
-		newModel.previewViewport = viewport.New(viewport.WithWidth(previewWidth), viewport.WithHeight(m.height-previewVerticalPadding))
+		newModel.previewViewport = viewport.New(
+			viewport.WithWidth(previewWidth),
+			viewport.WithHeight(m.height-previewVerticalPadding),
+		)
 		return newModel, newModel.Init()
 	}
 	return m, tea.Batch(cmds...)
