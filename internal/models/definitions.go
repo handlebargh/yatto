@@ -24,7 +24,7 @@
 package models
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/handlebargh/yatto/internal/colors"
 )
 
@@ -67,35 +67,35 @@ type Styles struct {
 	Help lipgloss.Style
 }
 
-// NewStyles returns a new instance of Styles configured using the provided lipgloss.Renderer.
+// NewStyles returns a new instance of Styles configured with default styling.
 // It defines base padding, bold headers, status boxes, error highlights, and more UI styling presets.
-func NewStyles(lg *lipgloss.Renderer) *Styles {
+func NewStyles() *Styles {
 	s := Styles{}
-	s.Base = lg.NewStyle().
+	s.Base = lipgloss.NewStyle().
 		Padding(1, 4, 0, 1)
-	s.HeaderText = lg.NewStyle().
+	s.HeaderText = lipgloss.NewStyle().
 		Bold(true).
 		Padding(0, 1, 0, 2)
-	s.Status = lg.NewStyle().
+	s.Status = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		PaddingLeft(1).
 		MarginTop(1)
-	s.StatusHeader = lg.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#FFFFFF"}).
+	s.StatusHeader = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
 		Bold(true)
-	s.Title = lg.NewStyle().
+	s.Title = lipgloss.NewStyle().
 		Bold(true)
-	s.Priority = lg.NewStyle().
+	s.Priority = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#000000")).
 		Padding(0, 1)
-	s.Completed = lg.NewStyle().
+	s.Completed = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#000000")).
 		Padding(0, 1)
-	s.Highlight = lg.NewStyle().
+	s.Highlight = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("212"))
 	s.ErrorHeaderText = s.HeaderText.
 		Foreground(colors.Red())
-	s.Help = lg.NewStyle().
+	s.Help = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240"))
 	return &s
 }

@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
+	"charm.land/bubbles/v2/list"
 )
 
 const ellipses = "..."
