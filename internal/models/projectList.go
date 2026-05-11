@@ -517,6 +517,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetSize(msg.Width-h, msg.Height-v)
 		m.width = msg.Width
 		m.height = msg.Height
+		return m, nil
 
 	case tea.KeyPressMsg:
 		if msg.Code == 'c' && msg.Mod == tea.ModCtrl {
