@@ -203,10 +203,12 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		listDescStyle = listDescStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(color)
-	} else {
-		// For all non-focused items (selected or not), add left margin
+	} else if !selected {
 		listTitleStyle = listTitleStyle.MarginLeft(1)
 		listDescStyle = listDescStyle.MarginLeft(1)
+	} else {
+		listTitleStyle = listTitleStyle.MarginLeft(1)
+		listDescStyle = listDescStyle.MarginLeft(4)
 	}
 
 	var left strings.Builder
