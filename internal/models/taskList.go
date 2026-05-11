@@ -190,7 +190,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	// Base styles.
 	contentWidth := leftWidth - indent
-	if index != m.Index() {
+	if index != m.GlobalIndex() {
 		contentWidth--
 	}
 
@@ -234,18 +234,19 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			BorderForeground(colors.Red()).Background(colors.Red())
 	}
 
-	if index == m.Index() {
+	switch {
+	case index == m.GlobalIndex():
 		titleStyle = titleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true)
 		labelsStyle = labelsStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true)
 		authorStyle = authorStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true)
-	} else if !selected {
+	case !selected:
 		titleStyle = titleStyle.MarginLeft(1)
 		labelsStyle = labelsStyle.MarginLeft(1)
 		authorStyle = authorStyle.MarginLeft(1)
-	} else {
+	default:
 		titleStyle = titleStyle.MarginLeft(1)
 		labelsStyle = labelsStyle.MarginLeft(4)
 		authorStyle = authorStyle.MarginLeft(4)

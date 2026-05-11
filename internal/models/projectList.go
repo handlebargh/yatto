@@ -196,17 +196,18 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	listItemInfoStyle := lipgloss.NewStyle().
 		Width(40)
 
-	if index == m.GlobalIndex() {
+	switch {
+	case index == m.GlobalIndex():
 		listTitleStyle = listTitleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(color)
 		listDescStyle = listDescStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(color)
-	} else if !selected {
+	case !selected:
 		listTitleStyle = listTitleStyle.MarginLeft(1)
 		listDescStyle = listDescStyle.MarginLeft(1)
-	} else {
+	default:
 		listTitleStyle = listTitleStyle.MarginLeft(1)
 		listDescStyle = listDescStyle.MarginLeft(4)
 	}
