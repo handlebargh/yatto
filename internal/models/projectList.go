@@ -23,7 +23,6 @@ package models
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -98,25 +97,6 @@ func newProjectListKeyMap() *projectListKeyMap {
 			key.WithKeys(" ", "space"),
 			key.WithHelp("space", "select/deselect"),
 		),
-	}
-}
-
-// initRendererCmd initializes a glamour terminal renderer asynchronously.
-// It queries the terminal background color to determine whether to use a
-// dark or light style, then constructs the renderer accordingly. The result
-// is sent back to the update loop via a rendererReadyMsg.
-func initRendererCmd() tea.Cmd {
-	return func() tea.Msg {
-		isDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
-		style := "dark"
-		if !isDark {
-			style = "light"
-		}
-		renderer, err := glamour.NewTermRenderer(glamour.WithStylePath(style))
-		if err != nil {
-			panic(err)
-		}
-		return rendererReadyMsg{renderer: renderer}
 	}
 }
 

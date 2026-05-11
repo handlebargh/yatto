@@ -161,7 +161,7 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View returns the tea.View representation of the task detail view.
 func (m taskPagerModel) View() tea.View {
 	if !m.ready {
-		content := "\n  Initializing..."
+		content := "\n  Initializing Renderer..."
 		v := tea.NewView(content)
 		v.AltScreen = true
 		return v
