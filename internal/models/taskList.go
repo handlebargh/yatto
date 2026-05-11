@@ -189,19 +189,25 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	}
 
 	// Base styles.
+	contentWidth := leftWidth - indent
+	if index != m.Index() {
+		contentWidth--
+	}
+
 	titleStyle := lipgloss.NewStyle().
-		Width(leftWidth-indent).
+		Width(contentWidth).
 		Padding(0, 1)
 
 	labelsStyle := lipgloss.NewStyle().
 		Foreground(colors.Blue()).
-		Width(leftWidth-indent).
+		Width(contentWidth).
 		Padding(0, 1).
 		MarginLeft(indent)
 
 	authorStyle := lipgloss.NewStyle().
 		Padding(0, 1).
-		MarginLeft(indent)
+		MarginLeft(indent).
+		Width(contentWidth)
 
 	priorityValueStyle := lipgloss.NewStyle().
 		Foreground(colors.BadgeText()).
@@ -235,7 +241,8 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Border(lipgloss.NormalBorder(), false, false, false, true)
 		authorStyle = authorStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true)
-	} else if !selected {
+	} else {
+		// For all non-focused items (selected or not), add left margin
 		titleStyle = titleStyle.MarginLeft(1)
 		labelsStyle = labelsStyle.MarginLeft(1)
 		authorStyle = authorStyle.MarginLeft(1)
