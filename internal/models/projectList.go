@@ -177,15 +177,20 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	}
 
 	// Base styles.
+	contentWidth := leftWidth - indent
+	if index != m.GlobalIndex() {
+		contentWidth--
+	}
+
 	listTitleStyle := lipgloss.NewStyle().
 		Foreground(color).
 		Padding(0, 1).
-		Width(leftWidth - indent)
+		Width(contentWidth)
 
 	listDescStyle := lipgloss.NewStyle().
 		Padding(0, 1).
 		MarginLeft(indent).
-		Width(leftWidth - indent).
+		Width(contentWidth).
 		Height(2)
 
 	listItemInfoStyle := lipgloss.NewStyle().
@@ -198,8 +203,8 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		listDescStyle = listDescStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(color)
-
-	} else if !selected {
+	} else {
+		// For all non-focused items (selected or not), add left margin
 		listTitleStyle = listTitleStyle.MarginLeft(1)
 		listDescStyle = listDescStyle.MarginLeft(1)
 	}
