@@ -403,7 +403,6 @@ func (m ProjectListModel) Init() tea.Cmd {
 	return tea.Batch(
 		vcs.InitCmd(m.config),
 		items.LoadAllTaskStatsCmd(m.config, projects),
-		initRendererCmd(),
 	)
 }
 
