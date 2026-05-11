@@ -1,4 +1,22 @@
 - - -
+## v1.2.1 - 2026-05-11
+#### Bug Fixes
+- load renderer lazily to avoid race condition - (b8aec9d) - Benedikt Zumtobel
+- correct list item indentation (#100) - (a21854b) - Benedikt Zumtobel
+- fix width for right columns in list views (#99) - (576eebf) - Benedikt Zumtobel
+#### Documentation
+- update README - (1170a50) - Benedikt Zumtobel
+#### Refactoring
+- remove unused function - (01512e9) - Benedikt Zumtobel
+#### Miscellaneous Chores
+- (**deps**) bump sigstore/cosign-installer in the github-actions group (#97) - (90396fd) - dependabot[bot], *dependabot[bot]*
+- (**deps**) bump goreleaser/goreleaser-action (#96) - (8fc5707) - dependabot[bot], *dependabot[bot]*
+- (**deps**) bump goreleaser/goreleaser-action (#95) - (bbd6b63) - dependabot[bot], *dependabot[bot]*
+- (**deps**) bump sigstore/cosign-installer in the github-actions group (#94) - (7d6f410) - dependabot[bot], *dependabot[bot]*
+- update charm libs to v2 (#98) - (3cc2051) - Benedikt Zumtobel
+
+- - -
+
 ## v1.2.0 - 2026-03-18
 #### Features
 - save task labels as array (#93) - (edf803c) - Benedikt Zumtobel
