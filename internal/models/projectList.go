@@ -196,17 +196,20 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	listItemInfoStyle := lipgloss.NewStyle().
 		Width(40)
 
-	if index == m.GlobalIndex() {
+	switch {
+	case index == m.GlobalIndex():
 		listTitleStyle = listTitleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(color)
 		listDescStyle = listDescStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(color)
-	} else {
-		// For all non-focused items (selected or not), add left margin
+	case !selected:
 		listTitleStyle = listTitleStyle.MarginLeft(1)
 		listDescStyle = listDescStyle.MarginLeft(1)
+	default:
+		listTitleStyle = listTitleStyle.MarginLeft(1)
+		listDescStyle = listDescStyle.MarginLeft(4)
 	}
 
 	var left strings.Builder
@@ -515,6 +518,7 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetSize(msg.Width-h, msg.Height-v)
 		m.width = msg.Width
 		m.height = msg.Height
+		return m, nil
 
 	case tea.KeyPressMsg:
 		if msg.Code == 'c' && msg.Mod == tea.ModCtrl {

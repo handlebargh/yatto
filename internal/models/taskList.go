@@ -190,7 +190,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	// Base styles.
 	contentWidth := leftWidth - indent
-	if index != m.Index() {
+	if index != m.GlobalIndex() {
 		contentWidth--
 	}
 
@@ -234,18 +234,22 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			BorderForeground(colors.Red()).Background(colors.Red())
 	}
 
-	if index == m.Index() {
+	switch {
+	case index == m.GlobalIndex():
 		titleStyle = titleStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true)
 		labelsStyle = labelsStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true)
 		authorStyle = authorStyle.
 			Border(lipgloss.NormalBorder(), false, false, false, true)
-	} else {
-		// For all non-focused items (selected or not), add left margin
+	case !selected:
 		titleStyle = titleStyle.MarginLeft(1)
 		labelsStyle = labelsStyle.MarginLeft(1)
 		authorStyle = authorStyle.MarginLeft(1)
+	default:
+		titleStyle = titleStyle.MarginLeft(1)
+		labelsStyle = labelsStyle.MarginLeft(4)
+		authorStyle = authorStyle.MarginLeft(4)
 	}
 
 	var left strings.Builder
@@ -261,8 +265,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		authorString := strings.Join(authorSlice[:len(authorSlice)-1], " ")
 
 		left.WriteString("\n")
-		left.WriteString(authorStyle.Render("Author: "))
-		left.WriteString(authorString)
+		left.WriteString(authorStyle.Render("Author:", authorString))
 	}
 
 	// Labels
@@ -564,6 +567,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetSize(msg.Width-h, msg.Height-v)
 		m.width = msg.Width
 		m.height = msg.Height
+		return m, nil
 
 	case tea.KeyPressMsg:
 		if msg.Code == 'c' && msg.Mod == tea.ModCtrl {

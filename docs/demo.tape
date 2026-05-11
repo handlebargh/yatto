@@ -3,7 +3,7 @@ Output demo.gif
 Require yatto
 
 Set Shell "bash"
-Set FontSize 18
+Set FontSize 21
 Set Width 1920
 Set Height 1080
 
