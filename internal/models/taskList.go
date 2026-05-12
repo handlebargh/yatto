@@ -430,7 +430,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	} else {
 		// Blank line for consistent spacing
 		sb.WriteString(borderV)
-		sb.WriteString(strings.Repeat(" ", contentWidth+2))
+		sb.WriteString(strings.Repeat(" ", contentWidth))
 		sb.WriteString(borderV)
 		sb.WriteString("\n")
 	}
