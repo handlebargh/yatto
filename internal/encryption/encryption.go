@@ -53,7 +53,8 @@ var (
 )
 
 // Encrypt encrypts plaintext data using AES-256-GCM with the provided key.
-// Returns the encrypted ciphertext (nonce + ciphertext + tag) or an error.
+// Returns the base64-encoded encrypted ciphertext (with YATTO_ENC prefix) as bytes,
+// making it safe for text-based storage (git-friendly).
 func Encrypt(plaintext, base64Key []byte) ([]byte, error) {
 	key, err := base64.StdEncoding.DecodeString(string(base64Key))
 	if err != nil {
@@ -86,11 +87,13 @@ func Encrypt(plaintext, base64Key []byte) ([]byte, error) {
 	copy(result, EncryptedFilePrefix)
 	copy(result[len(EncryptedFilePrefix):], ciphertext)
 
-	return result, nil
+	// Base64 encode for text-based storage (git-friendly)
+	return []byte(base64.StdEncoding.EncodeToString(result)), nil
 }
 
 // Decrypt decrypts ciphertext data using AES-256-GCM with the provided key.
-// The ciphertext should have been produced by Encrypt() and includes the nonce.
+// The ciphertext should have been produced by Encrypt() and is expected to be
+// base64-encoded bytes with the YATTO_ENC prefix.
 // Returns the decrypted plaintext or an error.
 func Decrypt(ciphertext, base64Key []byte) ([]byte, error) {
 	key, err := base64.StdEncoding.DecodeString(string(base64Key))
@@ -102,13 +105,19 @@ func Decrypt(ciphertext, base64Key []byte) ([]byte, error) {
 		return nil, ErrInvalidKey
 	}
 
+	// Base64 decode the input
+	decoded, err := base64.StdEncoding.DecodeString(string(ciphertext))
+	if err != nil {
+		return nil, ErrDecryptionFailed
+	}
+
 	// Check for encryption prefix
-	if len(ciphertext) < len(EncryptedFilePrefix) ||
-		string(ciphertext[:len(EncryptedFilePrefix)]) != EncryptedFilePrefix {
+	if len(decoded) < len(EncryptedFilePrefix) ||
+		string(decoded[:len(EncryptedFilePrefix)]) != EncryptedFilePrefix {
 		return nil, ErrNotEncrypted
 	}
 
-	actualCiphertext := ciphertext[len(EncryptedFilePrefix):]
+	actualCiphertext := decoded[len(EncryptedFilePrefix):]
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -136,9 +145,20 @@ func Decrypt(ciphertext, base64Key []byte) ([]byte, error) {
 }
 
 // IsEncrypted checks if the given data has the encryption prefix.
+// The data can be either raw bytes or base64-encoded bytes.
 func IsEncrypted(data []byte) bool {
-	return len(data) >= len(EncryptedFilePrefix) &&
-		string(data[:len(EncryptedFilePrefix)]) == EncryptedFilePrefix
+	// Try direct check first (for raw bytes)
+	if len(data) >= len(EncryptedFilePrefix) &&
+		string(data[:len(EncryptedFilePrefix)]) == EncryptedFilePrefix {
+		return true
+	}
+	// Try base64 decode and check (for text-based storage)
+	if _, err := base64.StdEncoding.DecodeString(string(data)); err == nil {
+		decoded, _ := base64.StdEncoding.DecodeString(string(data))
+		return len(decoded) >= len(EncryptedFilePrefix) &&
+			string(decoded[:len(EncryptedFilePrefix)]) == EncryptedFilePrefix
+	}
+	return false
 }
 
 // GenerateKey generates a new random 32-byte key suitable for AES-256.
@@ -213,7 +233,8 @@ var osReadFile = os.ReadFile
 var osWriteFile = os.WriteFile
 
 // EncryptToBase64 encrypts data and returns the result as a base64 string.
-// Useful for embedding encrypted data in structured formats.
+// The output includes the YATTO_ENC prefix for identification.
+// Useful for storing encrypted data as text (git-friendly).
 func EncryptToBase64(plaintext, key []byte) (string, error) {
 	encrypted, err := Encrypt(plaintext, key)
 	if err != nil {
@@ -223,10 +244,20 @@ func EncryptToBase64(plaintext, key []byte) (string, error) {
 }
 
 // DecryptFromBase64 decrypts a base64-encoded ciphertext string.
+// The input should have been produced by EncryptToBase64 and includes the YATTO_ENC prefix.
 func DecryptFromBase64(base64Ciphertext string, key []byte) ([]byte, error) {
 	ciphertext, err := base64.StdEncoding.DecodeString(base64Ciphertext)
 	if err != nil {
 		return nil, err
 	}
 	return Decrypt(ciphertext, key)
+}
+
+// IsBase64Encrypted checks if the given base64 string, when decoded, has the encryption prefix.
+func IsBase64Encrypted(base64Data string) bool {
+	data, err := base64.StdEncoding.DecodeString(base64Data)
+	if err != nil {
+		return false
+	}
+	return IsEncrypted(data)
 }
