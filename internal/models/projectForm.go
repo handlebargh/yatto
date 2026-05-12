@@ -33,7 +33,6 @@ import (
 	"github.com/handlebargh/yatto/internal/colors"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/handlebargh/yatto/internal/storage"
-	"github.com/handlebargh/yatto/internal/vcs"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -187,15 +186,12 @@ func (m projectFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.listModel.spinning = true
+		m.listModel.commitMessage = fmt.Sprintf("%s: %s", action, m.project.Title)
+		m.listModel.commitPath = filepath.Join(m.project.ID, "project.json")
 		cmds = append(
 			cmds,
 			m.listModel.spinner.Tick,
 			m.project.WriteProjectJSON(m.listModel.config, json, action),
-			vcs.CommitCmd(
-				m.listModel.config,
-				fmt.Sprintf("%s: %s", action, m.project.Title),
-				filepath.Join(m.project.ID, "project.json"),
-			),
 		)
 
 		m.listModel.status = ""

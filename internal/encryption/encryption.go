@@ -54,7 +54,12 @@ var (
 
 // Encrypt encrypts plaintext data using AES-256-GCM with the provided key.
 // Returns the encrypted ciphertext (nonce + ciphertext + tag) or an error.
-func Encrypt(plaintext, key []byte) ([]byte, error) {
+func Encrypt(plaintext, base64Key []byte) ([]byte, error) {
+	key, err := base64.StdEncoding.DecodeString(string(base64Key))
+	if err != nil {
+		return nil, err
+	}
+
 	if len(key) != KeySize {
 		return nil, ErrInvalidKey
 	}
@@ -87,7 +92,12 @@ func Encrypt(plaintext, key []byte) ([]byte, error) {
 // Decrypt decrypts ciphertext data using AES-256-GCM with the provided key.
 // The ciphertext should have been produced by Encrypt() and includes the nonce.
 // Returns the decrypted plaintext or an error.
-func Decrypt(ciphertext, key []byte) ([]byte, error) {
+func Decrypt(ciphertext, base64Key []byte) ([]byte, error) {
+	key, err := base64.StdEncoding.DecodeString(string(base64Key))
+	if err != nil {
+		return nil, err
+	}
+
 	if len(key) != KeySize {
 		return nil, ErrInvalidKey
 	}
