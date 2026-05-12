@@ -1,4 +1,10 @@
 - - -
+## v1.3.0 - 2026-05-12
+#### Features
+- new styling (#101) - (db207f9) - Benedikt Zumtobel
+
+- - -
+
 ## v1.2.1 - 2026-05-11
 #### Bug Fixes
 - load renderer lazily to avoid race condition - (b8aec9d) - Benedikt Zumtobel
