@@ -31,6 +31,7 @@ import (
 
 var (
 	keyOutputPath string
+	keyForce      bool
 )
 
 // keyCmd represents the key command
@@ -75,6 +76,15 @@ Then update your config.toml:
 			}
 		}
 
+		// Check if key file already exists
+		if _, err := os.Stat(keyOutputPath); err == nil {
+			if !keyForce {
+				return fmt.Errorf("key file already exists at %s. Use --force to overwrite, or remove the existing file first", keyOutputPath)
+			}
+		} else if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to check key file: %w", err)
+		}
+
 		// Ensure parent directory exists
 		if err := os.MkdirAll(filepath.Dir(keyOutputPath), 0o700); err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
@@ -103,4 +113,6 @@ func init() {
 
 	keyGenerateCmd.Flags().StringVarP(&keyOutputPath, "output", "o", "",
 		"Output path for the encryption key file (default: ~/.config/yatto/encryption.key)")
+	keyGenerateCmd.Flags().BoolVarP(&keyForce, "force", "f", false,
+		"Overwrite existing key file if it exists")
 }
