@@ -31,7 +31,7 @@ and manages your task directory as a Git or Jujutsu repository.
 - Markdown support for task descriptions
 - Non-interactive output (`yatto print`) for simple dashboards
 - Simple theme and color customization
-- Optional task encryption
+- Optional task encryption (experimental)
 
 ## Requirements
 
