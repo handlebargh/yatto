@@ -31,6 +31,7 @@ import (
 
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
+	"github.com/handlebargh/yatto/internal/encryption"
 	"github.com/mattn/go-runewidth"
 	"github.com/spf13/viper"
 )
@@ -127,6 +128,19 @@ func (p *Project) ReadTasksFromFS(v *viper.Viper) []Task {
 			panic(err)
 		}
 
+		// Decrypt if encrypted and encryption is enabled
+		if v.GetBool("encryption.enable") && encryption.IsEncrypted(fileContent) {
+			keyPath := v.GetString("encryption.key_path")
+			key, err := os.ReadFile(keyPath)
+			if err != nil {
+				panic(err)
+			}
+			fileContent, err = encryption.Decrypt(fileContent, key)
+			if err != nil {
+				panic(err)
+			}
+		}
+
 		var task Task
 		if err := json.Unmarshal(fileContent, &task); err != nil {
 			panic(err)
@@ -166,6 +180,7 @@ func (p *Project) MarshalProject() []byte {
 // WriteProjectJSON writes the given project JSON to disk as project.json
 // inside the project's directory. Ensures the directory exists.
 // Returns a Tea message indicating success or error.
+// If encryption is enabled in the config, the data will be encrypted before writing.
 func (p *Project) WriteProjectJSON(v *viper.Viper, json []byte, kind string) tea.Cmd {
 	return func() tea.Msg {
 		root, err := os.OpenRoot(v.GetString("storage.path"))
@@ -180,6 +195,20 @@ func (p *Project) WriteProjectJSON(v *viper.Viper, json []byte, kind string) tea
 		}
 
 		file := filepath.Join(p.ID, "project.json")
+
+		// Encrypt if enabled
+		if v.GetBool("encryption.enable") {
+			keyPath := v.GetString("encryption.key_path")
+			key, err := os.ReadFile(keyPath)
+			if err != nil {
+				return WriteProjectJSONErrorMsg{err}
+			}
+			json, err = encryption.Encrypt(json, key)
+			if err != nil {
+				return WriteProjectJSONErrorMsg{err}
+			}
+		}
+
 		if err := root.WriteFile(file, json, 0o600); err != nil {
 			return WriteProjectJSONErrorMsg{err}
 		}
@@ -216,6 +245,19 @@ func (p *Project) NumOfTasks(v *viper.Viper) (int, int, int, error) {
 		data, err := root.ReadFile(filePath)
 		if err != nil {
 			continue
+		}
+
+		// Decrypt if encrypted and encryption is enabled
+		if v.GetBool("encryption.enable") && encryption.IsEncrypted(data) {
+			keyPath := v.GetString("encryption.key_path")
+			key, err := os.ReadFile(keyPath)
+			if err != nil {
+				return 0, 0, 0, err
+			}
+			data, err = encryption.Decrypt(data, key)
+			if err != nil {
+				return 0, 0, 0, err
+			}
 		}
 
 		var t struct {

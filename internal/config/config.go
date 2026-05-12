@@ -65,6 +65,8 @@ type config struct {
 	jjRemoteName        string
 	colorsFormTheme     string
 	colorValues         map[string]string
+	encryptionEnable    bool
+	encryptionKeyPath   string
 }
 
 // InitConfig sets default values for application configuration and
@@ -114,6 +116,10 @@ func InitConfig(v *viper.Viper, home string, configPath *string) {
 
 	// Form themes
 	v.SetDefault("colors.form.theme", "Base16")
+
+	// Encryption
+	v.SetDefault("encryption.enable", false)
+	v.SetDefault("encryption.key_path", "")
 
 	if *configPath != "" {
 		v.SetConfigFile(*configPath)
@@ -285,6 +291,8 @@ func LoadAndValidateConfig(v *viper.Viper) error {
 		jjDefaultBranch:     v.GetString("jj.default_branch"),
 		jjRemoteName:        v.GetString("jj.remote.name"),
 		colorsFormTheme:     v.GetString("colors.form.theme"),
+		encryptionEnable:    v.GetBool("encryption.enable"),
+		encryptionKeyPath:   v.GetString("encryption.key_path"),
 		colorValues: map[string]string{
 			"colors.red_light":        v.GetString("colors.red_light"),
 			"colors.red_dark":         v.GetString("colors.red_dark"),
@@ -365,6 +373,16 @@ func (c *config) Validate() error {
 	for k, v := range c.colorValues {
 		if !colorRegexp.MatchString(v) {
 			return fmt.Errorf("invalid color value for '%s': %q", k, v)
+		}
+	}
+
+	// Encryption validation
+	if c.encryptionEnable {
+		if c.encryptionKeyPath == "" {
+			return fmt.Errorf("encryption is enabled but encryption.key_path is not set")
+		}
+		if !filepath.IsAbs(c.encryptionKeyPath) {
+			return fmt.Errorf("encryption.key_path must be absolute: %q", c.encryptionKeyPath)
 		}
 	}
 

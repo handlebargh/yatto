@@ -89,3 +89,14 @@ url = "git@github.com:<username>/<repo>.git"
 ## Replace with your actual home directory
 ## or any other path you'd like to use.
 path = "/home/<me>/.yatto"
+
+[encryption]
+## Enable encryption of task and project files at rest.
+## When enabled, all task and project JSON files will be encrypted
+## using AES-256-GCM with the key specified in key_path.
+enable = false
+
+## Path to the file containing the 32-byte encryption key (base64 encoded).
+## The key can be generated using: yatto key generate
+## Example: key_path = "/home/<me>/.config/yatto/encryption.key"
+key_path = ""

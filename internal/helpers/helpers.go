@@ -33,6 +33,7 @@ import (
 	"strings"
 
 	"github.com/handlebargh/yatto/internal/colors"
+	"github.com/handlebargh/yatto/internal/encryption"
 	"github.com/handlebargh/yatto/internal/items"
 	"github.com/spf13/viper"
 )
@@ -62,6 +63,19 @@ func ReadProjectsFromFS(v *viper.Viper) []items.Project {
 		projectFile, err := root.ReadFile(filepath.Join(entry.Name(), "project.json"))
 		if err != nil {
 			panic(err)
+		}
+
+		// Decrypt if encrypted and encryption is enabled
+		if v.GetBool("encryption.enable") && encryption.IsEncrypted(projectFile) {
+			keyPath := v.GetString("encryption.key_path")
+			key, err := os.ReadFile(keyPath)
+			if err != nil {
+				panic(err)
+			}
+			projectFile, err = encryption.Decrypt(projectFile, key)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		var project items.Project
@@ -111,6 +125,19 @@ func AllLabels(v *viper.Viper) map[string]int {
 		data, err := root.ReadFile(path)
 		if err != nil {
 			panic(fmt.Sprintf("unexpected read error for %s: %v", path, err))
+		}
+
+		// Decrypt if encrypted and encryption is enabled
+		if v.GetBool("encryption.enable") && encryption.IsEncrypted(data) {
+			keyPath := v.GetString("encryption.key_path")
+			key, err := os.ReadFile(keyPath)
+			if err != nil {
+				panic(err)
+			}
+			data, err = encryption.Decrypt(data, key)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		var task struct {
