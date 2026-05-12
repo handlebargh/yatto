@@ -147,18 +147,7 @@ type customTaskDelegate struct {
 
 // Height returns the delegate's preferred height.
 func (d customTaskDelegate) Height() int {
-	showAuthor := viper.GetBool("author.show")
-	showAssignee := viper.GetBool("assignee.show")
-
-	if showAuthor && showAssignee {
-		return 4
-	}
-
-	if showAuthor || showAssignee {
-		return 3
-	}
-
-	return 2
+	return 5
 }
 
 // Render draws a single task item within the task list.
@@ -173,190 +162,279 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		return
 	}
 
-	availableWidth := max(m.Width(), 40)
-	leftWidth := max(availableWidth-40, 20)
+	color := helpers.GetColorCode(d.parent.project.Color)
+
+	availableWidth := max(m.Width(), 50)
 
 	// Check if item is selected
 	_, selected := d.parent.selectedItems[taskItem.ID]
 
-	marker := ""
-	indent := 0
-	if selected {
-		marker = lipgloss.NewStyle().
-			Foreground(colors.Red()).
-			Render("⟹  ")
-		indent = 3
-	}
+	// === Card-based Design (similar to project list) ===
+	// Each task as a clean card with rounded corners
+	// Layout: [icon] Title
+	//         Labels
+	//         [badges...]
 
-	// Base styles.
-	contentWidth := leftWidth - indent
-	if index != m.GlobalIndex() {
-		contentWidth--
-	}
-
-	titleStyle := lipgloss.NewStyle().
-		Width(contentWidth).
-		Padding(0, 1)
-
-	labelsStyle := lipgloss.NewStyle().
-		Foreground(colors.Blue()).
-		Width(contentWidth).
-		Padding(0, 1).
-		MarginLeft(indent)
-
-	authorStyle := lipgloss.NewStyle().
-		Padding(0, 1).
-		MarginLeft(indent).
-		Width(contentWidth)
-
-	priorityValueStyle := lipgloss.NewStyle().
-		Foreground(colors.BadgeText()).
-		Padding(0, 1)
-
-	switch taskItem.Priority {
-	case "low":
-		titleStyle = titleStyle.BorderForeground(colors.Indigo())
-		labelsStyle = labelsStyle.BorderForeground(colors.Indigo())
-		authorStyle = authorStyle.BorderForeground(colors.Indigo())
-		priorityValueStyle = priorityValueStyle.
-			BorderForeground(colors.Indigo()).Background(colors.Indigo())
-	case "medium":
-		titleStyle = titleStyle.BorderForeground(colors.Orange())
-		labelsStyle = labelsStyle.BorderForeground(colors.Orange())
-		authorStyle = authorStyle.BorderForeground(colors.Orange())
-		priorityValueStyle = priorityValueStyle.
-			BorderForeground(colors.Orange()).Background(colors.Orange())
-	case "high":
-		titleStyle = titleStyle.BorderForeground(colors.Red())
-		labelsStyle = labelsStyle.BorderForeground(colors.Red())
-		authorStyle = authorStyle.BorderForeground(colors.Red())
-		priorityValueStyle = priorityValueStyle.
-			BorderForeground(colors.Red()).Background(colors.Red())
-	}
+	// Border styling - dynamic based on state
+	var borderStyle lipgloss.Style
+	var cornerTL, cornerTR, cornerBL, cornerBR, borderH, borderV string
 
 	switch {
+	case selected && index == m.GlobalIndex():
+		// Selected and on cursor: double border with green color
+		borderStyle = lipgloss.NewStyle().Foreground(colors.Green())
+		cornerTL = borderStyle.Render("╔")
+		cornerTR = borderStyle.Render("╗")
+		cornerBL = borderStyle.Render("╚")
+		cornerBR = borderStyle.Render("╝")
+		borderH = borderStyle.Render("═")
+		borderV = borderStyle.Render("║")
+	case selected:
+		// Selected: double border with red color
+		borderStyle = lipgloss.NewStyle().Foreground(colors.Red())
+		cornerTL = borderStyle.Render("╔")
+		cornerTR = borderStyle.Render("╗")
+		cornerBL = borderStyle.Render("╚")
+		cornerBR = borderStyle.Render("╝")
+		borderH = borderStyle.Render("═")
+		borderV = borderStyle.Render("║")
 	case index == m.GlobalIndex():
-		titleStyle = titleStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true)
-		labelsStyle = labelsStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true)
-		authorStyle = authorStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true)
-	case !selected:
-		titleStyle = titleStyle.MarginLeft(1)
-		labelsStyle = labelsStyle.MarginLeft(1)
-		authorStyle = authorStyle.MarginLeft(1)
+		// Current item: single border with project color
+		borderStyle = lipgloss.NewStyle().Foreground(colors.Green())
+		cornerTL = borderStyle.Render("╭")
+		cornerTR = borderStyle.Render("╮")
+		cornerBL = borderStyle.Render("╰")
+		cornerBR = borderStyle.Render("╯")
+		borderH = borderStyle.Render("─")
+		borderV = borderStyle.Render("│")
 	default:
-		titleStyle = titleStyle.MarginLeft(1)
-		labelsStyle = labelsStyle.MarginLeft(4)
-		authorStyle = authorStyle.MarginLeft(4)
+		// Normal: subtle gray single border
+		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#333333"))
+		cornerTL = borderStyle.Render("╭")
+		cornerTR = borderStyle.Render("╮")
+		cornerBL = borderStyle.Render("╰")
+		cornerBR = borderStyle.Render("╯")
+		borderH = borderStyle.Render("─")
+		borderV = borderStyle.Render("│")
 	}
 
-	var left strings.Builder
+	// Content width between borders
+	contentWidth := availableWidth - 2
+
+	// Selection indicator
+	var indicator string
+	switch {
+	case index == m.GlobalIndex():
+		indicator = lipgloss.NewStyle().Foreground(color).Render("●")
+	case selected:
+		indicator = lipgloss.NewStyle().Foreground(colors.Red()).Render("●")
+	default:
+		indicator = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555")).Render("○")
+	}
 
 	// Title
-	left.WriteString(marker)
-	left.WriteString(titleStyle.Render(taskItem.CropTaskTitle(taskEntryLength)))
-
-	// Author
-	if viper.GetBool("author.show") {
-		// Strip email address in list view.
-		authorSlice := strings.Split(taskItem.Author, " ")
-		authorString := strings.Join(authorSlice[:len(authorSlice)-1], " ")
-
-		left.WriteString("\n")
-		left.WriteString(authorStyle.Render("Author:", authorString))
-	}
+	titleStyle := lipgloss.NewStyle().
+		Foreground(color).
+		Bold(true)
+	title := titleStyle.Render(taskItem.CropTaskTitle(60))
 
 	// Labels
-	left.WriteString("\n")
-	left.WriteString(labelsStyle.Render(taskItem.CropTaskLabels(taskEntryLength)))
+	labelsStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#777777"))
+	labels := labelsStyle.Render(taskItem.CropTaskLabels(60))
 
-	var right strings.Builder
+	// Build badge strings with spacing
+	var badges []string
 
-	right.WriteString(priorityValueStyle.Render(taskItem.Priority))
+	// Priority badge
+	switch taskItem.Priority {
+	case "low":
+		badges = append(badges, lipgloss.NewStyle().
+			Foreground(colors.BadgeText()).
+			Background(colors.Indigo()).
+			Padding(0, 1).
+			MarginRight(1).
+			Render(taskItem.Priority))
+	case "medium":
+		badges = append(badges, lipgloss.NewStyle().
+			Foreground(colors.BadgeText()).
+			Background(colors.Orange()).
+			Padding(0, 1).
+			MarginRight(1).
+			Render(taskItem.Priority))
+	case "high":
+		badges = append(badges, lipgloss.NewStyle().
+			Foreground(colors.BadgeText()).
+			Background(colors.Red()).
+			Padding(0, 1).
+			MarginRight(1).
+			Render(taskItem.Priority))
+	default:
+		badges = append(badges, lipgloss.NewStyle().
+			Foreground(colors.BadgeText()).
+			Background(lipgloss.Color("#555555")).
+			Padding(0, 1).
+			MarginRight(1).
+			Render(taskItem.Priority))
+	}
 
+	// Due date badges
 	now := time.Now()
 	dueDate := taskItem.DueDate
 
-	if dueDate != nil &&
-		items.IsToday(dueDate) &&
-		dueDate.After(now) {
-		right.WriteString(lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(colors.VividRed()).
-			Foreground(colors.BadgeText()).
-			Render("due today"))
-	}
-
 	if dueDate != nil && dueDate.Before(now) {
-		right.WriteString(lipgloss.NewStyle().
-			Padding(0, 1).
+		badges = append(badges, lipgloss.NewStyle().
+			Foreground(colors.BadgeText()).
 			Background(colors.VividRed()).
-			Foreground(colors.BadgeText()).
+			Padding(0, 1).
+			MarginRight(1).
 			Render("overdue"))
-	}
-
-	if taskItem.InProgress {
-		right.WriteString(lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(colors.Blue()).
+	} else if dueDate != nil && items.IsToday(dueDate) {
+		badges = append(badges, lipgloss.NewStyle().
 			Foreground(colors.BadgeText()).
-			Render("in progress"))
-	}
-
-	if dueDate != nil &&
-		!dueDate.Before(now) &&
-		!items.IsToday(dueDate) {
-		right.WriteString(lipgloss.NewStyle().
+			Background(colors.VividRed()).
 			Padding(0, 1).
+			MarginRight(1).
+			Render("due today"))
+	} else if dueDate != nil {
+		badges = append(badges, lipgloss.NewStyle().
+			Foreground(colors.BadgeText()).
 			Background(colors.Yellow()).
-			Foreground(colors.BadgeText()).
-			Render("due in " + taskItem.DaysUntilToString() + " day(s)"))
+			Padding(0, 1).
+			MarginRight(1).
+			Render("due in "+taskItem.DaysUntilToString()+" day(s)"))
 	}
 
+	// Status badges
 	if taskItem.Completed {
-		right.Reset()
-		right.WriteString(lipgloss.NewStyle().
-			Padding(0, 1).
-			Background(colors.Green()).
+		badges = append(badges, lipgloss.NewStyle().
 			Foreground(colors.BadgeText()).
+			Background(colors.Green()).
+			Padding(0, 1).
+			MarginRight(1).
 			Render("completed"))
 	}
 
-	// Assignee
+	if taskItem.InProgress && !taskItem.Completed {
+		badges = append(badges, lipgloss.NewStyle().
+			Foreground(colors.BadgeText()).
+			Background(colors.Blue()).
+			Padding(0, 1).
+			MarginRight(1).
+			Render("in progress"))
+	}
+
+	// Assignee badge
 	me, _ := vcs.User(d.parent.projectModel.config)
-	if viper.GetBool("assignee.show") {
-		// Strip email address in list view.
+	if viper.GetBool("assignee.show") && taskItem.Assignee != "" {
 		assigneeSlice := strings.Split(taskItem.Assignee, " ")
 		assigneeString := strings.Join(assigneeSlice[:len(assigneeSlice)-1], " ")
-
-		right.WriteString("\n")
-		if taskItem.Assignee == me {
-			right.WriteString(
-				lipgloss.NewStyle().
+		if assigneeString != "" {
+			if taskItem.Assignee == me {
+				badges = append(badges, lipgloss.NewStyle().
 					Foreground(colors.BadgeText()).
 					Background(colors.Red()).
 					Padding(0, 1).
-					Render(assigneeString),
-			)
-		} else {
-			right.WriteString(
-				lipgloss.NewStyle().
+					MarginRight(1).
+					Render(assigneeString))
+			} else {
+				badges = append(badges, lipgloss.NewStyle().
 					Foreground(colors.BadgeText()).
 					Background(colors.Green()).
 					Padding(0, 1).
-					Render(assigneeString),
-			)
+					MarginRight(1).
+					Render(assigneeString))
+			}
 		}
 	}
 
-	row := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Render(left.String()),
-		right.String(),
-	)
+	// Join all badges
+	badgesStr := lipgloss.JoinHorizontal(lipgloss.Top, badges...)
 
-	_, err := fmt.Fprint(w, row)
+	// Author
+	var authorStr string
+	if viper.GetBool("author.show") && taskItem.Author != "" {
+		authorSlice := strings.Split(taskItem.Author, " ")
+		authorString := strings.Join(authorSlice[:len(authorSlice)-1], " ")
+		if authorString != "" {
+			authorStr = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#777777")).
+				Render("Author: " + authorString)
+		}
+	}
+
+	// Build the card
+	var sb strings.Builder
+
+	// Top border
+	sb.WriteString(cornerTL)
+	sb.WriteString(strings.Repeat(borderH, availableWidth-2))
+	sb.WriteString(cornerTR)
+	sb.WriteString("\n")
+
+	// Title line: │ indicator title padding │
+	sb.WriteString(borderV)
+	sb.WriteString(" ")
+	sb.WriteString(indicator)
+	sb.WriteString(" ")
+	sb.WriteString(title)
+	pad := contentWidth - (1 + lipgloss.Width(indicator) + 1 + lipgloss.Width(title))
+	if pad > 0 {
+		sb.WriteString(strings.Repeat(" ", pad))
+	}
+	sb.WriteString(borderV)
+	sb.WriteString("\n")
+
+	// Labels line: │  labels padding │
+	sb.WriteString(borderV)
+	sb.WriteString(" ")
+	sb.WriteString(strings.Repeat(" ", 2))
+	sb.WriteString(labels)
+	pad = contentWidth - (1 + 2 + lipgloss.Width(labels))
+	if pad > 0 {
+		sb.WriteString(strings.Repeat(" ", pad))
+	}
+	sb.WriteString(borderV)
+	sb.WriteString("\n")
+
+	// Author line (if shown): │  author padding │
+	if authorStr != "" {
+		sb.WriteString(borderV)
+		sb.WriteString(" ")
+		sb.WriteString(strings.Repeat(" ", 2))
+		sb.WriteString(authorStr)
+		pad = contentWidth - (1 + 2 + lipgloss.Width(authorStr))
+		if pad > 0 {
+			sb.WriteString(strings.Repeat(" ", pad))
+		}
+		sb.WriteString(borderV)
+		sb.WriteString("\n")
+	} else {
+		// Blank line for consistent spacing
+		sb.WriteString(borderV)
+		sb.WriteString(strings.Repeat(" ", contentWidth+2))
+		sb.WriteString(borderV)
+		sb.WriteString("\n")
+	}
+
+	// Badges line: │  badges padding │
+	sb.WriteString(borderV)
+	sb.WriteString(" ")
+	sb.WriteString(strings.Repeat(" ", 2))
+	sb.WriteString(badgesStr)
+	pad = contentWidth - (1 + 2 + lipgloss.Width(badgesStr))
+	if pad > 0 {
+		sb.WriteString(strings.Repeat(" ", pad))
+	}
+	sb.WriteString(borderV)
+	sb.WriteString("\n")
+
+	// Bottom border
+	sb.WriteString(cornerBL)
+	sb.WriteString(strings.Repeat(borderH, availableWidth-2))
+	sb.WriteString(cornerBR)
+
+	_, err := fmt.Fprint(w, sb.String())
 	if err != nil {
 		panic(err)
 	}
@@ -657,7 +735,7 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					markdown := m.list.SelectedItem().(*items.Task).TaskToMarkdown()
 					pagerModel := newTaskPagerModel(markdown, &m)
 
-					return pagerModel, tea.RequestWindowSize
+					return &pagerModel, tea.RequestWindowSize
 				}
 				return m, nil
 
