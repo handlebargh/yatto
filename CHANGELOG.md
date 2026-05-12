@@ -1,4 +1,11 @@
 - - -
+## v1.4.0 - 2026-05-12
+#### Features
+- task encryption (#103) - (9e188d4) - Benedikt Zumtobel
+- task archiving and full text search (#102) - (77174f9) - Benedikt Zumtobel
+
+- - -
+
 ## v1.3.0 - 2026-05-12
 #### Features
 - new styling (#101) - (db207f9) - Benedikt Zumtobel
