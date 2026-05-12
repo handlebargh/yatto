@@ -430,7 +430,7 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	} else {
 		// Blank line for consistent spacing
 		sb.WriteString(borderV)
-		sb.WriteString(strings.Repeat(" ", contentWidth+2))
+		sb.WriteString(strings.Repeat(" ", contentWidth))
 		sb.WriteString(borderV)
 		sb.WriteString("\n")
 	}
@@ -473,6 +473,9 @@ type taskListModel struct {
 	width, height int
 	selectedItems map[string]*items.Task
 	showArchived  bool
+	// Fields for tracking pending commit after task write (from form)
+	commitMessage string
+	commitPath    string
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
@@ -643,11 +646,30 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			return m, nil
 		}
+
+		// If we have a pending commit (from single task create/update via form),
+		// trigger it now that the file has been written
+		if m.commitPath != "" && (msg.Kind == "create" || msg.Kind == "update") {
+			cmds := []tea.Cmd{
+				vcs.CommitCmd(
+					m.projectModel.config,
+					m.commitMessage,
+					m.commitPath,
+				),
+			}
+			// Clear the pending commit info
+			m.commitMessage = ""
+			m.commitPath = ""
+			return m, tea.Batch(cmds...)
+		}
+
 		return m, nil
 
 	case items.WriteTaskJSONErrorMsg:
-		m.mode = 2
+		m.mode = modeBackendError
 		m.err = msg.Err
+		m.cmdOutput = msg.Err.Error()
+		m.spinning = false
 		return m, nil
 
 	case items.TaskDeleteDoneMsg:

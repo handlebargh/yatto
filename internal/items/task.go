@@ -37,6 +37,7 @@ import (
 
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
+	"github.com/handlebargh/yatto/internal/encryption"
 	"github.com/mattn/go-runewidth"
 	"github.com/spf13/viper"
 )
@@ -233,6 +234,7 @@ func (t *Task) MarshalTask() []byte {
 
 // WriteTaskJSON writes the given task JSON to disk under the project directory,
 // using the task's ID as the filename. Returns a Tea message on success or error.
+// If encryption is enabled in the config, the data will be encrypted before writing.
 func (t *Task) WriteTaskJSON(v *viper.Viper, json []byte, p Project, kind string) tea.Cmd {
 	return func() tea.Msg {
 		root, err := os.OpenRoot(v.GetString("storage.path"))
@@ -242,6 +244,19 @@ func (t *Task) WriteTaskJSON(v *viper.Viper, json []byte, p Project, kind string
 		defer root.Close() //nolint:errcheck
 
 		file := filepath.Join(p.ID, t.ID+".json")
+
+		// Encrypt if enabled
+		if v.GetBool("encryption.enable") {
+			keyPath := v.GetString("encryption.key_path")
+			key, err := os.ReadFile(keyPath) //nolint:gosec
+			if err != nil {
+				return WriteTaskJSONErrorMsg{err}
+			}
+			json, err = encryption.Encrypt(json, key)
+			if err != nil {
+				return WriteTaskJSONErrorMsg{err}
+			}
+		}
 
 		if err := root.WriteFile(file, json, 0o600); err != nil {
 			return WriteTaskJSONErrorMsg{err}

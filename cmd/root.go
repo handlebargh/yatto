@@ -126,12 +126,21 @@ func Execute() {
 
 	config.InitConfig(appConfig.Viper, homePath, &configPath)
 
+	// Set encryption key path from flag if provided (overrides config file)
+	if encryptionKeyPath != "" {
+		appConfig.Viper.Set("encryption.key_path", encryptionKeyPath)
+	}
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
+var encryptionKeyPath string
+
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Path to the config file")
+	rootCmd.PersistentFlags().
+		StringVar(&encryptionKeyPath, "encryption-key", "", "Path to encryption key file (overrides config)")
 }

@@ -351,15 +351,12 @@ func (m taskFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.listModel.spinning = true
+			m.listModel.commitMessage = fmt.Sprintf("%s: %s", action, m.task.Title)
+			m.listModel.commitPath = taskPath
 			cmds = append(
 				cmds,
 				m.listModel.spinner.Tick,
 				m.task.WriteTaskJSON(m.listModel.projectModel.config, json, *m.listModel.project, action),
-				vcs.CommitCmd(
-					m.listModel.projectModel.config,
-					fmt.Sprintf("%s: %s", action, m.task.Title),
-					taskPath,
-				),
 			)
 
 			m.listModel.status = ""

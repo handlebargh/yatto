@@ -367,6 +367,9 @@ type ProjectListModel struct {
 	progressOrange progress.Model
 	progressYellow progress.Model
 	progressGreen  progress.Model
+	// Fields for tracking pending commit after project write (from form)
+	commitMessage string
+	commitPath    string
 }
 
 // InitialProjectListModel returns an initialized projectListModel
@@ -524,17 +527,35 @@ func (m ProjectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "create":
 			m.list.InsertItem(0, &msg.Project)
 			m.status = "🗸  Project created ― committing changes"
-			return m, items.LoadAllTaskStatsCmd(m.config, m.allProjects())
 
 		case "update":
 			m.status = "🗸  Project updated ― committing changes"
-			return m, items.LoadAllTaskStatsCmd(m.config, m.allProjects())
 		}
-		return m, nil
+
+		// If we have a pending commit (from project create/update via form),
+		// trigger it now that the file has been written
+		if m.commitPath != "" && (msg.Kind == "create" || msg.Kind == "update") {
+			cmds := []tea.Cmd{
+				vcs.CommitCmd(
+					m.config,
+					m.commitMessage,
+					m.commitPath,
+				),
+				items.LoadAllTaskStatsCmd(m.config, m.allProjects()),
+			}
+			// Clear the pending commit info
+			m.commitMessage = ""
+			m.commitPath = ""
+			return m, tea.Batch(cmds...)
+		}
+
+		return m, items.LoadAllTaskStatsCmd(m.config, m.allProjects())
 
 	case items.WriteProjectJSONErrorMsg:
-		m.mode = 2
+		m.mode = modeBackendError
 		m.err = msg.Err
+		m.cmdOutput = msg.Err.Error()
+		m.spinning = false
 		return m, nil
 
 	case items.ProjectDeleteDoneMsg:
