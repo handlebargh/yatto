@@ -151,26 +151,39 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	//         [───────>   ] x/y (zz%) • N due
 
 	// Border styling - dynamic based on state
+	// Selected items get double-line borders
 	var borderStyle lipgloss.Style
-	switch {
-	case index == m.GlobalIndex():
-		// Current item: use project color for border
-		borderStyle = lipgloss.NewStyle().Foreground(color)
-	case selected:
-		// Selected: blue border
-		borderStyle = lipgloss.NewStyle().Foreground(colors.Blue())
-	default:
-		// Normal: subtle gray
-		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555"))
-	}
+	var cornerTL, cornerTR, cornerBL, cornerBR, borderH, borderV string
 
-	// Corner characters
-	cornerTL := borderStyle.Render("╭")
-	cornerTR := borderStyle.Render("╮")
-	cornerBL := borderStyle.Render("╰")
-	cornerBR := borderStyle.Render("╯")
-	borderH := borderStyle.Render("─")
-	borderV := borderStyle.Render("│")
+	switch {
+	case selected:
+		// Selected: double border with red color
+		borderStyle = lipgloss.NewStyle().Foreground(colors.Red())
+		cornerTL = borderStyle.Render("╔")
+		cornerTR = borderStyle.Render("╗")
+		cornerBL = borderStyle.Render("╚")
+		cornerBR = borderStyle.Render("╝")
+		borderH = borderStyle.Render("═")
+		borderV = borderStyle.Render("║")
+	case index == m.GlobalIndex():
+		// Current item: single border with project color
+		borderStyle = lipgloss.NewStyle().Foreground(color)
+		cornerTL = borderStyle.Render("╭")
+		cornerTR = borderStyle.Render("╮")
+		cornerBL = borderStyle.Render("╰")
+		cornerBR = borderStyle.Render("╯")
+		borderH = borderStyle.Render("─")
+		borderV = borderStyle.Render("│")
+	default:
+		// Normal: subtle gray single border
+		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555"))
+		cornerTL = borderStyle.Render("╭")
+		cornerTR = borderStyle.Render("╮")
+		cornerBL = borderStyle.Render("╰")
+		cornerBR = borderStyle.Render("╯")
+		borderH = borderStyle.Render("─")
+		borderV = borderStyle.Render("│")
+	}
 
 	// All lines must be exactly availableWidth characters
 	// Content between borders: availableWidth - 2 (for the two border characters)
