@@ -44,23 +44,25 @@ import (
 
 // taskListKeyMap defines the key bindings used in the task list view.
 type taskListKeyMap struct {
-	quit             key.Binding
-	toggleHelpMenu   key.Binding
-	addItem          key.Binding
-	chooseItem       key.Binding
-	editItem         key.Binding
-	deleteItem       key.Binding
-	sortByPriority   key.Binding
-	sortByDueDate    key.Binding
-	sortByState      key.Binding
-	sortByAuthor     key.Binding
-	sortByAssignee   key.Binding
-	toggleInProgress key.Binding
-	toggleComplete   key.Binding
-	goBackVim        key.Binding
-	prevPage         key.Binding
-	nextPage         key.Binding
-	toggleSelect     key.Binding
+	quit              key.Binding
+	toggleHelpMenu    key.Binding
+	addItem           key.Binding
+	chooseItem        key.Binding
+	editItem          key.Binding
+	deleteItem        key.Binding
+	sortByPriority    key.Binding
+	sortByDueDate     key.Binding
+	sortByState       key.Binding
+	sortByAuthor      key.Binding
+	sortByAssignee    key.Binding
+	toggleInProgress  key.Binding
+	toggleComplete    key.Binding
+	toggleArchive     key.Binding
+	toggleShowArchive key.Binding
+	goBackVim         key.Binding
+	prevPage          key.Binding
+	nextPage          key.Binding
+	toggleSelect      key.Binding
 }
 
 // newTaskListKeyMap initializes and returns a new key map for task list actions.
@@ -77,6 +79,14 @@ func newTaskListKeyMap() *taskListKeyMap {
 		toggleInProgress: key.NewBinding(
 			key.WithKeys("P"),
 			key.WithHelp("P", "toggle in progress on selection"),
+		),
+		toggleArchive: key.NewBinding(
+			key.WithKeys("R"),
+			key.WithHelp("R", "toggle archive on selection"),
+		),
+		toggleShowArchive: key.NewBinding(
+			key.WithKeys("alt+r"),
+			key.WithHelp("alt+r", "toggle showing archived tasks"),
 		),
 		sortByPriority: key.NewBinding(
 			key.WithKeys("alt+p"),
@@ -323,6 +333,15 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 			Render("in progress"))
 	}
 
+	if taskItem.Archived {
+		badges = append(badges, lipgloss.NewStyle().
+			Foreground(colors.BadgeText()).
+			Background(lipgloss.Color("#888888")).
+			Padding(0, 1).
+			MarginRight(1).
+			Render("archived"))
+	}
+
 	// Assignee badge
 	me, _ := vcs.User(d.parent.projectModel.config)
 	if viper.GetBool("assignee.show") && taskItem.Assignee != "" {
@@ -453,6 +472,7 @@ type taskListModel struct {
 	status        string
 	width, height int
 	selectedItems map[string]*items.Task
+	showArchived  bool
 }
 
 // newTaskListModel creates a new taskListModel for the given project.
@@ -461,8 +481,12 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel, wi
 
 	tasks := project.ReadTasksFromFS(projectModel.config)
 	var listItems []list.Item
+	showArchived := false
 
 	for _, task := range tasks {
+		if !showArchived && task.Archived {
+			continue
+		}
 		listItems = append(listItems, &task)
 	}
 
@@ -488,6 +512,7 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel, wi
 		spinner:       sp,
 		spinning:      false,
 		selectedItems: make(map[string]*items.Task),
+		showArchived:  false,
 	}
 
 	itemList := list.New(
@@ -529,6 +554,8 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel, wi
 			listKeys.sortByAssignee,
 			listKeys.toggleInProgress,
 			listKeys.toggleComplete,
+			listKeys.toggleArchive,
+			listKeys.toggleShowArchive,
 			listKeys.toggleSelect,
 		}
 	}
@@ -772,6 +799,35 @@ func (m taskListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				)
 
 				return m, tea.Batch(cmds...)
+
+			case key.Matches(msg, m.keys.toggleArchive):
+				m, cmds = m.toggleTasks(
+					func(t *items.Task) { t.Archived = !t.Archived },
+					func(_ *items.Task) (bool, string) { return true, "" },
+					func(t *items.Task) string {
+						if t.Archived {
+							return "archive"
+						}
+						return "unarchive"
+					},
+					"archival",
+				)
+
+				return m, tea.Batch(cmds...)
+
+			case key.Matches(msg, m.keys.toggleShowArchive):
+				m.showArchived = !m.showArchived
+				m.status = fmt.Sprintf("Showing archived: %v", m.showArchived)
+				tasks := m.project.ReadTasksFromFS(m.projectModel.config)
+				var listItems []list.Item
+				for _, task := range tasks {
+					if !m.showArchived && task.Archived {
+						continue
+					}
+					listItems = append(listItems, &task)
+				}
+				m.list.SetItems(listItems)
+				return m, nil
 
 			case key.Matches(msg, m.keys.deleteItem):
 				if len(m.selectedItems) > 0 {

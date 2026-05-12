@@ -155,15 +155,16 @@ func sortTasks(v *viper.Viper, tasks []projectTask) {
 // For each provided project ID, it attempts to retrieve associated tasks. If any project IDs
 // are not found, an error message is printed for each.
 //
-// The remaining tasks are filtered to exclude completed ones, then sorted by in-progress state,
-// due date, and priority using sortTasks. Each task is printed with:
+// The remaining tasks are filtered to exclude completed ones (and archived ones unless
+// showArchived is true), then sorted by in-progress state, due date, and priority using
+// sortTasks. Each task is printed with:
 //   - A cropped task title
 //   - The project title, color-coded
 //   - Optional labels, color-coded
 //   - Priority, styled by level (low, medium, high)
 //   - Badges indicating task state, including:
 //   - "due today", "overdue", "in progress", or "due in N day(s)"
-func PrintTasks(v *viper.Viper, labelRegex string, author, assignee bool, projectsIDs ...string) {
+func PrintTasks(v *viper.Viper, labelRegex string, author, assignee, showArchived bool, projectsIDs ...string) {
 	projTask, missing := getProjectTasks(v, projectsIDs...)
 
 	if len(missing) > 0 {
@@ -182,6 +183,10 @@ func PrintTasks(v *viper.Viper, labelRegex string, author, assignee bool, projec
 	var pendingTasks []projectTask
 	for _, pt := range projTask {
 		if !pt.task.Completed && regex.MatchString(pt.task.Labels.String()) {
+			// Skip archived tasks unless showArchived is true
+			if !showArchived && pt.task.Archived {
+				continue
+			}
 			switch {
 			case author && pt.task.Author == me:
 				pendingTasks = append(pendingTasks, pt)
