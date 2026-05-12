@@ -41,6 +41,7 @@ var (
 	pullFlag      bool
 	authorFlag    bool
 	assigneeFlag  bool
+	archivedFlag  bool
 	printProjects string
 	printRegex    string
 )
@@ -131,13 +132,14 @@ func printTaskList(v *viper.Viper, printProjects, printRegex string) {
 	// Get a slice of strings from user input.
 	projects := strings.Fields(printProjects)
 
-	staticprinter.PrintTasks(v, printRegex, authorFlag, assigneeFlag, projects...)
+	staticprinter.PrintTasks(v, printRegex, authorFlag, assigneeFlag, archivedFlag, projects...)
 }
 
 func init() {
 	printCmd.Flags().BoolVarP(&pullFlag, "pull", "p", false, "Pull the remote before printing")
 	printCmd.Flags().BoolVarP(&authorFlag, "author", "a", false, "Print tasks only authored by you")
 	printCmd.Flags().BoolVarP(&assigneeFlag, "assignee", "A", false, "Print tasks only assigned to you")
+	printCmd.Flags().BoolVarP(&archivedFlag, "archived", "", false, "Print archived tasks")
 	printCmd.Flags().StringVarP(&printProjects, "projects", "P", "", "List of project UUIDs to print from")
 	printCmd.Flags().StringVarP(&printRegex, "regex", "r", "", "Regex to filter task labels")
 	rootCmd.AddCommand(printCmd)

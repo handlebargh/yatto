@@ -76,6 +76,7 @@ type Task struct {
 	Assignee    string     `json:"assignee,omitempty"`
 	InProgress  bool       `json:"in_progress"`
 	Completed   bool       `json:"completed"`
+	Archived    bool       `json:"archived"`
 	DueDate     *time.Time `json:"due_date,omitempty"`
 }
 
@@ -303,6 +304,9 @@ func (t *Task) TaskToMarkdown() string {
 		status = "Completed"
 	} else if t.InProgress {
 		status = "In Progress"
+	}
+	if t.Archived {
+		status = "Archived"
 	}
 	fmt.Fprintf(&content, "| **Status** | %s |\n", status)
 	fmt.Fprintf(&content, "| **Priority** | %s |\n", strings.ToUpper(t.Priority))
