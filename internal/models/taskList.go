@@ -42,8 +42,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const taskEntryLength = 53
-
 // taskListKeyMap defines the key bindings used in the task list view.
 type taskListKeyMap struct {
 	quit             key.Binding
@@ -282,21 +280,22 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	now := time.Now()
 	dueDate := taskItem.DueDate
 
-	if dueDate != nil && dueDate.Before(now) {
+	switch {
+	case dueDate != nil && dueDate.Before(now):
 		badges = append(badges, lipgloss.NewStyle().
 			Foreground(colors.BadgeText()).
 			Background(colors.VividRed()).
 			Padding(0, 1).
 			MarginRight(1).
 			Render("overdue"))
-	} else if dueDate != nil && items.IsToday(dueDate) {
+	case dueDate != nil && items.IsToday(dueDate):
 		badges = append(badges, lipgloss.NewStyle().
 			Foreground(colors.BadgeText()).
 			Background(colors.VividRed()).
 			Padding(0, 1).
 			MarginRight(1).
 			Render("due today"))
-	} else if dueDate != nil {
+	case dueDate != nil:
 		badges = append(badges, lipgloss.NewStyle().
 			Foreground(colors.BadgeText()).
 			Background(colors.Yellow()).
