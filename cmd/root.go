@@ -141,5 +141,6 @@ var encryptionKeyPath string
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Path to the config file")
-	rootCmd.PersistentFlags().StringVar(&encryptionKeyPath, "encryption-key", "", "Path to encryption key file (overrides config)")
+	rootCmd.PersistentFlags().
+		StringVar(&encryptionKeyPath, "encryption-key", "", "Path to encryption key file (overrides config)")
 }

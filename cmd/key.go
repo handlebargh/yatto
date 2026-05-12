@@ -79,7 +79,10 @@ Then update your config.toml:
 		// Check if key file already exists
 		if _, err := os.Stat(keyOutputPath); err == nil {
 			if !keyForce {
-				return fmt.Errorf("key file already exists at %s. Use --force to overwrite, or remove the existing file first", keyOutputPath)
+				return fmt.Errorf(
+					"key file already exists at %s. Use --force to overwrite, or remove the existing file first",
+					keyOutputPath,
+				)
 			}
 		} else if !os.IsNotExist(err) {
 			return fmt.Errorf("failed to check key file: %w", err)

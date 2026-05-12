@@ -131,7 +131,7 @@ func (p *Project) ReadTasksFromFS(v *viper.Viper) []Task {
 		// Decrypt if encrypted and encryption is enabled
 		if v.GetBool("encryption.enable") && encryption.IsEncrypted(fileContent) {
 			keyPath := v.GetString("encryption.key_path")
-			key, err := os.ReadFile(keyPath)
+			key, err := os.ReadFile(keyPath) //nolint:gosec
 			if err != nil {
 				panic(err)
 			}
@@ -199,7 +199,7 @@ func (p *Project) WriteProjectJSON(v *viper.Viper, json []byte, kind string) tea
 		// Encrypt if enabled
 		if v.GetBool("encryption.enable") {
 			keyPath := v.GetString("encryption.key_path")
-			key, err := os.ReadFile(keyPath)
+			key, err := os.ReadFile(keyPath) //nolint:gosec
 			if err != nil {
 				return WriteProjectJSONErrorMsg{err}
 			}
@@ -250,7 +250,7 @@ func (p *Project) NumOfTasks(v *viper.Viper) (int, int, int, error) {
 		// Decrypt if encrypted and encryption is enabled
 		if v.GetBool("encryption.enable") && encryption.IsEncrypted(data) {
 			keyPath := v.GetString("encryption.key_path")
-			key, err := os.ReadFile(keyPath)
+			key, err := os.ReadFile(keyPath) //nolint:gosec
 			if err != nil {
 				return 0, 0, 0, err
 			}

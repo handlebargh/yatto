@@ -248,7 +248,7 @@ func (t *Task) WriteTaskJSON(v *viper.Viper, json []byte, p Project, kind string
 		// Encrypt if enabled
 		if v.GetBool("encryption.enable") {
 			keyPath := v.GetString("encryption.key_path")
-			key, err := os.ReadFile(keyPath)
+			key, err := os.ReadFile(keyPath) //nolint:gosec
 			if err != nil {
 				return WriteTaskJSONErrorMsg{err}
 			}

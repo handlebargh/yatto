@@ -68,7 +68,7 @@ func ReadProjectsFromFS(v *viper.Viper) []items.Project {
 		// Decrypt if encrypted and encryption is enabled
 		if v.GetBool("encryption.enable") && encryption.IsEncrypted(projectFile) {
 			keyPath := v.GetString("encryption.key_path")
-			key, err := os.ReadFile(keyPath)
+			key, err := os.ReadFile(keyPath) //nolint:gosec
 			if err != nil {
 				panic(err)
 			}
@@ -130,7 +130,7 @@ func AllLabels(v *viper.Viper) map[string]int {
 		// Decrypt if encrypted and encryption is enabled
 		if v.GetBool("encryption.enable") && encryption.IsEncrypted(data) {
 			keyPath := v.GetString("encryption.key_path")
-			key, err := os.ReadFile(keyPath)
+			key, err := os.ReadFile(keyPath) //nolint:gosec
 			if err != nil {
 				panic(err)
 			}
