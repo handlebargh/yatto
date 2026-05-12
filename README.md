@@ -22,17 +22,16 @@ and manages your task directory as a Git or Jujutsu repository.
     - collaboration via shared repositories
 - Automatic commit on every change (optional auto-push)
 - Project-based task organization
+- Full-text search
 - Task attributes with sorting support:
     - due dates
     - status (open, in-progress, done)
     - priority
     - author / assignee
-- Task attributes with filtering support:
-    - titles
-    - labels
 - Markdown support for task descriptions
 - Non-interactive output (`yatto print`) for simple dashboards
 - Simple theme and color customization
+- Optional task encryption
 
 ## Requirements
 
@@ -204,6 +203,37 @@ See [examples/config.toml](examples/config.toml) as a reference with all availab
 > ```bash
 > yatto --config $PATH_TO_CONFIG_FILE
 > ```
+
+### Encryption
+
+yatto supports encrypting your task and project files at rest using AES-256-GCM.
+
+To enable encryption:
+
+1. Generate a new encryption key:
+
+    ```bash
+    yatto key generate
+    ```
+
+    This creates a key file at `~/.config/yatto/encryption.key` by default.
+    Use `--output` to specify a different path and `--force` to overwrite an existing key.
+
+2. Update your config file:
+    ```toml
+    [encryption]
+    enable = true
+    key_path = "~/.config/yatto/encryption.key"
+    ```
+
+> [!WARNING]
+> When encryption is enabled:
+>
+> - Task files are stored as **base64-encoded encrypted text** (git-friendly)
+> - `git diff/show` will show changes in the base64 encoding (not meaningful content)
+> - You cannot read or edit task files directly with a text editor (they are encrypted)
+> - Git history will only show encrypted content, making it impossible to recover old versions of tasks
+> - **Keep your key safe!** Losing the key means losing access to all your encrypted tasks.
 
 ### Colors and themes
 
