@@ -51,12 +51,46 @@ func newTaskPagerModel(content string, listModel *taskListModel) taskPagerModel 
 }
 
 // Init initializes the taskPagerModel and returns an initial command.
-func (m taskPagerModel) Init() tea.Cmd {
-	return nil
+func (m *taskPagerModel) Init() tea.Cmd {
+	// Initialize renderer if not already set
+	if m.listModel.projectModel.state.renderer == nil {
+		isDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+		style := "dark"
+		if !isDark {
+			style = "light"
+		}
+		renderer, err := glamour.NewTermRenderer(glamour.WithStylePath(style))
+		if err != nil {
+			// Fallback: store raw content
+			m.listModel.projectModel.state.renderer = nil
+			m.viewport = viewport.New(viewport.WithWidth(80), viewport.WithHeight(20))
+			m.viewport.SetContent(m.content)
+			m.ready = true
+			return tea.RequestWindowSize
+		}
+		m.listModel.projectModel.state.renderer = renderer
+	}
+
+	// Render markdown content
+	rendered, err := m.listModel.projectModel.state.renderer.Render(m.content)
+	if err != nil {
+		rendered = m.content // Fallback to raw markdown
+	}
+
+	// Initialize viewport with a default size
+	// It will be resized when the actual window size message arrives
+	m.viewport = viewport.New(
+		viewport.WithWidth(80),
+		viewport.WithHeight(20),
+	)
+	m.viewport.SetContent(rendered)
+	m.ready = true
+
+	return tea.RequestWindowSize
 }
 
 // Update handles incoming messages and updates the taskPagerModel accordingly.
-func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -116,11 +150,9 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		footerHeight := lipgloss.Height(m.footerView())
 
 		if !m.ready {
-			// Initialize renderer if not already set (race condition protection)
+			var err error
+			// Initialize renderer if not already set
 			if m.listModel.projectModel.state.renderer == nil {
-				// Initialize renderer synchronously if it wasn't initialized yet
-				// This handles the race condition where the user opens a task before
-				// the async renderer initialization completes
 				isDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 				style := "dark"
 				if !isDark {
@@ -128,15 +160,21 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				renderer, err := glamour.NewTermRenderer(glamour.WithStylePath(style))
 				if err != nil {
-					// Fallback: just use plain text without rendering
 					m.listModel.projectModel.state.renderer = nil
 				} else {
 					m.listModel.projectModel.state.renderer = renderer
 				}
 			}
-			rendered, err := m.listModel.projectModel.state.renderer.Render(m.content)
-			if err != nil {
-				rendered = "Error rendering markdown"
+
+			// Render markdown content
+			var rendered string
+			if m.listModel.projectModel.state.renderer != nil {
+				rendered, err = m.listModel.projectModel.state.renderer.Render(m.content)
+				if err != nil {
+					rendered = "Error rendering markdown"
+				}
+			} else {
+				rendered = m.content // Fallback to raw markdown
 			}
 
 			m.viewport = viewport.New(
@@ -159,7 +197,7 @@ func (m taskPagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View returns the tea.View representation of the task detail view.
-func (m taskPagerModel) View() tea.View {
+func (m *taskPagerModel) View() tea.View {
 	if !m.ready {
 		content := "\n  Initializing Renderer..."
 		v := tea.NewView(content)
@@ -173,7 +211,7 @@ func (m taskPagerModel) View() tea.View {
 }
 
 // footerView returns the string representation of the task detail view's footer.
-func (m taskPagerModel) footerView() string {
+func (m *taskPagerModel) footerView() string {
 	info := lipgloss.NewStyle().
 		Padding(0, 1).
 		Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
@@ -185,7 +223,7 @@ func (m taskPagerModel) footerView() string {
 // the provided mutation, validation, and labeling functions.
 //
 // Returns the updated list model and any resulting Bubble Tea commands.
-func (m taskPagerModel) toggleSelectedTask(
+func (m *taskPagerModel) toggleSelectedTask(
 	toggleFunc func(t *items.Task),
 	precondition func(t *items.Task) (bool, string),
 	commitKind func(t *items.Task) string,

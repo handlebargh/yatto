@@ -3,9 +3,14 @@ Output demo.gif
 Require yatto
 
 Set Shell "bash"
-Set FontSize 21
+Set FontSize 20
 Set Width 1920
 Set Height 1080
+Set Framerate 60
+Set WindowBar Colorful
+Set Margin 20
+Set MarginFill "#222222"
+Set BorderRadius 10
 
 Sleep 500ms
 Type "yatto"
@@ -83,4 +88,4 @@ Sleep 1s
 Type "P"
 Sleep 3s
 Enter
-Sleep 4s
+Sleep 6s

@@ -9,7 +9,7 @@
 **yatto** is a terminal to-do application that stores each task as a plain JSON file
 and manages your task directory as a Git or Jujutsu repository.
 
-![Made with VHS](https://vhs.charm.sh/vhs-66sLcUvH5lM8TlsOKXiSAz.gif)
+![Made with VHS](https://vhs.charm.sh/vhs-1RIKw1CXfdpWn7HaFiguvy.gif)
 
 ## Features
 
