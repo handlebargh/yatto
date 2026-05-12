@@ -156,6 +156,15 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	var cornerTL, cornerTR, cornerBL, cornerBR, borderH, borderV string
 
 	switch {
+	case selected && index == m.GlobalIndex():
+		// Selected and on cursor: double border with green color
+		borderStyle = lipgloss.NewStyle().Foreground(colors.Green())
+		cornerTL = borderStyle.Render("╔")
+		cornerTR = borderStyle.Render("╗")
+		cornerBL = borderStyle.Render("╚")
+		cornerBR = borderStyle.Render("╝")
+		borderH = borderStyle.Render("═")
+		borderV = borderStyle.Render("║")
 	case selected:
 		// Selected: double border with red color
 		borderStyle = lipgloss.NewStyle().Foreground(colors.Red())
@@ -167,7 +176,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		borderV = borderStyle.Render("║")
 	case index == m.GlobalIndex():
 		// Current item: single border with project color
-		borderStyle = lipgloss.NewStyle().Foreground(color)
+		borderStyle = lipgloss.NewStyle().Foreground(colors.Green())
 		cornerTL = borderStyle.Render("╭")
 		cornerTR = borderStyle.Render("╮")
 		cornerBL = borderStyle.Render("╰")
@@ -176,7 +185,7 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		borderV = borderStyle.Render("│")
 	default:
 		// Normal: subtle gray single border
-		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555"))
+		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#333333"))
 		cornerTL = borderStyle.Render("╭")
 		cornerTR = borderStyle.Render("╮")
 		cornerBL = borderStyle.Render("╰")
@@ -223,8 +232,8 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		// Current: colored circle matching project
 		indicator = lipgloss.NewStyle().Foreground(color).Render("●")
 	case selected:
-		// Selected: blue circle
-		indicator = lipgloss.NewStyle().Foreground(colors.Blue()).Render("●")
+		// Selected: red circle
+		indicator = lipgloss.NewStyle().Foreground(colors.Red()).Render("●")
 	default:
 		// Normal: subtle gray circle
 		indicator = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555")).Render("○")

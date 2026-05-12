@@ -24,50 +24,74 @@ package colors
 
 import (
 	"image/color"
+	"os"
+	"sync"
 
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/spf13/viper"
 )
 
+var (
+	colorSuffixVal  string
+	colorSuffixOnce sync.Once
+)
+
+// initColorSuffix detects terminal background once and caches the result.
+func initColorSuffix() {
+	colorSuffixOnce.Do(func() {
+		if lipgloss.HasDarkBackground(os.Stdin, os.Stdout) {
+			colorSuffixVal = "_dark"
+		} else {
+			colorSuffixVal = "_light"
+		}
+	})
+}
+
+// colorSuffix returns the cached "_dark" or "_light" based on terminal background.
+func colorSuffix() string {
+	initColorSuffix()
+	return colorSuffixVal
+}
+
 // Red returns a color value for red.
 func Red() color.Color {
-	return lipgloss.Color(viper.GetString("colors.red_dark"))
+	return lipgloss.Color(viper.GetString("colors.red" + colorSuffix()))
 }
 
 // VividRed returns a color value for vivid red.
 func VividRed() color.Color {
-	return lipgloss.Color(viper.GetString("colors.vividred_dark"))
+	return lipgloss.Color(viper.GetString("colors.vividred" + colorSuffix()))
 }
 
 // Indigo returns a color value for indigo.
 func Indigo() color.Color {
-	return lipgloss.Color(viper.GetString("colors.indigo_dark"))
+	return lipgloss.Color(viper.GetString("colors.indigo" + colorSuffix()))
 }
 
 // Green returns a color value for green.
 func Green() color.Color {
-	return lipgloss.Color(viper.GetString("colors.green_dark"))
+	return lipgloss.Color(viper.GetString("colors.green" + colorSuffix()))
 }
 
 // Orange returns a color value for orange.
 func Orange() color.Color {
-	return lipgloss.Color(viper.GetString("colors.orange_dark"))
+	return lipgloss.Color(viper.GetString("colors.orange" + colorSuffix()))
 }
 
 // Blue returns a color value for blue.
 func Blue() color.Color {
-	return lipgloss.Color(viper.GetString("colors.blue_dark"))
+	return lipgloss.Color(viper.GetString("colors.blue" + colorSuffix()))
 }
 
 // Yellow returns a color value for yellow.
 func Yellow() color.Color {
-	return lipgloss.Color(viper.GetString("colors.yellow_dark"))
+	return lipgloss.Color(viper.GetString("colors.yellow" + colorSuffix()))
 }
 
 // BadgeText returns a color value for badge text.
 func BadgeText() color.Color {
-	return lipgloss.Color(viper.GetString("colors.badge_text_dark"))
+	return lipgloss.Color(viper.GetString("colors.badge_text" + colorSuffix()))
 }
 
 // FormTheme returns a huh.Theme based on the configured theme name.
