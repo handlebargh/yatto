@@ -125,8 +125,10 @@ func (t *Task) LabelsList() []string {
 	return t.Labels
 }
 
-// FilterValue returns a string used for filtering/search, combining title and labels.
-func (t *Task) FilterValue() string { return fmt.Sprintf("%s %s", t.Title, t.Labels.String()) }
+// FilterValue returns a string used for filtering/search, combining title, description, and labels.
+func (t *Task) FilterValue() string {
+	return fmt.Sprintf("%s %s %s", t.Title, t.Description, t.Labels.String())
+}
 
 // CropTaskTitle returns the task's title cropped to fit
 // length with a concatenated ellipses.
