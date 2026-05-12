@@ -41,8 +41,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const projectDescLength = 200
-
 // projectListKeyMap defines the key bindings
 // used in the project list UI model.
 type projectListKeyMap struct {
@@ -123,7 +121,7 @@ type customProjectDelegate struct {
 }
 
 func (d customProjectDelegate) Height() int {
-	return 3
+	return 5
 }
 
 // Render renders a custom project item in the list,
@@ -141,63 +139,42 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 
 	color := helpers.GetColorCode(projectItem.Color)
 
-	availableWidth := max(m.Width(), 40)
-	leftWidth := max(availableWidth-40, 20)
+	availableWidth := max(m.Width(), 50)
 
 	// Check if item is selected
 	_, selected := d.parent.state.selectedItems[projectItem.ID]
 
-	marker := ""
-	indent := 0
-	if selected {
-		marker = lipgloss.NewStyle().
-			Foreground(colors.Red()).
-			Render("⟹  ")
-		indent = 3
-	}
+	// === Creative Modern Design ===
+	// Each project as a clean card with rounded corners
+	// Layout: [icon] Title
+	//         Description
+	//         [───────>   ] x/y (zz%) • N due
 
-	// Base styles.
-	contentWidth := leftWidth - indent
-	if index != m.GlobalIndex() {
-		contentWidth--
-	}
-
-	listTitleStyle := lipgloss.NewStyle().
-		Foreground(color).
-		Padding(0, 1).
-		Width(contentWidth)
-
-	listDescStyle := lipgloss.NewStyle().
-		Padding(0, 1).
-		MarginLeft(indent).
-		Width(contentWidth).
-		Height(2)
-
-	listItemInfoStyle := lipgloss.NewStyle().
-		Width(40)
-
+	// Border styling - dynamic based on state
+	var borderStyle lipgloss.Style
 	switch {
 	case index == m.GlobalIndex():
-		listTitleStyle = listTitleStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(color)
-		listDescStyle = listDescStyle.
-			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(color)
-	case !selected:
-		listTitleStyle = listTitleStyle.MarginLeft(1)
-		listDescStyle = listDescStyle.MarginLeft(1)
+		// Current item: use project color for border
+		borderStyle = lipgloss.NewStyle().Foreground(color)
+	case selected:
+		// Selected: blue border
+		borderStyle = lipgloss.NewStyle().Foreground(colors.Blue())
 	default:
-		listTitleStyle = listTitleStyle.MarginLeft(1)
-		listDescStyle = listDescStyle.MarginLeft(4)
+		// Normal: subtle gray
+		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555"))
 	}
 
-	var left strings.Builder
+	// Corner characters
+	cornerTL := borderStyle.Render("╭")
+	cornerTR := borderStyle.Render("╮")
+	cornerBL := borderStyle.Render("╰")
+	cornerBR := borderStyle.Render("╯")
+	borderH := borderStyle.Render("─")
+	borderV := borderStyle.Render("│")
 
-	left.WriteString(marker)
-	left.WriteString(listTitleStyle.Render(projectItem.Title))
-	left.WriteString("\n")
-	left.WriteString(listDescStyle.Render(projectItem.CropDescription(projectDescLength)))
+	// All lines must be exactly availableWidth characters
+	// Content between borders: availableWidth - 2 (for the two border characters)
+	contentWidth := availableWidth - 2
 
 	stats := d.parent.state.taskStats[projectItem.ID]
 	numTasks := stats.Total
@@ -209,8 +186,11 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		progressPercent = float64(numCompletedTasks) / float64(numTasks)
 	}
 
+	// Progress bar - colored based on completion
 	var progressBar progress.Model
 	switch {
+	case numCompletedTasks == numTasks && numTasks > 0:
+		progressBar = d.parent.progressGreen
 	case progressPercent < 0.33:
 		progressBar = d.parent.progressRed
 	case progressPercent < 0.60:
@@ -220,60 +200,126 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 	default:
 		progressBar = d.parent.progressGreen
 	}
-
-	progressBar.ShowPercentage = true
+	progressBar.ShowPercentage = false
 	progressBarView := progressBar.ViewAs(progressPercent)
 
-	var taskTotalCompleteMessage string
+	// Selection indicator - use colored circle for all states
+	var indicator string
+	switch {
+	case index == m.GlobalIndex():
+		// Current: colored circle matching project
+		indicator = lipgloss.NewStyle().Foreground(color).Render("●")
+	case selected:
+		// Selected: blue circle
+		indicator = lipgloss.NewStyle().Foreground(colors.Blue()).Render("●")
+	default:
+		// Normal: subtle gray circle
+		indicator = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555")).Render("○")
+	}
+
+	// Title
+	titleStyle := lipgloss.NewStyle().
+		Foreground(color).
+		Bold(true)
+	title := titleStyle.Render(projectItem.Title)
+
+	// Description
+	descStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#777777"))
+	desc := descStyle.Render(projectItem.CropDescription(60))
+
+	// Stats line
+	var statsStr string
 	if numTasks > 0 {
-		taskTotalCompleteMessage = fmt.Sprintf("%d/%d tasks completed", numCompletedTasks, numTasks)
+		percentInt := int(progressPercent * 100)
 		if numCompletedTasks == numTasks {
-			if numCompletedTasks == 1 {
-				taskTotalCompleteMessage = lipgloss.NewStyle().
-					Foreground(colors.Green()).
-					Render("1 task completed")
-			} else {
-				taskTotalCompleteMessage = lipgloss.NewStyle().
-					Foreground(colors.Green()).
-					Render(fmt.Sprintf("%d tasks completed", numCompletedTasks))
-			}
+			statsStr = lipgloss.NewStyle().
+				Foreground(colors.Green()).
+				Render(fmt.Sprintf("✓ %d/%d (%d%%)", numCompletedTasks, numTasks, percentInt))
+		} else {
+			statsStr = fmt.Sprintf("%d/%d (%d%%)", numCompletedTasks, numTasks, percentInt)
 		}
 	} else {
-		taskTotalCompleteMessage = "Empty project"
+		statsStr = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#666666")).
+			Render("empty")
 	}
 
-	var taskDueMessage string
+	// Due indicator
+	var dueStr string
 	if numDueTasks > 0 {
-		if numDueTasks == 1 {
-			taskDueMessage = lipgloss.NewStyle().
-				Foreground(colors.Red()).
-				Render("1 task due today")
-		} else {
-			taskDueMessage = lipgloss.NewStyle().
-				Foreground(colors.Red()).
-				Render(fmt.Sprintf("%d tasks due today", numDueTasks))
-		}
+		dueStr = lipgloss.NewStyle().
+			Foreground(colors.Red()).
+			Render(fmt.Sprintf(" • %d due", numDueTasks))
 	}
 
-	var right strings.Builder
+	// Build the card
+	var sb strings.Builder
 
-	right.WriteString(listItemInfoStyle.Render(progressBarView))
-	right.WriteString("\n")
-	right.WriteString(listItemInfoStyle.Render(taskTotalCompleteMessage))
-	right.WriteString("\n")
-	right.WriteString(taskDueMessage)
+	// Top border
+	sb.WriteString(cornerTL)
+	sb.WriteString(strings.Repeat(borderH, availableWidth-2))
+	sb.WriteString(cornerTR)
+	sb.WriteString("\n")
 
-	row := lipgloss.NewStyle().
-		Width(availableWidth).
-		Render(
-			lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				left.String(),
-				listItemInfoStyle.Render(right.String()),
-			),
-		)
+	// Title line: │ indicator title padding │
+	// Total: 1 + 1 + len(ind) + 1 + len(title) + pad + 1 = availableWidth
+	// So: pad = availableWidth - 5 - len(ind) - len(title)
+	sb.WriteString(borderV)
+	sb.WriteString(" ")
+	sb.WriteString(indicator)
+	sb.WriteString(" ")
+	sb.WriteString(title)
+	pad := contentWidth - (1 + lipgloss.Width(indicator) + 1 + lipgloss.Width(title))
+	if pad > 0 {
+		sb.WriteString(strings.Repeat(" ", pad))
+	}
+	sb.WriteString(borderV)
+	sb.WriteString("\n")
 
-	_, err := fmt.Fprint(w, row)
+	// Description line: │  desc padding │
+	sb.WriteString(borderV)
+	sb.WriteString(" ")
+	sb.WriteString(strings.Repeat(" ", 2))
+	sb.WriteString(desc)
+	pad = contentWidth - (1 + 2 + lipgloss.Width(desc))
+	if pad > 0 {
+		sb.WriteString(strings.Repeat(" ", pad))
+	}
+	sb.WriteString(borderV)
+	sb.WriteString("\n")
+
+	// Padding line (blank) for visual breathing room
+	sb.WriteString(borderV)
+	sb.WriteString(strings.Repeat(" ", contentWidth))
+	sb.WriteString(borderV)
+	sb.WriteString("\n")
+
+	// Progress line: │  [====      ] stats │
+	// All progress bars are 30 chars. Use fixed-width stats for alignment.
+	// Layout: │  [padding][30-char bar][space][20-char stats]│
+	// Total: 1 + 1 + 2 + padding + 30 + 1 + 20 + 1 = availableWidth
+	// So: padding = availableWidth - 56
+	statsFixed := lipgloss.NewStyle().Width(20).Render(statsStr + dueStr)
+	sb.WriteString(borderV)
+	sb.WriteString(" ")
+	sb.WriteString(strings.Repeat(" ", 2))
+	padBefore := availableWidth - 56 // 5 for borders/spaces + 30 bar + 1 space + 20 stats
+	if padBefore > 0 {
+		sb.WriteString(strings.Repeat(" ", padBefore))
+	}
+	sb.WriteString(progressBarView)
+	sb.WriteString(" ")
+	sb.WriteString(statsFixed)
+	sb.WriteString(borderV)
+	sb.WriteString("\n")
+
+	// Bottom border
+	sb.WriteString(cornerBL)
+	sb.WriteString(strings.Repeat(borderH, availableWidth-2))
+	sb.WriteString(cornerBR)
+
+	_, err := fmt.Fprint(w, sb.String())
 	if err != nil {
 		panic(err)
 	}
