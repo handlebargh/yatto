@@ -23,6 +23,7 @@ package models
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -117,7 +118,8 @@ type projectListState struct {
 // renderer for items in the project list.
 type customProjectDelegate struct {
 	list.DefaultDelegate
-	parent *ProjectListModel
+	parent    *ProjectListModel
+	lightDark lipgloss.LightDarkFunc
 }
 
 func (d customProjectDelegate) Height() int {
@@ -157,8 +159,11 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 
 	switch {
 	case selected && index == m.GlobalIndex():
-		// Selected and on cursor: double border with green color
-		borderStyle = lipgloss.NewStyle().Foreground(colors.Green())
+		// Selected and on cursor: double border
+		borderStyle = lipgloss.NewStyle().Foreground(d.lightDark(
+			lipgloss.Color("#111111"),
+			lipgloss.Color("#EEEEEE"),
+		))
 		cornerTL = borderStyle.Render("╔")
 		cornerTR = borderStyle.Render("╗")
 		cornerBL = borderStyle.Render("╚")
@@ -175,8 +180,11 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		borderH = borderStyle.Render("═")
 		borderV = borderStyle.Render("║")
 	case index == m.GlobalIndex():
-		// Current item: single border with project color
-		borderStyle = lipgloss.NewStyle().Foreground(colors.Green())
+		// Current item: single border
+		borderStyle = lipgloss.NewStyle().Foreground(d.lightDark(
+			lipgloss.Color("#111111"),
+			lipgloss.Color("#EEEEEE"),
+		))
 		cornerTL = borderStyle.Render("╭")
 		cornerTR = borderStyle.Render("╮")
 		cornerBL = borderStyle.Render("╰")
@@ -185,7 +193,10 @@ func (d customProjectDelegate) Render(w io.Writer, m list.Model, index int, item
 		borderV = borderStyle.Render("│")
 	default:
 		// Normal: subtle gray single border
-		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#333333"))
+		borderStyle = lipgloss.NewStyle().Foreground(d.lightDark(
+			lipgloss.Color("#CCCCCC"),
+			lipgloss.Color("#777777"),
+		))
 		cornerTL = borderStyle.Render("╭")
 		cornerTR = borderStyle.Render("╮")
 		cornerBL = borderStyle.Render("╰")
@@ -362,6 +373,7 @@ type ProjectListModel struct {
 	status        string
 	width, height int
 	state         *projectListState
+	isDark        bool
 
 	progressRed    progress.Model
 	progressOrange progress.Model
@@ -394,6 +406,7 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 		keys:     listKeys,
 		spinner:  sp,
 		spinning: false,
+		isDark:   lipgloss.HasDarkBackground(os.Stdin, os.Stdout),
 		state: &projectListState{
 			taskStats:     make(map[string]items.TaskStats),
 			selectedItems: make(map[string]*items.Project),
@@ -402,7 +415,11 @@ func InitialProjectListModel(v *viper.Viper) ProjectListModel {
 
 	itemList := list.New(
 		listItems,
-		customProjectDelegate{DefaultDelegate: list.NewDefaultDelegate(), parent: &m},
+		customProjectDelegate{
+			DefaultDelegate: list.NewDefaultDelegate(),
+			parent:          &m,
+			lightDark:       lipgloss.LightDark(m.isDark),
+		},
 		0,
 		0,
 	)
