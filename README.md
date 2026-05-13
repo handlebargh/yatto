@@ -232,7 +232,6 @@ To enable encryption:
 > - Task files are stored as **base64-encoded encrypted text** (git-friendly)
 > - `git diff/show` will show changes in the base64 encoding (not meaningful content)
 > - You cannot read or edit task files directly with a text editor (they are encrypted)
-> - Git history will only show encrypted content, making it impossible to recover old versions of tasks
 > - **Keep your key safe!** Losing the key means losing access to all your encrypted tasks.
 
 ### Colors and themes
