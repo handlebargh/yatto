@@ -150,7 +150,8 @@ func newTaskListKeyMap() *taskListKeyMap {
 // customTaskDelegate is a custom list delegate for rendering task items.
 type customTaskDelegate struct {
 	list.DefaultDelegate
-	parent *taskListModel
+	parent    *taskListModel
+	lightDark lipgloss.LightDarkFunc
 }
 
 // Height returns the delegate's preferred height.
@@ -170,8 +171,6 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		return
 	}
 
-	color := helpers.GetColorCode(d.parent.project.Color)
-
 	availableWidth := max(m.Width(), 50)
 
 	// Check if item is selected
@@ -189,8 +188,11 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	switch {
 	case selected && index == m.GlobalIndex():
-		// Selected and on cursor: double border with green color
-		borderStyle = lipgloss.NewStyle().Foreground(colors.Green())
+		// Selected and on cursor: double border
+		borderStyle = lipgloss.NewStyle().Foreground(d.lightDark(
+			lipgloss.Color("#111111"),
+			lipgloss.Color("#EEEEEE"),
+		))
 		cornerTL = borderStyle.Render("╔")
 		cornerTR = borderStyle.Render("╗")
 		cornerBL = borderStyle.Render("╚")
@@ -207,8 +209,11 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		borderH = borderStyle.Render("═")
 		borderV = borderStyle.Render("║")
 	case index == m.GlobalIndex():
-		// Current item: single border with project color
-		borderStyle = lipgloss.NewStyle().Foreground(colors.Green())
+		// Current item: single border
+		borderStyle = lipgloss.NewStyle().Foreground(d.lightDark(
+			lipgloss.Color("#111111"),
+			lipgloss.Color("#EEEEEE"),
+		))
 		cornerTL = borderStyle.Render("╭")
 		cornerTR = borderStyle.Render("╮")
 		cornerBL = borderStyle.Render("╰")
@@ -217,7 +222,10 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 		borderV = borderStyle.Render("│")
 	default:
 		// Normal: subtle gray single border
-		borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#333333"))
+		borderStyle = lipgloss.NewStyle().Foreground(d.lightDark(
+			lipgloss.Color("#CCCCCC"),
+			lipgloss.Color("#777777"),
+		))
 		cornerTL = borderStyle.Render("╭")
 		cornerTR = borderStyle.Render("╮")
 		cornerBL = borderStyle.Render("╰")
@@ -233,7 +241,10 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 	var indicator string
 	switch {
 	case index == m.GlobalIndex():
-		indicator = lipgloss.NewStyle().Foreground(color).Render("●")
+		indicator = lipgloss.NewStyle().Foreground(d.lightDark(
+			lipgloss.Color("#111111"),
+			lipgloss.Color("#EEEEEE"),
+		)).Render("●")
 	case selected:
 		indicator = lipgloss.NewStyle().Foreground(colors.Red()).Render("●")
 	default:
@@ -242,7 +253,10 @@ func (d customTaskDelegate) Render(w io.Writer, m list.Model, index int, item li
 
 	// Title
 	titleStyle := lipgloss.NewStyle().
-		Foreground(color).
+		Foreground(d.lightDark(
+			lipgloss.Color("#111111"),
+			lipgloss.Color("#EEEEEE"),
+		)).
 		Bold(true)
 	title := titleStyle.Render(taskItem.CropTaskTitle(60))
 
@@ -520,7 +534,11 @@ func newTaskListModel(project *items.Project, projectModel *ProjectListModel, wi
 
 	itemList := list.New(
 		listItems,
-		customTaskDelegate{DefaultDelegate: list.NewDefaultDelegate(), parent: &m},
+		customTaskDelegate{
+			DefaultDelegate: list.NewDefaultDelegate(),
+			parent:          &m,
+			lightDark:       lipgloss.LightDark(m.projectModel.isDark),
+		},
 		m.width,
 		m.height,
 	)
