@@ -26,7 +26,7 @@ jobs:
           - locked
           - latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -37,7 +37,7 @@ jobs:
 
       - name: Set up Homebrew
         id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@f181caf81dacfb95901873fccc6399facff2b788
+        uses: Homebrew/actions/setup-homebrew@18fcb8e3e06b4247c676c506750dc95ea7226479
 
       - name: Install jj
         run: brew install jj
